@@ -1,0 +1,40 @@
+SRC_DIR = src
+BUILD_DIR = build
+BIN_DIR = bin
+CC = g++
+SRC_FILES = $(wildcard $(SRC_DIR)/Deak/*.cpp)
+INCLUDE_PATHS =
+LIBRARY_PATHS = 
+CXXFLAGS = -std=c++20 -Wall -fPIC
+LDFLAGS = -shared
+PLATFORM = x64
+PROJECT_NAME = Deak
+
+DEBUG_DIR = $(BIN_DIR)/Debug-$(PLATFORM)/$(PROJECT_NAME)
+DEBUG_LIB_NAME = libdeak.dylib
+DEBUG_FLAGS = -O0 -g
+DEBUG_LIB_TARGET = $(DEBUG_DIR)/$(DEBUG_LIB_NAME)
+
+RELEASE_DIR = $(BIN_DIR)/Release-$(PLATFORM)/$(PROJECT_NAME)
+RELEASE_LIB_NAME = libdeak.dylib
+RELEASE_FLAGS = -O3
+RELEASE_LIB_TARGET = $(RELEASE_DIR)/$(RELEASE_LIB_NAME)
+
+.PHONY: all debug release clean
+
+all: debug release
+
+debug: $(DEBUG_LIB_TARGET)
+
+release: $(RELEASE_LIB_TARGET)
+
+$(DEBUG_LIB_TARGET): $(SRC_FILES)
+	mkdir -p $(DEBUG_DIR)
+	$(CC) $(CXXFLAGS) $(DEBUG_FLAGS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $^ -o $@ $(LDFLAGS)
+
+$(RELEASE_LIB_TARGET): $(SRC_FILES)
+	mkdir -p $(RELEASE_DIR)
+	$(CC) $(CXXFLAGS) $(RELEASE_FLAGS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $^ -o $@ $(LDFLAGS)
+
+clean:
+	rm -rf $(BIN_DIR)

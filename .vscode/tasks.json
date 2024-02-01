@@ -1,0 +1,53 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build debug library",
+            "type": "cppbuild",
+            "command": "make",
+            "args": ["debug"],
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "build release library",
+            "type": "cppbuild",
+            "command": "make",
+            "args": ["release"],
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "build debug sandbox",
+            "type": "cppbuild",
+            "command": "make",
+            "args": ["debug"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "options": {
+                "cwd": "${workspaceFolder}/Sandbox"
+            }
+        },
+        {
+            "label": "build release sandbox",
+            "type": "cppbuild",
+            "command": "make",
+            "args": ["release"],
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "options": {
+                "cwd": "${workspaceFolder}/Sandbox"
+            }
+        }
+    ]
+}
+
