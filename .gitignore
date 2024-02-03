@@ -35,6 +35,8 @@
 *.out
 *.app
 
+build
+
 ### macOS ###
 # General
 .DS_Store
