@@ -3,13 +3,8 @@
 namespace Deak
 {
 
-    Application::Application()
-    {
-    }
-
-    Application::~Application()
-    {
-    }
+    Application::Application() {}
+    Application::~Application() {}
 
     void Application::Run()
     {

@@ -31,7 +31,8 @@ DEPS := $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-CPPFLAGS := $(INC_FLAGS) -MMD -MP
+# Define DK_PLATFORM_MAC and visibility for shared library
+CPPFLAGS := -MMD -MP -DDK_PLATFORM_MAC -fvisibility=hidden $(INC_FLAGS)
 
 # Linker flags
 LDFLAGS := 
@@ -45,12 +46,12 @@ all: $(ENGINE) $(CLIENT_EXEC)
 # Rule to build the Deak shared library
 $(ENGINE): $(ENGINE_OBJS)
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -shared $^ -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(CPPFLAGS) -shared
 
 # Rule to build the Sandbox executable
 $(CLIENT_EXEC): $(CLIENT_OBJS) $(ENGINE)
 	mkdir -p $(@D)
-	$(CXX) $(CLIENT_OBJS) $(LDLIBS) -o $@
+	$(CXX) $(CLIENT_OBJS) $(LDLIBS) -o $@ $(CPPFLAGS)
 
 # Build step for C++ source files
 $(BUILD_DIR)/%.cpp.o: %.cpp
@@ -65,6 +66,8 @@ clean:
 
 
 
+
+### OLD MAKEFILES ###
 
 # CXX = g++
 # CXXFLAGS = -std=c++20 -Wall -Werror

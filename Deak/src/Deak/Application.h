@@ -1,9 +1,9 @@
 #pragma once
+#include "Core.h"
 
 namespace Deak
 {
-
-    class Application
+    class DEAK_API Application
     {
     public:
         Application();
@@ -12,7 +12,7 @@ namespace Deak
         void Run();
     };
 
-    // To be defined in CLIENT
+    // To be defined in CLIENT (Sandbox.cpp)
     Application* CreateApplication();
 
 }
