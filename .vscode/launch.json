@@ -5,27 +5,27 @@
             "name": "Debug Sandbox",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Sandbox/bin/Debug-x64/Sandbox/sandbox", 
+            "program": "${workspaceFolder}/build/bin/Sandbox",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
             "MIMode": "lldb",
-            "preLaunchTask": "build debug sandbox"
+            "preLaunchTask": "build sandbox debug"
         },
         {
             "name": "Release Sandbox",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Sandbox/bin/Release-x64/Sandbox/sandbox",
+            "program": "${workspaceFolder}/build/bin/Sandbox",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
+            "externalConsole": true,
             "MIMode": "lldb",
-            "preLaunchTask": "build release sandbox"
+            "preLaunchTask": "build sandbox release"
         }
     ]
 }

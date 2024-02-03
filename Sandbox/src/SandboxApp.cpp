@@ -15,6 +15,7 @@ public:
 
 Deak::Application* Deak::CreateApplication()
 {
+    std::cout << "Hello friend!" << '\n';
     return new Sandbox();
 }
 
