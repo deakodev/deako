@@ -28,7 +28,7 @@ OBJS := $(ENGINE_OBJS) $(CLIENT_OBJS)
 DEPS := $(OBJS:.o=.d)
 
 # Include directories
-INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) ./Deak/vendor/spdlog/include
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # Define DK_PLATFORM_MAC and visibility for shared library
