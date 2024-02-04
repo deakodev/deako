@@ -1,0 +1,3 @@
+[submodule "Deak/vendor/spdlog"]
+	path = Deak/vendor/spdlog
+	url = https://github.com/gabime/spdlog
