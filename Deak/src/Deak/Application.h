@@ -1,5 +1,7 @@
 #pragma once
+
 #include "Core.h"
+#include "Deak/Events/Event.h"
 
 namespace Deak
 {

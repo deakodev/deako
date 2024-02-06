@@ -8,3 +8,5 @@
 #error Deak only supports MacOS
 
 #endif
+
+#define BIT(x) (1 << x)
