@@ -10,6 +10,10 @@ endif
 BUILD_DIR := ./build
 SRC_DIRS := ./Deak/src ./Sandbox/src
 
+# Precompiled Header
+PCH := ./Deak/src/dkpch.h
+PCH_OUT := $(BUILD_DIR)/bin/dkpch.h.gch
+
 # Targets
 ENGINE := $(BUILD_DIR)/bin/libDeak.dylib
 CLIENT_EXEC := $(BUILD_DIR)/bin/Sandbox
@@ -39,9 +43,15 @@ LDFLAGS :=
 # For linking against the Deak library
 LDLIBS := -L$(BUILD_DIR)/bin -lDeak
 
-.PHONY: all clean
+.PHONY: all clean pch
 
-all: $(ENGINE) $(CLIENT_EXEC)
+all: $(PCH_OUT) $(ENGINE) $(CLIENT_EXEC)
+
+pch: $(PCH_OUT)
+
+$(PCH_OUT): $(PCH)
+	mkdir -p $(@D)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -x c++-header $< -o $@
 
 # Rule to build the Deak shared library
 $(ENGINE): $(ENGINE_OBJS)
@@ -54,14 +64,15 @@ $(CLIENT_EXEC): $(CLIENT_OBJS) $(ENGINE)
 	$(CXX) $(CLIENT_OBJS) $(LDLIBS) -o $@ $(CPPFLAGS)
 
 # Build step for C++ source files
-$(BUILD_DIR)/%.cpp.o: %.cpp
+$(BUILD_DIR)/%.cpp.o: %.cpp $(PCH_OUT)
 	mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -include $(PCH) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
 
 -include $(DEPS)
+
 
 
 

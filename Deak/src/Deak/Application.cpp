@@ -1,6 +1,6 @@
 #include "Application.h"
 #include "Deak/Events/ApplicationEvent.h"
-#include "Deak/Log.h"
+#include "dkpch.h"
 
 namespace Deak
 {

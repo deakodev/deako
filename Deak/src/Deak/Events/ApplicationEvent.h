@@ -1,8 +1,7 @@
 #pragma once
 
+#include "dkpch.h"
 #include "Deak/Events/Event.h"
-
-#include <sstream>
 
 namespace Deak {
 
