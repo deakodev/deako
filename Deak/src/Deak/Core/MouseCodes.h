@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Hazel
+namespace Deak
 {
     using MouseCode = uint16_t;
 

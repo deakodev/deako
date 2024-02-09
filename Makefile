@@ -1,18 +1,14 @@
 CXX := g++
-CXXFLAGS := -std=c++20 -Wall -Werror
+CXXFLAGS := -std=c++20
 # Conditional compilation flags based on DEBUG variable
 ifeq ($(DEBUG), 1)
-    CXXFLAGS += -g -O0
+    CXXFLAGS += -g -O0 -DDK_ENABLE_ASSERTS -Wall -Werror
 else
     CXXFLAGS += -O3
 endif
 
 BUILD_DIR := ./build
 SRC_DIRS := ./Deak/src ./Sandbox/src
-
-# Precompiled Header
-PCH := ./Deak/src/dkpch.h
-PCH_OUT := $(BUILD_DIR)/bin/dkpch.h.gch
 
 # Targets
 ENGINE := $(BUILD_DIR)/bin/libDeak.dylib
@@ -31,48 +27,42 @@ OBJS := $(ENGINE_OBJS) $(CLIENT_OBJS)
 # Dependency files
 DEPS := $(OBJS:.o=.d)
 
-# Include directories
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) ./Deak/vendor/spdlog/include
+# Include directories 
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) ./Deak/vendor/spdlog/include ./Deak/vendor/GLFW
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # Define DK_PLATFORM_MAC and visibility for shared library
 CPPFLAGS := -MMD -MP -DDK_PLATFORM_MAC -fvisibility=hidden $(INC_FLAGS)
 
-# Linker flags
-LDFLAGS := 
+# Linker flags 
+LDFLAGS := -L./Deak/vendor/GLFW/bin -lglfw3 -framework Cocoa -framework IOKit -framework CoreVideo
+
 # For linking against the Deak library
-LDLIBS := -L$(BUILD_DIR)/bin -lDeak
+LDLIBS := -L$(BUILD_DIR)/bin -lDeak 
 
-.PHONY: all clean pch
+.PHONY: all clean
 
-all: $(PCH_OUT) $(ENGINE) $(CLIENT_EXEC)
-
-pch: $(PCH_OUT)
-
-$(PCH_OUT): $(PCH)
-	mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -x c++-header $< -o $@
+all: $(ENGINE) $(CLIENT_EXEC)
 
 # Rule to build the Deak shared library
 $(ENGINE): $(ENGINE_OBJS)
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@ $(CPPFLAGS) -shared
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $^ -o $@ $(LDFLAGS) -shared
 
 # Rule to build the Sandbox executable
 $(CLIENT_EXEC): $(CLIENT_OBJS) $(ENGINE)
 	mkdir -p $(@D)
-	$(CXX) $(CLIENT_OBJS) $(LDLIBS) -o $@ $(CPPFLAGS)
+	$(CXX) $(CLIENT_OBJS) $(CPPFLAGS) -o $@ $(LDLIBS)
 
 # Build step for C++ source files
-$(BUILD_DIR)/%.cpp.o: %.cpp $(PCH_OUT)
+$(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -include $(PCH) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
 
 -include $(DEPS)
-
 
 
 

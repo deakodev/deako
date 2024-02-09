@@ -1,4 +1,4 @@
-# pragma once
+#pragma once
 
 #include "Deak/Events/Event.h"
 #include "Deak/Core/KeyCodes.h"
@@ -19,7 +19,7 @@ namespace Deak {
 
         KeyCode m_KeyCode{};
 
-    }
+    };
 
     class KeyPressedEvent : public KeyEvent
     {

@@ -1,4 +1,4 @@
-#include pragma once
+#pragma once
 
 #include "Deak/Events/Event.h"
 #include "Deak/Core/MouseCodes.h"

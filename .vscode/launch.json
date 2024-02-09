@@ -26,6 +26,6 @@
             "externalConsole": true,
             "MIMode": "lldb",
             "preLaunchTask": "build sandbox release"
-        }
+        },
     ]
 }
