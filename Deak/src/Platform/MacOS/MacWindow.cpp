@@ -127,11 +127,16 @@ namespace Deak {
 
         glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
             {
-                WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+                // MacOs specific fix to prevent mouse moved event from firing when cursor is outside of window
+                if (glfwGetWindowAttrib(window, GLFW_HOVERED))
+                {
+                    WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
-                MouseMovedEvent event((float)xPos, (float)yPos);
-                data.EventCallback(event);
+                    MouseMovedEvent event((float)xPos, (float)yPos);
+                    data.EventCallback(event);
+                }
             });
+
     }
 
     void MacWindow::Shutdown()
@@ -142,6 +147,8 @@ namespace Deak {
     void MacWindow::OnUpdate()
     {
         glfwPollEvents();
+
+        // This function does not apply to Vulkan
         glfwSwapBuffers(m_Window);
     }
 
