@@ -70,4 +70,19 @@ Temporary Items
 # iCloud generated files
 *.icloud
 
+# Ignore Makefiles
+Makefile
+Makefile.*
+*.make
+*.mk
+
+# Ignore directories created by Premake or other build configuration tools
+bin/
+bin-int/
+obj/
+Debug/
+Release/
+Dist/
+
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,c++

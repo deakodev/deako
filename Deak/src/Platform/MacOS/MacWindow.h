@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Deak/Core/Window.h"
-#include "glfw3.h"
 #include "dkpch.h"
+
+struct GLFWwindow;
 
 namespace Deak {
 

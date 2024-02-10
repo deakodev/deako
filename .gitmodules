@@ -4,9 +4,6 @@
 [submodule "Deak/vendor/imgui"]
 	path = Deak/vendor/imgui
 	url = https://github.com/deak1zm/imgui
-[submodule "Deak/vendor/GLFW/glfw"]
-	path = Deak/vendor/GLFW/glfw
-	url = https://github.com/deak1zm/glfw
-[submodule "Deak/vendor/GFLW"]
-	path = Deak/vendor/GFLW
+[submodule "Deak/vendor/GLFW"]
+	path = Deak/vendor/GLFW
 	url = https://github.com/deak1zm/glfw

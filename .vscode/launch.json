@@ -5,7 +5,7 @@
             "name": "Debug Sandbox",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/Sandbox",
+            "program": "${workspaceFolder}/bin/Debug-macosx-x86_64/Sandbox/Sandbox",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -18,7 +18,7 @@
             "name": "Release Sandbox",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/bin/Sandbox",
+            "program": "${workspaceFolder}/bin/Debug-macosx-x86_64/Sandbox/Sandbox",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -26,6 +26,19 @@
             "externalConsole": true,
             "MIMode": "lldb",
             "preLaunchTask": "build sandbox release"
+        },
+        {
+            "name": "Dist Sandbox",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug-macosx-x86_64/Sandbox/Sandbox",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build sandbox dist"
         },
     ]
 }

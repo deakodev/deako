@@ -4,7 +4,7 @@
         {
             "label": "build sandbox debug",
             "type": "shell",
-            "command": "make DEBUG=1",
+            "command": "make config=debug",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -19,7 +19,19 @@
         {
             "label": "build sandbox release",
             "type": "shell",
-            "command": "make",
+            "command": "make config=release",
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "build sandbox dist",
+            "type": "shell",
+            "command": "make config=dist",
             "group": "build",
             "problemMatcher": [
                 "$gcc"
