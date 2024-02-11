@@ -7,7 +7,7 @@
 
 namespace Deak {
 
-    class DEAK_API Log
+    class Log
     {
     public:
         static void Init();

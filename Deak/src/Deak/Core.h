@@ -1,12 +1,13 @@
 # pragma once
 
 #ifdef DK_PLATFORM_MAC
-#define DEAK_API __attribute__((visibility("default")))
+// #define DEAK_API __attribute__((visibility("default")))
 #include <signal.h>
 #define DK_DEBUGBREAK() raise(SIGTRAP)
 #else
 #error Deak only supports MacOS
 #endif
+
 
 #ifdef DK_ENABLE_ASSERTS
 #define DK_ASSERT(x, ...) { if(!(x)) { DK_ERROR("Assertion Failed: {0}", __VA_ARGS__); raise(SIGTRAP); } }

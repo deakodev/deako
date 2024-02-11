@@ -35,8 +35,6 @@
 *.out
 *.app
 
-build
-
 ### macOS ###
 # General
 .DS_Store
@@ -83,6 +81,9 @@ obj/
 Debug/
 Release/
 Dist/
+
+## Dear ImGui artifacts
+imgui.ini
 
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,c++
