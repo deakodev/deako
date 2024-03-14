@@ -10,7 +10,8 @@ namespace Deak {
     public:
         WindowResizeEvent(unsigned int width, unsigned int height)
             : m_Width(width), m_Height(height)
-        {}
+        {
+        }
 
         unsigned int GetWidth() const { return m_Width; }
         unsigned int GetHeight() const { return m_Height; }
@@ -28,7 +29,6 @@ namespace Deak {
     private:
         unsigned int m_Width{};
         unsigned int m_Height{};
-
     };
 
     class WindowCloseEvent : public Event

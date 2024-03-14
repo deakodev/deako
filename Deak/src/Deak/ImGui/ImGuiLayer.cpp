@@ -1,6 +1,5 @@
-#include "dkpch.h"
-
 #include "ImGuiLayer.h"
+#include "dkpch.h"
 
 #include "imgui.h"
 #include "Platform/OpenGL/ImGuiOpenGLRenderer.h"
@@ -56,7 +55,6 @@ namespace Deak {
 
     void ImGuiLayer::OnDetach()
     {
-
     }
 
     void ImGuiLayer::OnUpdate()
@@ -81,7 +79,6 @@ namespace Deak {
 
     void ImGuiLayer::OnEvent(Event& event)
     {
-
     }
 
 }

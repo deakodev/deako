@@ -10,7 +10,8 @@ namespace Deak {
     public:
         MouseMovedEvent(const float x, const float y)
             : m_MouseX(x), m_MouseY(y)
-        {}
+        {
+        }
 
         float GetX() const { return m_MouseX; }
         float GetY() const { return m_MouseY; }
@@ -28,7 +29,6 @@ namespace Deak {
     private:
         float m_MouseX{};
         float m_MouseY{};
-
     };
 
     class MouseScrolledEvent : public Event
@@ -36,7 +36,8 @@ namespace Deak {
     public:
         MouseScrolledEvent(const float xOffset, const float yOffset)
             : m_XOffset(xOffset), m_YOffset(yOffset)
-        {}
+        {
+        }
 
         float GetXOffset() const { return m_XOffset; }
         float GetYOffset() const { return m_YOffset; }
@@ -54,7 +55,6 @@ namespace Deak {
     private:
         float m_XOffset{};
         float m_YOffset{};
-
     };
 
     class MouseButtonEvent : public Event
@@ -67,10 +67,10 @@ namespace Deak {
     protected:
         MouseButtonEvent(const MouseCode button)
             : m_Button(button)
-        {}
+        {
+        }
 
         MouseCode m_Button{};
-
     };
 
     class MouseButtonPressedEvent : public MouseButtonEvent
@@ -78,7 +78,8 @@ namespace Deak {
     public:
         MouseButtonPressedEvent(const MouseCode button)
             : MouseButtonEvent(button)
-        {}
+        {
+        }
 
         std::string ToString() const override
         {
@@ -88,7 +89,6 @@ namespace Deak {
         }
 
         EVENT_CLASS_TYPE(MouseButtonPressed)
-
     };
 
     class MouseButtonReleasedEvent : public MouseButtonEvent
@@ -96,7 +96,8 @@ namespace Deak {
     public:
         MouseButtonReleasedEvent(const MouseCode button)
             : MouseButtonEvent(button)
-        {}
+        {
+        }
 
         std::string ToString() const override
         {
@@ -106,7 +107,6 @@ namespace Deak {
         }
 
         EVENT_CLASS_TYPE(MouseButtonReleased)
-
     };
 
 }

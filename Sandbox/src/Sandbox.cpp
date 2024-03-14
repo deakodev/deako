@@ -5,7 +5,8 @@ class ExampleLayer : public Deak::Layer
 public:
     ExampleLayer()
         : Layer("Example")
-    {}
+    {
+    }
 
     void OnUpdate() override
     {
@@ -27,8 +28,9 @@ public:
         PushOverlay(new Deak::ImGuiLayer());
     }
 
-    ~Sandbox() {}
-
+    ~Sandbox()
+    {
+    }
 };
 
 Deak::Application* Deak::CreateApplication()

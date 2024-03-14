@@ -27,6 +27,9 @@ project "Deak"
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
+	pchheader "dkpch.h"
+	pchsource "Deak/src/dkpch.cpp"
+
     files
     {
         "%{prj.name}/src/**.h",
@@ -70,8 +73,12 @@ project "Deak"
 		}
 
     filter "configurations:Debug"
-        defines "DK_DEBUG"
-        symbols "On"
+		symbols "On"
+        defines 
+		{
+			"DK_DEBUG",
+			"DK_ENABLE_ASSERTS"
+		}
 
     filter "configurations:Release"
         defines "DK_RELEASE"
@@ -117,8 +124,12 @@ project "Sandbox"
 		}
 
 	filter "configurations:Debug"
-		defines "DK_DEBUG"
 		symbols "On"
+        defines 
+		{
+			"DK_DEBUG",
+			"DK_ENABLE_ASSERTS"
+		}
 
 	filter "configurations:Release"
 		defines "DK_RELEASE"

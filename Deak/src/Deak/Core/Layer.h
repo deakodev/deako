@@ -20,7 +20,6 @@ namespace Deak {
 
     protected:
         std::string m_DebugName;
-
     };
 
 }

@@ -42,7 +42,7 @@ namespace Deak {
 
         if (!s_GLFWInitialized)
         {
-            //   TODO: glfwTerminate on system shutdown
+            // TODO: glfwTerminate on system shutdown
             int success = glfwInit();
             DK_CORE_ASSERT(success, "Could not intialize GLFW!");
 
@@ -150,7 +150,6 @@ namespace Deak {
                     data.EventCallback(event);
                 }
             });
-
     }
 
     void MacWindow::Shutdown()
@@ -161,7 +160,6 @@ namespace Deak {
     void MacWindow::OnUpdate()
     {
         glfwPollEvents();
-
         // This function does not apply to Vulkan
         glfwSwapBuffers(m_Window);
     }

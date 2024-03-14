@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "Hazel/Core/PlatformDetection.h"
+// #include "Deak/Core/PlatformDetection.h"
 
 #include <iostream>
 #include <memory>

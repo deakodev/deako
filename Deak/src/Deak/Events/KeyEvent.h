@@ -15,10 +15,10 @@ namespace Deak {
     protected:
         KeyEvent(const KeyCode keycode)
             : m_KeyCode(keycode)
-        {}
+        {
+        }
 
         KeyCode m_KeyCode{};
-
     };
 
     class KeyPressedEvent : public KeyEvent
@@ -26,7 +26,8 @@ namespace Deak {
     public:
         KeyPressedEvent(const KeyCode keycode, bool isRepeat = false)
             : KeyEvent(keycode), m_IsRepeat(isRepeat)
-        {}
+        {
+        }
 
         bool IsRepeat() const { return m_IsRepeat; }
 
@@ -41,7 +42,6 @@ namespace Deak {
 
     private:
         bool m_IsRepeat{};
-
     };
 
     class KeyReleasedEvent : public KeyEvent
@@ -49,7 +49,8 @@ namespace Deak {
     public:
         KeyReleasedEvent(const KeyCode keycode)
             : KeyEvent(keycode)
-        {}
+        {
+        }
 
         std::string ToString() const override
         {
@@ -59,7 +60,6 @@ namespace Deak {
         }
 
         EVENT_CLASS_TYPE(KeyReleased)
-
     };
 
     class KeyTypedEvent : public KeyEvent
@@ -67,7 +67,8 @@ namespace Deak {
     public:
         KeyTypedEvent(const KeyCode keycode)
             : KeyEvent(keycode)
-        {}
+        {
+        }
 
         std::string ToString() const override
         {
@@ -77,7 +78,6 @@ namespace Deak {
         }
 
         EVENT_CLASS_TYPE(KeyTyped)
-
     };
 
 }

@@ -17,7 +17,8 @@ namespace Deak {
             uint32_t width = 1200,
             uint32_t height = 800)
             : Title(title), Width(width), Height(height)
-        {}
+        {
+        }
     };
 
     // Interface representing a desktop Window
