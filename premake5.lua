@@ -15,6 +15,7 @@ IncludeDir = {}
 IncludeDir["GLFW"] = "Deak/vendor/GLFW/include"
 IncludeDir["Glad"] = "Deak/vendor/Glad/include"
 IncludeDir["ImGui"] = "Deak/vendor/imgui"
+IncludeDir["glm"] = "Deak/vendor/glm"
 
 include "Deak/vendor/GLFW"
 include "Deak/vendor/Glad"
@@ -44,7 +45,8 @@ project "Deak"
         "%{prj.name}/vendor/spdlog/include",
         "%{IncludeDir.GLFW}",
         "%{IncludeDir.Glad}",
-        "%{IncludeDir.ImGui}"
+        "%{IncludeDir.ImGui}",
+		"%{IncludeDir.glm}"
     }
 
     links 
@@ -107,7 +109,8 @@ project "Sandbox"
 	includedirs
 	{
 		"Deak/vendor/spdlog/include",
-		"Deak/src"
+		"Deak/src",
+		"%{IncludeDir.glm}"
 	}
 
 	links

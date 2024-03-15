@@ -7,3 +7,6 @@
 [submodule "Deak/vendor/GLFW"]
 	path = Deak/vendor/GLFW
 	url = https://github.com/deak1zm/glfw
+[submodule "Deak/vendor/glm"]
+	path = Deak/vendor/glm
+	url = https://github.com/g-truc/glm
