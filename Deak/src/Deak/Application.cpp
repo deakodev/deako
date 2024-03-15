@@ -3,6 +3,8 @@
 #include "dkpch.h"
 #include <glad/glad.h>
 
+#include "Core/Input.h"
+
 namespace Deak
 {
     #define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
@@ -56,6 +58,9 @@ namespace Deak
 
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
+
+            auto [x, y] = Input::GetMousePosition();
+            DK_CORE_TRACE("{0}, {1}", x, y);
 
             m_Window->OnUpdate();
         }

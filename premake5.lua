@@ -24,9 +24,11 @@ project "Deak"
     location "Deak"
     kind "SharedLib"
     language "C++"
+	staticruntime "off"
+
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
-
+	
 	pchheader "dkpch.h"
 	pchsource "Deak/src/dkpch.cpp"
 
@@ -74,24 +76,24 @@ project "Deak"
 
     filter "configurations:Debug"
 		symbols "On"
-        defines 
-		{
-			"DK_DEBUG",
-			"DK_ENABLE_ASSERTS"
-		}
+		defines "DK_DEBUG"
+		runtime "Debug"
 
     filter "configurations:Release"
         defines "DK_RELEASE"
         optimize "On"
+		runtime "Release"
 
     filter "configurations:Dist"
         defines "DK_DIST"
         optimize "On"
+		runtime "Release"
 
 project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -125,16 +127,15 @@ project "Sandbox"
 
 	filter "configurations:Debug"
 		symbols "On"
-        defines 
-		{
-			"DK_DEBUG",
-			"DK_ENABLE_ASSERTS"
-		}
+        defines "DK_DEBUG"
+		runtime "Debug"
 
 	filter "configurations:Release"
 		defines "DK_RELEASE"
 		optimize "On"
+		runtime "Release"
 
 	filter "configurations:Dist"
 		defines "DK_DIST"
 		optimize "On"
+		runtime "Release"

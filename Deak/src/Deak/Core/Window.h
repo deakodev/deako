@@ -39,6 +39,9 @@ namespace Deak {
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
 
+        // Will allow us to get pointer to GFLW window
+        virtual void* GetNativeWindow() const = 0;
+
         static Window* Create(const WindowProps& props = WindowProps());
     };
 

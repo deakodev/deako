@@ -8,6 +8,9 @@
 #error Deak only supports MacOS
 #endif
 
+#ifdef DK_DEBUG
+#define DK_ENABLE_ASSERTS
+#endif
 
 #ifdef DK_ENABLE_ASSERTS
 #define DK_ASSERT(x, ...) { if(!(x)) { DK_ERROR("Assertion Failed: {0}", __VA_ARGS__); raise(SIGTRAP); } }
