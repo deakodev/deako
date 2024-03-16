@@ -5,6 +5,7 @@
 #include "Core/LayerStack.h"
 #include "Deak/Events/Event.h"
 #include "Deak/Events/ApplicationEvent.h"
+#include "Deak/ImGui/ImGuiLayer.h"
 
 namespace Deak
 {
@@ -27,6 +28,7 @@ namespace Deak
         bool OnWindowClose(WindowCloseEvent& e);
 
         std::unique_ptr<Window> m_Window;
+        ImGuiLayer* m_ImGuiLayer;
         bool m_Running{ true };
         LayerStack m_LayerStack;
 

@@ -37,7 +37,6 @@ public:
     Sandbox()
     {
         PushLayer(new ExampleLayer());
-        PushOverlay(new Deak::ImGuiLayer());
     }
 
     ~Sandbox()

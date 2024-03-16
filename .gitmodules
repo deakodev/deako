@@ -1,12 +1,12 @@
 [submodule "Deak/vendor/spdlog"]
 	path = Deak/vendor/spdlog
 	url = https://github.com/gabime/spdlog
-[submodule "Deak/vendor/imgui"]
-	path = Deak/vendor/imgui
-	url = https://github.com/deak1zm/imgui
 [submodule "Deak/vendor/GLFW"]
 	path = Deak/vendor/GLFW
 	url = https://github.com/deak1zm/glfw
 [submodule "Deak/vendor/glm"]
 	path = Deak/vendor/glm
 	url = https://github.com/g-truc/glm
+[submodule "Deak/vendor/imgui"]
+	path = Deak/vendor/imgui
+	url = https://github.com/deak1zm/imgui
