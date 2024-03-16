@@ -1,14 +1,16 @@
 #include "ImGuiLayer.h"
-#include "Deak/Application.h"
+
 #include "dkpch.h"
-#include "imgui.h"
-#include "backends/imgui_impl_opengl3.cpp"
-#include "backends/imgui_impl_glfw.cpp"
+#include <imgui.h>
 
-// // Temporary
-// #include "GLFW/glfw3.h"
-// #include <glad/glad.h>
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 
+#include "Deak/Application.h"
+
+// TEMPORARY
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 namespace Deak {
 
     ImGuiLayer::ImGuiLayer()
