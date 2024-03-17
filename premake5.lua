@@ -1,5 +1,5 @@
 workspace "Deak_Engine"
-	architecture "x64"
+	architecture "ARM64"
 
 	configurations
 	{
@@ -23,9 +23,10 @@ include "Deak/vendor/imgui"
 
 project "Deak"
     location "Deak"
-    kind "SharedLib"
+    kind "StaticLib"
     language "C++"
-	staticruntime "off"
+	cppdialect "C++20"
+	staticruntime "on"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -38,6 +39,11 @@ project "Deak"
         "%{prj.name}/src/**.h",
         "%{prj.name}/src/**.cpp"
     }
+
+	defines
+	{
+		"_CRT_SECURE_NO_WARNINGS"
+	}
 
     includedirs
     {
@@ -61,8 +67,6 @@ project "Deak"
     }
 
     filter "system:macosx"
-        cppdialect "C++20"
-        staticruntime "On"
         systemversion "11.0"
 
         defines
@@ -71,31 +75,27 @@ project "Deak"
             "GLFW_INCLUDE_NONE"
         }
 
-		postbuildcommands
-		{
-			("cp %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
-		}
-
     filter "configurations:Debug"
-		symbols "On"
 		defines "DK_DEBUG"
 		runtime "Debug"
+		symbols "on"
 
     filter "configurations:Release"
         defines "DK_RELEASE"
-        optimize "On"
 		runtime "Release"
+		optimize "on"
 
     filter "configurations:Dist"
         defines "DK_DIST"
-        optimize "On"
 		runtime "Release"
+		optimize "on"
 
 project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
-	staticruntime "off"
+	cppdialect "C++20"
+	staticruntime "on"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -110,17 +110,23 @@ project "Sandbox"
 	{
 		"Deak/vendor/spdlog/include",
 		"Deak/src",
+		"Deak/vendor",
 		"%{IncludeDir.glm}"
 	}
 
 	links
 	{
-		"Deak"
+		"Deak",
+		"GLFW",
+        "Glad",
+        "ImGui",
+        "OpenGL.framework",
+        "Cocoa.framework",
+        "IOKit.framework",
+        "CoreVideo.framework"
 	}
 
 	filter "system:macosx"
-		cppdialect "C++20"
-		staticruntime "On"
 		systemversion "11.0"
 
 		defines
@@ -129,16 +135,16 @@ project "Sandbox"
 		}
 
 	filter "configurations:Debug"
-		symbols "On"
         defines "DK_DEBUG"
 		runtime "Debug"
+		symbols "on"
 
 	filter "configurations:Release"
 		defines "DK_RELEASE"
-		optimize "On"
 		runtime "Release"
+		optimize "on"
 
 	filter "configurations:Dist"
 		defines "DK_DIST"
-		optimize "On"
 		runtime "Release"
+		optimize "on"

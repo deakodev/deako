@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef DK_PLATFORM_MAC
+// For shared lib, if we decide to change from static
 // #define DEAK_API __attribute__((visibility("default")))
 #include <signal.h>
 #define DK_DEBUGBREAK() raise(SIGTRAP)

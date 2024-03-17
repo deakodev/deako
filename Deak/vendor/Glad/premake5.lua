@@ -1,6 +1,7 @@
 project "Glad"
     kind "StaticLib"
     language "C"
+    staticruntime "on"
     
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -18,12 +19,13 @@ project "Glad"
     }
 
     filter "system:macosx"
-        staticruntime "On"
-        
+        systemversion "11.0"
+   
     filter "configurations:Debug"
-        runtime "Debug"
-        symbols "On"
+		runtime "Debug"
+		symbols "on"
 
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "On"
+	filter "configurations:Release"
+		runtime "Release"
+		optimize "on"
+

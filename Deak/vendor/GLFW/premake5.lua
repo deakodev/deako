@@ -29,8 +29,8 @@ project "GLFW"
     }
 
     filter "system:macosx"
-        pic "On"
         systemversion "11.0"
+        pic "on"
         
         files
         {
@@ -50,14 +50,10 @@ project "GLFW"
         }
 
     filter "configurations:Debug"
-        runtime "Debug"
-        symbols "on"
+		runtime "Debug"
+		symbols "on"
 
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "on"
+	filter "configurations:Release"
+		runtime "Release"
+		optimize "on"
 
-    filter "configurations:Dist"
-        runtime "Release"
-        optimize "on"
-        symbols "off"

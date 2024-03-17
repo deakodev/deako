@@ -1,7 +1,5 @@
 #pragma once
 
-// #include "Deak/Core/PlatformDetection.h"
-
 #include <iostream>
 #include <memory>
 #include <utility>
@@ -15,7 +13,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-// #include "Deak/Core/Base.h"
 
 #include "Deak/Core/Log.h"
 
