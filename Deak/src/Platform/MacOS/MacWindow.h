@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Deak/Core/Window.h"
-#include "dkpch.h"
+#include "Deak/Renderer/GraphicsContext.h"
 
-struct GLFWwindow;
+#include <GLFW/glfw3.h>
 
 namespace Deak {
 
@@ -32,6 +32,7 @@ namespace Deak {
         virtual void Shutdown();
 
         GLFWwindow* m_Window;
+        GraphicsContext* m_Context;
 
         struct WindowData
         {
