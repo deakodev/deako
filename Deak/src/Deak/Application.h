@@ -7,6 +7,8 @@
 #include "Deak/Events/ApplicationEvent.h"
 #include "Deak/ImGui/ImGuiLayer.h"
 
+#include "Deak/Renderer/Shader.h"
+
 namespace Deak
 {
     class Application
@@ -31,6 +33,9 @@ namespace Deak
         ImGuiLayer* m_ImGuiLayer;
         bool m_Running{ true };
         LayerStack m_LayerStack;
+
+        unsigned int m_VertexArray, m_VertexBuffer, m_IndexBuffer;
+        std::unique_ptr<Shader> m_Shader; // Temporary shader for triangle
 
     private:
         static Application* s_Instance;

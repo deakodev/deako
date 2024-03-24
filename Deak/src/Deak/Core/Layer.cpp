@@ -3,7 +3,7 @@
 
 namespace Deak {
 
-    Layer::Layer(const std::string& debugName)
+    Layer::Layer(std::string_view debugName)
         : m_DebugName(debugName)
     {
     }
