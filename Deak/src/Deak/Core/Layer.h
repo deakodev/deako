@@ -9,7 +9,7 @@ namespace Deak {
     {
     public:
         Layer(std::string_view name = "Layer");
-        virtual ~Layer();
+        virtual ~Layer() = default;
 
         virtual void OnAttach() {}
         virtual void OnDetach() {}

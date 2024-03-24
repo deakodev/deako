@@ -25,14 +25,14 @@ namespace Deak {
 //TODO: Strip out macros in dist build
 
 // Core Log Macros
-#define DK_CORE_FATAL(...)    ::Deak::Log::GetCoreLogger()->fatal(__VA_ARGS__)
+#define DK_CORE_FATAL(...)    ::Deak::Log::GetCoreLogger()->critical(__VA_ARGS__)
 #define DK_CORE_ERROR(...)    ::Deak::Log::GetCoreLogger()->error(__VA_ARGS__)
 #define DK_CORE_WARN(...)     ::Deak::Log::GetCoreLogger()->warn(__VA_ARGS__)
 #define DK_CORE_INFO(...)     ::Deak::Log::GetCoreLogger()->info(__VA_ARGS__)
 #define DK_CORE_TRACE(...)    ::Deak::Log::GetCoreLogger()->trace(__VA_ARGS__)
 
 // Client Log Macros
-#define DK_FATAL(...)         ::Deak::Log::GetClientLogger()->fatal(__VA_ARGS__)
+#define DK_FATAL(...)         ::Deak::Log::GetClientLogger()->critical(__VA_ARGS__)
 #define DK_ERROR(...)         ::Deak::Log::GetClientLogger()->error(__VA_ARGS__)
 #define DK_WARN(...)          ::Deak::Log::GetClientLogger()->warn(__VA_ARGS__)
 #define DK_INFO(...)          ::Deak::Log::GetClientLogger()->info(__VA_ARGS__)

@@ -18,10 +18,6 @@ namespace Deak {
     {
     }
 
-    ImGuiLayer::~ImGuiLayer()
-    {
-    }
-
     void ImGuiLayer::OnAttach()
     {
         // Setup Dear ImGui context

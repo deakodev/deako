@@ -8,8 +8,4 @@ namespace Deak {
     {
     }
 
-    Layer::~Layer()
-    {
-    }
-
 }
