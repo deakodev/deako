@@ -66,7 +66,7 @@ namespace Deak {
                 layout.GetStride(),
                 (const void*)(uintptr_t)element.Offset
             );
-            index++;
+            ++index;
         }
 
         m_VertexBuffers.push_back(vertexBuffer);

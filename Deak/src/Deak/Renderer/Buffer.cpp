@@ -11,10 +11,10 @@ namespace Deak {
     {
         switch (Renderer::GetAPI())
         {
-        case RendererAPI::None:
+        case RendererAPI::API::None:
             DK_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
             return nullptr;
-        case RendererAPI::OpenGL:
+        case RendererAPI::API::OpenGL:
             return new OpenGLVertexBuffer(vertices, size);
         }
         DK_CORE_ASSERT(false, "Unknown RendererAPI!");
@@ -25,10 +25,10 @@ namespace Deak {
     {
         switch (Renderer::GetAPI())
         {
-        case RendererAPI::None:
+        case RendererAPI::API::None:
             DK_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
             return nullptr;
-        case RendererAPI::OpenGL:
+        case RendererAPI::API::OpenGL:
             return new OpenGLIndexBuffer(indices, count);
         }
         DK_CORE_ASSERT(false, "Unknown RendererAPI!");

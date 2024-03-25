@@ -1,5 +1,7 @@
 #include "Deak.h"
 
+#include "imgui/imgui.h"
+
 class ExampleLayer : public Deak::Layer
 {
 public:
@@ -23,6 +25,13 @@ public:
 
         if (Deak::Input::IsMouseButtonPressed(Deak::Mouse::ButtonRight))
             DK_INFO("Right mouse button is pressed");
+    }
+
+    virtual void OnImGuiRender() override
+    {
+        ImGui::Begin("Test");
+        ImGui::Text("Hello World");
+        ImGui::End();
     }
 
     void OnEvent(Deak::Event& event) override
