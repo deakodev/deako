@@ -1,16 +1,25 @@
 #pragma once
 
-// For use by Deak applications
+// To be used by Deak applications
 #include "Deak/Application.h"
+#include "Deak/EntryPoint.h"
+
 #include "Deak/Core/Log.h"
 #include "Deak/Core/Layer.h"
-#include "Deak/ImGui/ImGuiLayer.h"
-
 #include "Deak/Core/Input.h"
 #include "Deak/Core/KeyCodes.h"
 #include "Deak/Core/MouseCodes.h"
 
-//---Entry Point-------------
-#include "Deak/EntryPoint.h"
-//---------------------------
+#include "Deak/Renderer/Renderer.h"
+#include "Deak/Renderer/RenderCommand.h"
+
+#include "Deak/Renderer/Shader.h"
+#include "Deak/Renderer/Buffer.h"
+#include "Deak/Renderer/VertexArray.h"
+
+#include "Deak/Renderer/Camera/Camera.h"
+#include "Deak/Renderer/Camera/PerspectiveCameraController.h"
+#include "Deak/Renderer/Camera/OrthographicCameraController.h"
+
+#include "Deak/ImGui/ImGuiLayer.h"
 

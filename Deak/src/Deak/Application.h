@@ -6,10 +6,7 @@
 #include "Deak/Events/Event.h"
 #include "Deak/Events/ApplicationEvent.h"
 #include "Deak/ImGui/ImGuiLayer.h"
-
-#include "Deak/Renderer/Shader.h"
-#include "Deak/Renderer/VertexArray.h"
-#include "Deak/Renderer/Buffer.h"
+#include "Deak/Core/Timestep.h"
 
 namespace Deak
 {
@@ -21,7 +18,8 @@ namespace Deak
 
         void Run();
 
-        void OnEvent(Event& e);
+        void Close();
+        void OnEvent(Event& event);
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* layer);
 
@@ -35,12 +33,7 @@ namespace Deak
         ImGuiLayer* m_ImGuiLayer;
         bool m_Running{ true };
         LayerStack m_LayerStack;
-
-        std::shared_ptr<Shader> m_Shader;
-        std::shared_ptr<VertexArray> m_VertexArray;
-
-        std::shared_ptr<Shader> m_BlueShader;
-        std::shared_ptr<VertexArray> m_SquareVA;
+        float m_LastFrameTime = 0.0f;
 
     private:
         static Application* s_Instance;

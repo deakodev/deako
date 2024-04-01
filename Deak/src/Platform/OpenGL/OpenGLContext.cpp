@@ -18,6 +18,9 @@ namespace Deak {
         int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         DK_CORE_ASSERT(status, "Failed to initialize Glad!");
 
+        // glfwSetInputMode(m_WindowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glEnable(GL_DEPTH_TEST);
+
         DK_CORE_INFO("OpenGL Info:");
         DK_CORE_INFO("  Vendor: {0}", (const char*)glGetString(GL_VENDOR));
         DK_CORE_INFO("  Renderer: {0}", (const char*)glGetString(GL_RENDERER));

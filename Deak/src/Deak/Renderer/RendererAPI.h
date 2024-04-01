@@ -18,6 +18,7 @@ namespace Deak {
         virtual void Clear() = 0;
 
         virtual void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray) = 0;
+        virtual void DrawArrays(const std::shared_ptr<VertexArray>& vertexArray) = 0;
 
         inline static API GetAPI() { return s_API; }
 
