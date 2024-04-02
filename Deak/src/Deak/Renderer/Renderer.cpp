@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Platform/OpenGL/OpenGLShader.h"
+
 namespace Deak {
 
     Renderer::SceneData* Renderer::s_SceneData = new Renderer::SceneData;
@@ -17,14 +19,11 @@ namespace Deak {
     {
     }
 
-    void Renderer::Submit(const std::shared_ptr<Shader>& shader, const std::shared_ptr<VertexArray>& vertexArray)
+    void Renderer::Submit(const Ref<Shader>& shader, const Ref<VertexArray>& vertexArray, const glm::mat4& model)
     {
         shader->Bind();
-        shader->setMat4("u_ViewProjection", s_SceneData->ViewProjection);
-
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, 20.0f, glm::vec3(0.5f, 1.0f, 0.0f));
-        shader->setMat4("u_Model", model);
+        std::dynamic_pointer_cast<OpenGLShader>(shader)->setUniformMat4("u_ViewProjection", s_SceneData->ViewProjection);
+        std::dynamic_pointer_cast<OpenGLShader>(shader)->setUniformMat4("u_Model", model);
 
         vertexArray->Bind();
         RenderCommand::DrawArrays(vertexArray);

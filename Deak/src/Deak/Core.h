@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #ifdef DK_PLATFORM_MAC
 // For shared lib, if we decide to change from static
 // #define DEAK_API __attribute__((visibility("default")))
@@ -24,3 +26,13 @@
 #define BIT(x) (1 << x)
 
 #define DK_BIND_EVENT_FN(fn) std::bind(&fn, this, std::placeholders::_1)
+
+namespace Deak {
+
+    template <typename T>
+    using Ref = std::shared_ptr<T>;
+
+    template <typename T>
+    using Scope = std::unique_ptr<T>;
+
+}
