@@ -14,64 +14,63 @@ public:
         : Layer("Example"), m_CameraController()
     {
         float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.2f, 0.2f, 0.8f, 0.5f,
-         0.5f, -0.5f, -0.5f,  0.2f, 0.2f, 0.8f, 0.5f,
-         0.5f,  0.5f, -0.5f,  0.2f, 0.2f, 0.8f, 0.5f,
-         0.5f,  0.5f, -0.5f,  0.2f, 0.2f, 0.8f, 0.5f,
-        -0.5f,  0.5f, -0.5f,  0.2f, 0.2f, 0.8f, 0.5f,
-        -0.5f, -0.5f, -0.5f,  0.2f, 0.2f, 0.8f, 0.5f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.8f, 0.2f, 0.2f, 0.5f,
-         0.5f, -0.5f,  0.5f,  0.8f, 0.2f, 0.2f, 0.5f,
-         0.5f,  0.5f,  0.5f,  0.8f, 0.2f, 0.2f, 0.5f,
-         0.5f,  0.5f,  0.5f,  0.8f, 0.2f, 0.2f, 0.5f,
-        -0.5f,  0.5f,  0.5f,  0.8f, 0.2f, 0.2f, 0.5f,
-        -0.5f, -0.5f,  0.5f,  0.8f, 0.2f, 0.2f, 0.5f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f,  0.2f, 0.8f, 0.2f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.2f, 0.8f, 0.2f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.2f, 0.8f, 0.2f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.2f, 0.8f, 0.2f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.2f, 0.8f, 0.2f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.2f, 0.8f, 0.2f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-         0.5f,  0.5f,  0.5f,  0.8f, 0.2f, 0.8f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.8f, 0.2f, 0.8f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.8f, 0.2f, 0.8f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.8f, 0.2f, 0.8f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.8f, 0.2f, 0.8f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.8f, 0.2f, 0.8f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.8f, 0.8f, 0.2f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.8f, 0.8f, 0.2f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.8f, 0.8f, 0.2f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.8f, 0.8f, 0.2f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.8f, 0.8f, 0.2f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.8f, 0.8f, 0.2f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.2f, 0.8f, 0.8f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.2f, 0.8f, 0.8f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.2f, 0.8f, 0.8f, 0.0f,
-         0.5f,  0.5f,  0.5f,  0.2f, 0.8f, 0.8f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.2f, 0.8f, 0.8f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.2f, 0.8f, 0.8f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
         };
 
-        m_VertexArray.reset(Deak::VertexArray::Create());
+        m_VertexArray = Deak::VertexArray::Create();
 
-        Deak::Ref<Deak::VertexBuffer> vertexBuffer;
-        vertexBuffer.reset(Deak::VertexBuffer::Create(vertices, sizeof(vertices)));
+        Deak::Ref<Deak::VertexBuffer> vertexBuffer = Deak::VertexBuffer::Create(vertices, sizeof(vertices));
 
-        vertexBuffer->SetLayout({ { Deak::ShaderDataType::Float3, "a_Position" }, { Deak::ShaderDataType::Float4, "a_Color" } });
+        vertexBuffer->SetLayout({ { Deak::ShaderDataType::Float3, "a_Position" }, { Deak::ShaderDataType::Float2, "a_TexCoord" } });
         m_VertexArray->AddVertexBuffer(vertexBuffer);
 
         std::string vertexSource = R"(
             #version 330 core
 
             layout(location = 0) in vec3 a_Position;
-            layout(location = 1) in vec4 a_Color;
+            layout(location = 1) in vec2 a_TexCoord;
 
-            out vec4 v_Color;
+            out vec2 TexCoord;
             
             uniform mat4 u_Model;
             uniform mat4 u_ViewProjection;
@@ -79,25 +78,31 @@ public:
             void main()
             {
                 gl_Position = u_ViewProjection * u_Model * vec4(a_Position, 1.0);
-                v_Color = a_Color;
+                TexCoord = a_TexCoord;
             }
         )";
 
         std::string fragmentSource = R"(
             #version 330 core
 
-            in vec4 v_Color;
+            in vec2 TexCoord;
             out vec4 fragColor;
 
-            uniform vec3 u_Color;
+            uniform sampler2D u_Texture;
 
             void main()
             {
-                fragColor = vec4(u_Color, 1.0) *v_Color;
+                fragColor = texture(u_Texture, TexCoord);
             }
         )";
 
-        m_Shader.reset(Deak::Shader::Create(vertexSource, fragmentSource));
+        m_Shader = Deak::Shader::Create(vertexSource, fragmentSource);
+
+        m_Texture = Deak::Texture2D::Create("Sandbox/assets/textures/container.jpg");
+
+        std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->Bind();
+        std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->setUniformInt("u_Texture", 0);
+
     }
 
     void OnUpdate(Deak::Timestep timestep) override
@@ -109,14 +114,9 @@ public:
 
         Deak::Renderer::BeginScene(m_CameraController.GetCamera());
 
-        static glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
-
-        std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->Bind();
-        std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->setUniformVec3("u_Color", m_SquareColor);
-
+        m_Texture->Bind();
         glm::mat4 model = glm::mat4(1.0f);
         Deak::Renderer::Submit(m_Shader, m_VertexArray, model);
-
 
         Deak::Renderer::EndScene();
     }
@@ -140,6 +140,7 @@ private:
     Deak::PerspectiveCameraController  m_CameraController;
     Deak::Ref<Deak::Shader> m_Shader;
     Deak::Ref<Deak::VertexArray> m_VertexArray;
+    Deak::Ref<Deak::Texture2D> m_Texture;
 
     glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };

@@ -14,6 +14,7 @@
 #include "Deak/Renderer/RenderCommand.h"
 
 #include "Deak/Renderer/Shader.h"
+#include "Deak/Renderer/Texture.h"
 #include "Deak/Renderer/Buffer.h"
 #include "Deak/Renderer/VertexArray.h"
 

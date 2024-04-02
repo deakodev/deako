@@ -15,6 +15,7 @@ IncludeDir = {}
 IncludeDir["GLFW"] = "Deak/vendor/GLFW/include"
 IncludeDir["Glad"] = "Deak/vendor/Glad/include"
 IncludeDir["ImGui"] = "Deak/vendor/imgui"
+IncludeDir["stb_image"] = "Deak/vendor/stb_image"
 IncludeDir["glm"] = "Deak/vendor/glm"
 
 include "Deak/vendor/GLFW"
@@ -37,7 +38,12 @@ project "Deak"
     files
     {
         "%{prj.name}/src/**.h",
-        "%{prj.name}/src/**.cpp"
+        "%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/stb_image/**.h",
+		"%{prj.name}/vendor/stb_image/**.cpp",
+		"%{prj.name}/glm/glm/**.hpp",
+		"%{prj.name}/glm/glm/**.inl"
+
     }
 
 	defines
@@ -52,6 +58,7 @@ project "Deak"
         "%{IncludeDir.GLFW}",
         "%{IncludeDir.Glad}",
         "%{IncludeDir.ImGui}",
+		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.glm}"
     }
 
