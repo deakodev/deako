@@ -98,7 +98,7 @@ public:
 
         m_Shader = Deak::Shader::Create(vertexSource, fragmentSource);
 
-        m_Texture = Deak::Texture2D::Create("Sandbox/assets/textures/container.jpg");
+        m_Texture = Deak::Texture2D::Create("Sandbox/assets/textures/container2.png");
 
         std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->Bind();
         std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->setUniformInt("u_Texture", 0);
