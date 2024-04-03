@@ -64,11 +64,11 @@ public:
 
         m_VertexArray->AddVertexBuffer(vertexBuffer);
 
-        m_Shader = Deak::Shader::Create("Sandbox/assets/shaders/Texture.glsl");
+        auto shader = m_ShaderLibrary.Load("Sandbox/assets/shaders/Texture.glsl");
         m_Texture = Deak::Texture2D::Create("Sandbox/assets/textures/container2.png");
 
-        std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->Bind();
-        std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->setUniformInt("u_Texture", 0);
+        std::dynamic_pointer_cast<Deak::OpenGLShader>(shader)->Bind();
+        std::dynamic_pointer_cast<Deak::OpenGLShader>(shader)->setUniformInt("u_Texture", 0);
     }
 
     void OnUpdate(Deak::Timestep timestep) override
@@ -80,9 +80,11 @@ public:
 
         Deak::Renderer::BeginScene(m_CameraController.GetCamera());
 
+        auto shader = m_ShaderLibrary.Get("Texture");
+
         m_Texture->Bind();
         glm::mat4 model = glm::mat4(1.0f);
-        Deak::Renderer::Submit(m_Shader, m_VertexArray, model);
+        Deak::Renderer::Submit(shader, m_VertexArray, model);
 
         Deak::Renderer::EndScene();
     }
@@ -103,7 +105,7 @@ public:
 
 private:
     Deak::PerspectiveCameraController  m_CameraController;
-    Deak::Ref<Deak::Shader> m_Shader;
+    Deak::ShaderLibrary m_ShaderLibrary;
     Deak::Ref<Deak::VertexArray> m_VertexArray;
     Deak::Ref<Deak::Texture2D> m_Texture;
 };

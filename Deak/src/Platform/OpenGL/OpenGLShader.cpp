@@ -21,9 +21,16 @@ namespace Deak {
         std::string source = ReadFile(filePath);
         auto shaderSources = PreProcess(source);
         Compile(shaderSources);
+
+        auto lastSlash = filePath.find_last_of("/\\");
+        lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
+        auto lastDecimal = filePath.rfind(".");
+        auto count = lastDecimal == std::string::npos ? filePath.size() - lastSlash : lastDecimal - lastSlash;
+        m_Name = filePath.substr(lastSlash, count);
     }
 
-    OpenGLShader::OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource)
+    OpenGLShader::OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource)
+        : m_Name(name)
     {
         std::unordered_map<GLenum, std::string> sources;
         sources[GL_VERTEX_SHADER] = vertexSource;
@@ -82,7 +89,9 @@ namespace Deak {
     void OpenGLShader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
     {
         GLuint program = glCreateProgram();
-        std::vector<GLuint> glShaderIDs(shaderSources.size());
+        DK_CORE_ASSERT(shaderSources.size() <= 2, "Only supports 2 shaders for now.");
+        std::array<GLuint, 2> glShaderIDs;
+        int glShaderIDIndex = 0;
 
         for (auto& kv : shaderSources)
         {
@@ -114,7 +123,7 @@ namespace Deak {
             }
 
             glAttachShader(program, shader);
-            glShaderIDs.push_back(shader);
+            glShaderIDs[glShaderIDIndex++] = shader;
         }
 
         glLinkProgram(program);

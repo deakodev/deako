@@ -12,11 +12,13 @@ namespace Deak {
     {
     public:
         OpenGLShader(const std::string& filePath);
-        OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource);
+        OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource);
         virtual ~OpenGLShader();
 
         virtual void Bind() const override;
         virtual void Unbind() const override;
+
+        virtual const std::string& GetName() const override { return m_Name; }
 
         void setUniformBool(const std::string& name, bool value) const;
         void setUniformInt(const std::string& name, int value) const;
@@ -39,6 +41,7 @@ namespace Deak {
 
     private:
         uint32_t m_RendererID;
+        std::string m_Name;
         mutable std::unordered_map<std::string, int> m_UniformLocationCache;
     };
 
