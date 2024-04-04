@@ -79,6 +79,22 @@ namespace Deak {
                 data.EventCallback(event);
             });
 
+        glfwSetWindowIconifyCallback(m_Window, [](GLFWwindow* window, int iconified)
+            {
+                WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+
+                if (iconified)
+                {
+                    WindowMinimizedEvent event;
+                    data.EventCallback(event);
+                }
+                else
+                {
+                    WindowRestoredEvent event;
+                    data.EventCallback(event);
+                }
+            });
+
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);

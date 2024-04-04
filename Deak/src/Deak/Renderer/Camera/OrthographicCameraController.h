@@ -37,8 +37,6 @@ namespace Deak {
         bool OnWindowResized(WindowResizeEvent& event);
 
     private:
-        OrthographicCamera m_Camera;
-
         glm::vec3 m_Position = O_POSITION;
 
         bool m_EnableRotation = ENABLE_ROTATION;
@@ -49,6 +47,8 @@ namespace Deak {
         // Movement/Sensitivity
         float m_TranslationSpeed = O_TRANS_SPEED;
         float m_RotationSpeed = O_ROT_SPEED;
+
+        OrthographicCamera m_Camera;
     };
 
 }

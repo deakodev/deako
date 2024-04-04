@@ -94,6 +94,7 @@ public:
         ImGui::Begin("Editor");
         auto mousePosition = Deak::Input::GetMousePosition();
         ImGui::Text("Mouse Position: (%.3f, %.3f)", mousePosition.first, mousePosition.second);
+        ImGui::Text("Aspect Ratio: (%.3f, %.3f)", (float)Deak::Application::Get().GetWindow().GetWidth(), (float)Deak::Application::Get().GetWindow().GetHeight());
         ImGui::End();
     }
 
@@ -104,7 +105,7 @@ public:
     }
 
 private:
-    Deak::PerspectiveCameraController  m_CameraController;
+    Deak::OrthographicCameraController  m_CameraController;
     Deak::ShaderLibrary m_ShaderLibrary;
     Deak::Ref<Deak::VertexArray> m_VertexArray;
     Deak::Ref<Deak::Texture2D> m_Texture;

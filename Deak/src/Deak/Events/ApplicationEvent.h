@@ -31,6 +31,25 @@ namespace Deak {
         unsigned int m_Height{};
     };
 
+    class WindowMinimizedEvent : public Event
+    {
+    public:
+        WindowMinimizedEvent() = default;
+
+        EVENT_CLASS_TYPE(WindowMinimized)
+            EVENT_CLASS_CATEGORY(EventCategoryApplication)
+
+    };
+
+    class WindowRestoredEvent : public Event
+    {
+    public:
+        WindowRestoredEvent() = default;
+
+        EVENT_CLASS_TYPE(WindowRestored)
+            EVENT_CLASS_CATEGORY(EventCategoryApplication)
+
+    };
     class WindowCloseEvent : public Event
     {
     public:

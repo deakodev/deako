@@ -7,10 +7,10 @@
 namespace Deak {
 
     OrthographicCameraController::OrthographicCameraController(bool enableRotation, float aspectRatio, float zoomLevel)
-        : m_Camera(-aspectRatio * zoomLevel, aspectRatio* zoomLevel, -zoomLevel, zoomLevel)
-        , m_EnableRotation(enableRotation)
+        : m_EnableRotation(enableRotation)
         , m_AspectRatio(aspectRatio)
         , m_ZoomLevel(zoomLevel)
+        , m_Camera(-m_AspectRatio * m_ZoomLevel, m_AspectRatio* m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel)
     {
     }
 
