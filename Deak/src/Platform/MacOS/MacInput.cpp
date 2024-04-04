@@ -5,7 +5,7 @@
 
 namespace Deak {
 
-    Input* Input::s_Instance = new MacInput();
+    Scope<Input> Input::s_Instance = CreateScope<MacInput>();
 
     bool MacInput::IsKeyPressedImpl(int keycode)
     {

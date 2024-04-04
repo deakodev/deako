@@ -26,7 +26,7 @@ namespace Deak {
             glm::mat4 ViewProjection;
         };
 
-        static SceneData* s_SceneData;
+        static Scope<SceneData> s_SceneData;
 
     };
 

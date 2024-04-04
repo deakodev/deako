@@ -78,7 +78,6 @@ project "Deak"
 
         defines
         {
-            "DK_PLATFORM_MAC",
             "GLFW_INCLUDE_NONE"
         }
 
@@ -135,11 +134,6 @@ project "Sandbox"
 
 	filter "system:macosx"
 		systemversion "11.0"
-
-		defines
-		{
-			"DK_PLATFORM_MAC"
-		}
 
 	filter "configurations:Debug"
         defines "DK_DEBUG"
