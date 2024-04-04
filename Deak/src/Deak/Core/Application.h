@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Core.h"
-#include "Core/Window.h"
-#include "Core/LayerStack.h"
+#include "Base.h"
+#include "Window.h"
+#include "LayerStack.h"
+#include "Timestep.h"
+
 #include "Deak/Events/Event.h"
 #include "Deak/Events/ApplicationEvent.h"
 #include "Deak/ImGui/ImGuiLayer.h"
-#include "Deak/Core/Timestep.h"
 
 namespace Deak
 {

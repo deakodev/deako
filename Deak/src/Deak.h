@@ -1,8 +1,8 @@
 #pragma once
 
 // To be used by Deak applications
-#include "Deak/Application.h"
-#include "Deak/EntryPoint.h"
+#include "Deak/Core/Application.h"
+#include "Deak/Core/EntryPoint.h"
 
 #include "Deak/Core/Log.h"
 #include "Deak/Core/Layer.h"

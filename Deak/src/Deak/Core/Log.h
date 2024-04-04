@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dkpch.h"
-#include "Deak/Core.h"
+#include "Deak/Core/Base.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
 

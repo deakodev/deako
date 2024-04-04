@@ -1,7 +1,7 @@
 #include "Application.h"
 #include "dkpch.h"
 
-#include "Core/Input.h"
+#include "Input.h"
 #include "Deak/Events/ApplicationEvent.h"
 #include "Deak/Renderer/Renderer.h"
 

@@ -1,6 +1,6 @@
 #include "dkpch.h"
 #include "MacInput.h"
-#include "Deak/Application.h"
+#include "Deak/Core/Application.h"
 #include <GLFW/glfw3.h>
 
 namespace Deak {
