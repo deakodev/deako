@@ -80,7 +80,7 @@ void Example3D::OnUpdate(Deak::Timestep timestep)
     Deak::Renderer::BeginScene(m_CameraController.GetCamera());
 
     std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->Bind();
-    std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->setUniformVec3("u_Color", m_ColorModifier);
+    std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->UploadUniformVec3("u_Color", m_ColorModifier);
 
     Deak::Renderer::Submit(m_Shader, m_VertexArray, glm::mat4(1.0f));
 

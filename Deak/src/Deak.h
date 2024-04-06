@@ -10,6 +10,8 @@
 #include "Deak/Core/MouseCodes.h"
 
 #include "Deak/Renderer/Renderer.h"
+#include "Deak/Renderer/RendererAPI.h"
+#include "Deak/Renderer/Renderer2D.h"
 #include "Deak/Renderer/RenderCommand.h"
 
 #include "Deak/Renderer/Shader.h"

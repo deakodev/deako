@@ -1,7 +1,5 @@
 #include "Example2D.h"
 
-#include "Platform/OpenGL/OpenGLShader.h"
-
 #include "imgui/imgui.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -13,24 +11,7 @@ Example2D::Example2D()
 
 void Example2D::OnAttach()
 {
-    m_VertexArray = Deak::VertexArray::Create();
-
-    float vertices[] = {
-            -0.5f, -0.5f, 0.0f,
-             0.5f, -0.5f, 0.0f,
-             0.5f,  0.5f, 0.0f,
-            -0.5f,  0.5f, 0.0f,
-    };
-
-    Deak::Ref<Deak::VertexBuffer> vertexBuffer = Deak::VertexBuffer::Create(vertices, sizeof(vertices));
-    vertexBuffer->SetLayout({ { Deak::ShaderDataType::Float3, "a_Position" } });
-    m_VertexArray->AddVertexBuffer(vertexBuffer);
-
-    uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
-    Deak::Ref<Deak::IndexBuffer> indexBuffer = Deak::IndexBuffer::Create(indices, sizeof(indices) / sizeof(uint32_t));
-    m_VertexArray->SetIndexBuffer(indexBuffer);
-
-    m_Shader = Deak::Shader::Create("Sandbox/assets/shaders/Example2D.glsl");
+    m_BoxTexture = Deak::Texture2D::Create("Sandbox/assets/textures/container.jpg");
 }
 
 void Example2D::OnDetach()
@@ -44,14 +25,13 @@ void Example2D::OnUpdate(Deak::Timestep timestep)
     Deak::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
     Deak::RenderCommand::Clear();
 
-    Deak::Renderer::BeginScene(m_CameraController.GetCamera());
+    Deak::Renderer2D::BeginScene(m_CameraController.GetCamera());
 
-    std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->Bind();
-    std::dynamic_pointer_cast<Deak::OpenGLShader>(m_Shader)->setUniformVec4("u_Color", m_SquareColor);
+    Deak::Renderer2D::DrawQuad({ -1.0f, 0.0f }, { 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
+    Deak::Renderer2D::DrawQuad({ 0.5f, -0.5f }, { 0.5f, 0.75f }, { 0.2f, 0.3f, 0.8f, 1.0f });
+    Deak::Renderer2D::DrawQuad({ 0.4f, -0.5f , -0.1f }, { 10.0f, 10.0f }, m_BoxTexture);
 
-    Deak::Renderer::Submit(m_Shader, m_VertexArray, glm::mat4(1.0f));
-
-    Deak::Renderer::EndScene();
+    Deak::Renderer2D::EndScene();
 }
 
 void Example2D::OnEvent(Deak::Event& event)
@@ -61,7 +41,7 @@ void Example2D::OnEvent(Deak::Event& event)
 
 void Example2D::OnImGuiRender()
 {
-    ImGui::Begin("Example2D");
-    ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
-    ImGui::End();
+    // ImGui::Begin("Example2D");
+    // ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
+    // ImGui::End();
 }

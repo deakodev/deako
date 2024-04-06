@@ -1,10 +1,11 @@
 #include "Renderer.h"
 #include "dkpch.h"
 
+#include "Renderer2D.h"
+#include "Platform/OpenGL/OpenGLShader.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-#include "Platform/OpenGL/OpenGLShader.h"
 
 namespace Deak {
 
@@ -13,6 +14,7 @@ namespace Deak {
     void Renderer::Init()
     {
         RenderCommand::Init();
+        Renderer2D::Init();
     }
 
     void Renderer::OnWindowResize(uint32_t width, uint32_t height)
@@ -32,8 +34,8 @@ namespace Deak {
     void Renderer::Submit(const Ref<Shader>& shader, const Ref<VertexArray>& vertexArray, const glm::mat4& model)
     {
         shader->Bind();
-        std::dynamic_pointer_cast<OpenGLShader>(shader)->setUniformMat4("u_ViewProjection", s_SceneData->ViewProjection);
-        std::dynamic_pointer_cast<OpenGLShader>(shader)->setUniformMat4("u_Model", model);
+        std::dynamic_pointer_cast<OpenGLShader>(shader)->UploadUniformMat4("u_ViewProjection", s_SceneData->ViewProjection);
+        std::dynamic_pointer_cast<OpenGLShader>(shader)->UploadUniformMat4("u_Model", model);
 
         vertexArray->Bind();
         RenderCommand::DrawArrays(vertexArray);

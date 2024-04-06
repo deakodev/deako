@@ -77,7 +77,7 @@ namespace Deak
 
             // TODO: Remove later
             if (Input::IsKeyPressed(Deak::Key::Escape))
-                Application::Get().Close();
+                Application::Close();
         }
     }
 
@@ -111,7 +111,5 @@ namespace Deak
         m_Minimized = false;
         return true;
     }
-
-
 
 }

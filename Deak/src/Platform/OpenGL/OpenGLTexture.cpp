@@ -1,10 +1,27 @@
 #include "OpenGLTexture.h"
 #include "dkpch.h"
 
-#include <glad/glad.h>
 #include "stb_image.h"
 
 namespace Deak {
+
+    OpenGLTexture2D::OpenGLTexture2D(uint32_t width, uint32_t height)
+        : m_Width(width), m_Height(height)
+    {
+        m_InternalFormat = GL_RGBA8;
+        m_DataFormat = GL_RGBA;
+
+        glGenTextures(1, &m_RendererID);
+        glBindTexture(GL_TEXTURE_2D, m_RendererID);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, m_InternalFormat, m_Width, m_Height, 0, m_DataFormat, GL_UNSIGNED_BYTE, nullptr);
+
+    }
 
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
         : m_Path(path)
@@ -30,14 +47,17 @@ namespace Deak {
             dataFormat = GL_RGB;
         }
 
+        m_InternalFormat = internalFormat;
+        m_DataFormat = dataFormat;
+
         DK_CORE_ASSERT(internalFormat & dataFormat, "Format not supported!");
 
         glGenTextures(1, &m_RendererID);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_Width, m_Height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
@@ -56,6 +76,14 @@ namespace Deak {
     {
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
+    }
+
+    void OpenGLTexture2D::SetData(void* data, uint32_t size)
+    {
+        uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
+        DK_CORE_ASSERT(size == m_Width * m_Height * bpp, "Data must be enitre texture!");
+        glBindTexture(GL_TEXTURE_2D, m_RendererID);
+        glTexImage2D(GL_TEXTURE_2D, 0, m_InternalFormat, m_Width, m_Height, 0, m_DataFormat, GL_UNSIGNED_BYTE, data);
     }
 
 }

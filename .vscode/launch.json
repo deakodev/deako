@@ -9,10 +9,15 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
             "externalConsole": true,
             "MIMode": "lldb",
-            "preLaunchTask": "build sandbox debug"
+            "preLaunchTask": "build sandbox debug",
+            "environment": [
+                {
+                    "name": "OS_ACTIVITY_MODE",
+                    "value": "disable"
+                }
+            ],
         },
         {
             "name": "Release Sandbox",

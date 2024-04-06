@@ -30,6 +30,8 @@ namespace Deak {
     void OpenGLRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray)
     {
         glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+        // Temp fix to unbind texture between calls
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void OpenGLRendererAPI::DrawArrays(const Ref<VertexArray>& vertexArray)

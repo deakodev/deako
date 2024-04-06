@@ -16,9 +16,6 @@ namespace Deak {
 
         virtual void DrawIndexed(const Ref<VertexArray>& vertexArray) override;
         virtual void DrawArrays(const Ref<VertexArray>& vertexArray) override;
-
-    private:
-
     };
 
 }
