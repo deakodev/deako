@@ -18,12 +18,6 @@ public:
 
 private:
     Deak::OrthographicCameraController  m_CameraController;
-
-    //TODO remove once 2D renderer is built
-    Deak::Ref<Deak::Shader> m_Shader;
-    Deak::Ref<Deak::VertexArray> m_VertexArray;
     Deak::Ref<Deak::Texture2D> m_BoxTexture;
-
     glm::vec4 m_SquareColor = { 0.2f, 0.3f, 0.0f, 1.0f };
-
 };

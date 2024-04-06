@@ -23,11 +23,6 @@ namespace Deak {
             s_RendererAPI->DrawIndexed(vertexArray);
         }
 
-        inline static void DrawArrays(const Ref<VertexArray>& vertexArray)
-        {
-            s_RendererAPI->DrawArrays(vertexArray);
-        }
-
     private:
         static Scope<RendererAPI> s_RendererAPI;
 

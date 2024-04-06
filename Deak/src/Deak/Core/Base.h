@@ -36,7 +36,7 @@
 #if TARGET_IPHONE_SIMULATOR == 1
 #error "IOS simulator is not supported!"
 #elif TARGET_OS_IPHONE == 1
-#define HZ_PLATFORM_IOS
+#define DK_PLATFORM_IOS
 #error "IOS is not supported!"
 #elif TARGET_OS_MAC == 1
 #define DK_PLATFORM_MAC
@@ -49,10 +49,10 @@
   * since android is based on the linux kernel
   * it has __linux__ defined */
 #elif defined(__ANDROID__)
-#define HZ_PLATFORM_ANDROID
+#define DK_PLATFORM_ANDROID
 #error "Android is not supported!"
 #elif defined(__linux__)
-#define HZ_PLATFORM_LINUX
+#define DK_PLATFORM_LINUX
 #error "Linux is not supported!"
 #else
     /* Unknown compiler/platform */

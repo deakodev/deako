@@ -1,5 +1,5 @@
 #pragma once
-#include "dkpch.h"
+
 #include "Layer.h"
 #include "Base.h"
 
@@ -8,7 +8,7 @@ namespace Deak {
     class LayerStack
     {
     public:
-        LayerStack();
+        LayerStack() = default;
         ~LayerStack();
 
         void PushLayer(Layer* layer);

@@ -18,10 +18,7 @@ public:
 
 private:
     Deak::PerspectiveCameraController  m_CameraController;
-
-    //TODO remove once 3D renderer is built
-    Deak::Ref<Deak::Shader> m_Shader;
-    Deak::Ref<Deak::VertexArray> m_VertexArray;
+    Deak::Ref<Deak::Texture2D> m_BoxTexture;
     glm::vec3 m_ColorModifier = { 0.75f, 0.5f, 0.25f };
 
 };

@@ -20,7 +20,6 @@ public:
 
 Deak::Application* Deak::CreateApplication()
 {
-    Deak::RendererAPI::SetAPI(Deak::RendererAPI::API::OpenGL);
     return new Sandbox();
 }
 

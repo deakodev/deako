@@ -1,0 +1,24 @@
+#pragma once
+
+#include "Camera/Camera.h"
+#include "Texture.h"
+
+
+namespace Deak {
+
+    class Renderer3D
+    {
+    public:
+        static void Init();
+        static void Shutdown();
+
+        static void BeginScene(const PerspectiveCamera& camera);
+        static void EndScene();
+
+        static void DrawQuad(const glm::vec2& position, const glm::vec3& size, const glm::vec4& color);
+        static void DrawQuad(const glm::vec3& position, const glm::vec3& size, const glm::vec4& color);
+        static void DrawQuad(const glm::vec2& position, const glm::vec3& size, const Ref<Texture2D>& texture);
+        static void DrawQuad(const glm::vec3& position, const glm::vec3& size, const Ref<Texture2D>& texture);
+    };
+
+}

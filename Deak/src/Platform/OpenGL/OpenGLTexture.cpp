@@ -1,7 +1,7 @@
 #include "OpenGLTexture.h"
 #include "dkpch.h"
 
-#include "stb_image.h"
+#include <stb_image.h>
 
 namespace Deak {
 
@@ -20,7 +20,6 @@ namespace Deak {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         glTexImage2D(GL_TEXTURE_2D, 0, m_InternalFormat, m_Width, m_Height, 0, m_DataFormat, GL_UNSIGNED_BYTE, nullptr);
-
     }
 
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
@@ -81,7 +80,7 @@ namespace Deak {
     void OpenGLTexture2D::SetData(void* data, uint32_t size)
     {
         uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
-        DK_CORE_ASSERT(size == m_Width * m_Height * bpp, "Data must be enitre texture!");
+        DK_CORE_ASSERT(size == m_Width * m_Height * bpp, "Data must be entire texture!");
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
         glTexImage2D(GL_TEXTURE_2D, 0, m_InternalFormat, m_Width, m_Height, 0, m_DataFormat, GL_UNSIGNED_BYTE, data);
     }

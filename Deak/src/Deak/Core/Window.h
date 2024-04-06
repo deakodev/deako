@@ -1,6 +1,5 @@
 #pragma once
 
-// #include "Deak/Core/Base.h"
 #include "Base.h"
 #include "Deak/Events/Event.h"
 #include "dkpch.h"
@@ -42,7 +41,7 @@ namespace Deak {
         // Will allow us to get pointer to GFLW window
         virtual void* GetNativeWindow() const = 0;
 
-        static Window* Create(const WindowProps& props = WindowProps());
+        static Scope<Window> Create(const WindowProps& props = WindowProps());
     };
 
 }

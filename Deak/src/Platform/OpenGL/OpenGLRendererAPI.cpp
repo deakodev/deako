@@ -34,10 +34,4 @@ namespace Deak {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void OpenGLRendererAPI::DrawArrays(const Ref<VertexArray>& vertexArray)
-    {
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-
-
 }
