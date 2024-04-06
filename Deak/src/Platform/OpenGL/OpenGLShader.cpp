@@ -67,6 +67,8 @@ namespace Deak {
         {
             DK_CORE_ERROR("Could not open file '{0}'", filePath);
         }
+
+        return result;
     }
 
     std::unordered_map<GLenum, std::string> OpenGLShader::PreProcess(const std::string& source)
