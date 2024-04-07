@@ -19,6 +19,8 @@ namespace Deak {
 
     void ImGuiLayer::OnAttach()
     {
+        DK_PROFILE_FUNC();
+
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -47,6 +49,8 @@ namespace Deak {
 
     void ImGuiLayer::OnDetach()
     {
+        DK_PROFILE_FUNC();
+
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -54,6 +58,8 @@ namespace Deak {
 
     void ImGuiLayer::Begin()
     {
+        DK_PROFILE_FUNC();
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -61,6 +67,8 @@ namespace Deak {
 
     void ImGuiLayer::End()
     {
+        DK_PROFILE_FUNC();
+
         ImGuiIO& io = ImGui::GetIO();
         Application& app = Application::Get();
         io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());

@@ -18,6 +18,8 @@ namespace Deak {
 
     OpenGLShader::OpenGLShader(std::string_view filePath)
     {
+        DK_PROFILE_FUNC();
+
         std::string source = ReadFile(filePath);
         auto shaderSources = PreProcess(source);
         Compile(shaderSources);
@@ -32,6 +34,8 @@ namespace Deak {
     OpenGLShader::OpenGLShader(std::string_view name, const std::string& vertexSource, const std::string& fragmentSource)
         : m_Name(name)
     {
+        DK_PROFILE_FUNC();
+
         std::unordered_map<GLenum, std::string> sources;
         sources[GL_VERTEX_SHADER] = vertexSource;
         sources[GL_FRAGMENT_SHADER] = fragmentSource;
@@ -40,11 +44,15 @@ namespace Deak {
 
     OpenGLShader::~OpenGLShader()
     {
+        DK_PROFILE_FUNC();
+
         glDeleteProgram(m_RendererID);
     }
 
     std::string OpenGLShader::ReadFile(std::string_view filePath)
     {
+        DK_PROFILE_FUNC();
+
         std::string result;
         std::ifstream in(filePath, std::ios::in | std::ios::binary);
         if (in)
@@ -73,6 +81,8 @@ namespace Deak {
 
     std::unordered_map<GLenum, std::string> OpenGLShader::PreProcess(const std::string& source)
     {
+        DK_PROFILE_FUNC();
+
         std::unordered_map<GLenum, std::string> shaderSources;
 
         const char* typeToken = "#type";
@@ -97,6 +107,8 @@ namespace Deak {
 
     void OpenGLShader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources)
     {
+        DK_PROFILE_FUNC();
+
         GLuint program = glCreateProgram();
         DK_CORE_ASSERT(shaderSources.size() <= 2, "Only supports 2 shaders for now.");
         std::array<GLuint, 2> glShaderIDs;
@@ -168,31 +180,43 @@ namespace Deak {
 
     void OpenGLShader::Bind() const
     {
+        DK_PROFILE_FUNC();
+
         glUseProgram(m_RendererID);
     }
 
     void OpenGLShader::Unbind() const
     {
+        DK_PROFILE_FUNC();
+
         glUseProgram(0);
     }
 
     void OpenGLShader::SetInt(const std::string& name, int value)
     {
+        DK_PROFILE_FUNC();
+
         UploadUniformInt(name, value);
     }
 
     void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value)
     {
+        DK_PROFILE_FUNC();
+
         UploadUniformVec3(name, value);
     }
 
     void OpenGLShader::SetFloat4(const std::string& name, const glm::vec4& value)
     {
+        DK_PROFILE_FUNC();
+
         UploadUniformVec4(name, value);
     }
 
     void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
     {
+        DK_PROFILE_FUNC();
+
         UploadUniformMat4(name, value);
     }
 

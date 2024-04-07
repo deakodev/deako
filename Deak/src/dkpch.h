@@ -15,4 +15,5 @@
 
 
 #include "Deak/Core/Log.h"
+#include "Deak/Debug/Instrumentor.h"
 

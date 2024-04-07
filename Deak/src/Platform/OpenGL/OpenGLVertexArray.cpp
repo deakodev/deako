@@ -28,26 +28,36 @@ namespace Deak {
 
     OpenGLVertexArray::OpenGLVertexArray()
     {
+        DK_PROFILE_FUNC();
+
         glGenVertexArrays(1, &m_RendererID);
     }
 
     OpenGLVertexArray::~OpenGLVertexArray()
     {
+        DK_PROFILE_FUNC();
+
         glDeleteVertexArrays(1, &m_RendererID);
     }
 
     void OpenGLVertexArray::Bind() const
     {
+        DK_PROFILE_FUNC();
+
         glBindVertexArray(m_RendererID);
     }
 
     void OpenGLVertexArray::Unbind() const
     {
+        DK_PROFILE_FUNC();
+
         glBindVertexArray(0);
     }
 
     void OpenGLVertexArray::AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer)
     {
+        DK_PROFILE_FUNC();
+
         DK_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size(), "Vertex buffer has no layout!");
 
         glBindVertexArray(m_RendererID);
@@ -74,6 +84,8 @@ namespace Deak {
 
     void OpenGLVertexArray::AddIndexBuffer(const Ref<IndexBuffer>& indexBuffer)
     {
+        DK_PROFILE_FUNC();
+
         glBindVertexArray(m_RendererID);
         indexBuffer->Bind();
         m_IndexBuffer = indexBuffer;

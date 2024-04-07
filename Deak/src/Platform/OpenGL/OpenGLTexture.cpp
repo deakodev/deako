@@ -8,6 +8,8 @@ namespace Deak {
     OpenGLTexture2D::OpenGLTexture2D(uint32_t width, uint32_t height)
         : m_Width(width), m_Height(height)
     {
+        DK_PROFILE_FUNC();
+
         m_InternalFormat = GL_RGBA8;
         m_DataFormat = GL_RGBA;
 
@@ -25,9 +27,15 @@ namespace Deak {
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
         : m_Path(path)
     {
+        DK_PROFILE_FUNC();
+
         int width, height, channels;
         stbi_set_flip_vertically_on_load(true);
-        stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+        stbi_uc* data = nullptr;
+        {
+            DK_PROFILE_SCOPE("stbi_load - OpenGLTexture2D::OpenGLTexture2D(const std::string& path)");
+            data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+        }
 
         DK_CORE_ASSERT(data, "Failed to load image!");
 
@@ -68,17 +76,23 @@ namespace Deak {
 
     OpenGLTexture2D::~OpenGLTexture2D()
     {
+        DK_PROFILE_FUNC();
+
         glDeleteTextures(1, &m_RendererID);
     }
 
     void OpenGLTexture2D::Bind(uint32_t slot) const
     {
+        DK_PROFILE_FUNC();
+
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_RendererID);
     }
 
     void OpenGLTexture2D::SetData(void* data, uint32_t size)
     {
+        DK_PROFILE_FUNC();
+
         uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
         DK_CORE_ASSERT(size == m_Width * m_Height * bpp, "Data must be entire texture!");
         glBindTexture(GL_TEXTURE_2D, m_RendererID);

@@ -20,6 +20,8 @@ namespace Deak {
 
     void Renderer2D::Init()
     {
+        DK_PROFILE_FUNC();
+
         s_2DData.vertexArray = VertexArray::Create();
 
         float vertices[] = {
@@ -51,16 +53,20 @@ namespace Deak {
 
     void Renderer2D::Shutdown()
     {
+        DK_PROFILE_FUNC();
     }
 
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
     {
+        DK_PROFILE_FUNC();
+
         s_2DData.textureShader->Bind();
         s_2DData.textureShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
     }
 
     void Renderer2D::EndScene()
     {
+        DK_PROFILE_FUNC();
     }
 
     void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color)
@@ -70,6 +76,8 @@ namespace Deak {
 
     void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color)
     {
+        DK_PROFILE_FUNC();
+
         s_2DData.textureShader->SetFloat4("u_Color", color);
         s_2DData.whiteTexture->Bind();
 
@@ -87,6 +95,8 @@ namespace Deak {
 
     void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<Texture2D>& texture)
     {
+        DK_PROFILE_FUNC();
+
         s_2DData.textureShader->SetFloat4("u_Color", glm::vec4(1.0f));
         texture->Bind();
 

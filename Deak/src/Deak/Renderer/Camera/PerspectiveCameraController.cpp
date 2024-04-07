@@ -19,6 +19,8 @@ namespace Deak {
 
     void PerspectiveCameraController::OnUpdate(Timestep timestep)
     {
+        DK_PROFILE_FUNC();
+
         if (Input::IsKeyPressed(Key::Space))
         {
             const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
@@ -56,6 +58,8 @@ namespace Deak {
 
     void PerspectiveCameraController::OnEvent(Event& event)
     {
+        DK_PROFILE_FUNC();
+
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<MouseScrolledEvent>(DK_BIND_EVENT_FN(PerspectiveCameraController::OnMouseScrolled));
         dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(PerspectiveCameraController::OnWindowResized));
@@ -63,6 +67,8 @@ namespace Deak {
 
     void PerspectiveCameraController::SetViewportSize(float width, float height)
     {
+        DK_PROFILE_FUNC();
+
         m_ViewportWidth = width;
         m_ViewportHeight = height;
         HandleCameraResize(m_ViewportWidth, m_ViewportHeight);
@@ -71,6 +77,8 @@ namespace Deak {
 
     bool PerspectiveCameraController::OnMouseScrolled(MouseScrolledEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         float delta = event.GetYOffset() * 0.1f;
         HandleMouseZoom(delta);
         m_Camera.UpdateView(UpdatePosition(), GetOrientation());
@@ -79,6 +87,8 @@ namespace Deak {
 
     void PerspectiveCameraController::HandleMouseZoom(float delta)
     {
+        DK_PROFILE_FUNC();
+
         m_Distance -= delta * CalculateZoomSpeed();
         if (m_Distance < 1.0f)
         {
@@ -89,17 +99,23 @@ namespace Deak {
 
     bool PerspectiveCameraController::OnWindowResized(WindowResizeEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         HandleCameraResize((float)event.GetWidth(), (float)event.GetHeight());
         return false;
     }
 
     void PerspectiveCameraController::HandleCameraResize(float width, float height)
     {
+        DK_PROFILE_FUNC();
+
         m_Camera.UpdateProjection(m_FOV, width / height, m_NearPlane, m_FarPlane);
     }
 
     void PerspectiveCameraController::HandleMousePan(const glm::vec2& delta)
     {
+        DK_PROFILE_FUNC();
+
         auto [xSpeed, ySpeed] = m_PanSpeed;
         m_FocalPoint += -GetRightDirection() * delta.x * xSpeed * m_Distance;
         m_FocalPoint += GetUpDirection() * delta.y * ySpeed * m_Distance;
@@ -107,6 +123,8 @@ namespace Deak {
 
     void PerspectiveCameraController::HandleMouseRotate(const glm::vec2& delta)
     {
+        DK_PROFILE_FUNC();
+
         float yawSign = GetUpDirection().y < 0 ? -1.0f : 1.0f;
         m_Yaw += yawSign * delta.x * m_RotationSpeed;
         m_Pitch += delta.y * m_RotationSpeed;
@@ -114,6 +132,8 @@ namespace Deak {
 
     void PerspectiveCameraController::CalculatePanSpeed()
     {
+        DK_PROFILE_FUNC();
+
         float x = std::min(m_ViewportWidth / 1000.0f, 2.4f);
         float xPanSpeed = 0.0366f * (x * x) - 0.1778f * x + 0.3021f;
 
@@ -125,6 +145,8 @@ namespace Deak {
 
     float PerspectiveCameraController::CalculateZoomSpeed() const
     {
+        DK_PROFILE_FUNC();
+
         float distance = m_Distance * 0.2f;
         distance = std::max(distance, 0.0f);
         float speed = distance * distance;
@@ -134,26 +156,36 @@ namespace Deak {
 
     glm::vec3 PerspectiveCameraController::UpdatePosition() const
     {
+        DK_PROFILE_FUNC();
+
         return m_FocalPoint - GetForwardDirection() * m_Distance;
     }
 
     glm::quat PerspectiveCameraController::GetOrientation() const
     {
+        DK_PROFILE_FUNC();
+
         return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
     }
 
     glm::vec3 PerspectiveCameraController::GetUpDirection() const
     {
+        DK_PROFILE_FUNC();
+
         return glm::rotate(GetOrientation(), glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     glm::vec3 PerspectiveCameraController::GetRightDirection() const
     {
+        DK_PROFILE_FUNC();
+
         return glm::rotate(GetOrientation(), glm::vec3(1.0f, 0.0f, 0.0f));
     }
 
     glm::vec3 PerspectiveCameraController::GetForwardDirection() const
     {
+        DK_PROFILE_FUNC();
+
         return glm::rotate(GetOrientation(), glm::vec3(0.0f, 0.0f, -1.0f));
     }
 

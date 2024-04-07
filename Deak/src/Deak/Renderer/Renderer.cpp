@@ -8,6 +8,8 @@ namespace Deak {
 
     void Renderer::Init()
     {
+        DK_PROFILE_FUNC();
+
         RenderCommand::Init();
         Renderer2D::Init();
         Renderer3D::Init();
@@ -15,6 +17,8 @@ namespace Deak {
 
     void Renderer::Shutdown()
     {
+        DK_PROFILE_FUNC();
+
         Renderer3D::Shutdown();
         Renderer2D::Shutdown();
     }

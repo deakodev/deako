@@ -26,16 +26,22 @@ namespace Deak {
 
     MacWindow::MacWindow(const WindowProps& props)
     {
+        DK_PROFILE_FUNC();
+
         Init(props);
     }
 
     MacWindow::~MacWindow()
     {
+        DK_PROFILE_FUNC();
+
         Shutdown();
     }
 
     void MacWindow::Init(const WindowProps& props)
     {
+        DK_PROFILE_FUNC();
+
         m_Data.Title = props.Title;
         m_Data.Width = props.Width;
         m_Data.Height = props.Height;
@@ -44,7 +50,11 @@ namespace Deak {
 
         if (s_GLFWWindowCount == 0)
         {
+
+            DK_PROFILE_SCOPE("glfwInit");
+
             int success = glfwInit();
+
             DK_CORE_ASSERT(success, "Could not intialize GLFW!");
 
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -58,8 +68,12 @@ namespace Deak {
             glfwSetErrorCallback(GLFWErrorCallback);
         }
 
-        m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title, nullptr, nullptr);
-        ++s_GLFWWindowCount;
+        {
+            DK_PROFILE_SCOPE("glfwCreateWindow");
+
+            m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title, nullptr, nullptr);
+            ++s_GLFWWindowCount;
+        }
 
         m_Context = GraphicsContext::Create(m_Window);
         m_Context->Init();
@@ -180,6 +194,8 @@ namespace Deak {
 
     void MacWindow::Shutdown()
     {
+        DK_PROFILE_FUNC();
+
         glfwDestroyWindow(m_Window);
         --s_GLFWWindowCount;
 
@@ -191,12 +207,16 @@ namespace Deak {
 
     void MacWindow::OnUpdate()
     {
+        DK_PROFILE_FUNC();
+
         glfwPollEvents();
         m_Context->SwapBuffers();
     }
 
     void MacWindow::SetVSync(bool enabled)
     {
+        DK_PROFILE_FUNC();
+
         if (enabled)
             glfwSwapInterval(1);
         else

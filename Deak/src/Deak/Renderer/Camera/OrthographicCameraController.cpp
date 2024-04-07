@@ -16,6 +16,8 @@ namespace Deak {
 
     void OrthographicCameraController::OnUpdate(Timestep timestep)
     {
+        DK_PROFILE_FUNC();
+
         if (Input::IsKeyPressed(Key::A))
         {
             m_Position.x -= cos(glm::radians(m_Rotation)) * m_TranslationSpeed * timestep;
@@ -58,6 +60,8 @@ namespace Deak {
 
     void OrthographicCameraController::OnEvent(Event& event)
     {
+        DK_PROFILE_FUNC();
+
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<MouseScrolledEvent>(DK_BIND_EVENT_FN(OrthographicCameraController::OnMouseScrolled));
         dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(OrthographicCameraController::OnWindowResized));
@@ -65,6 +69,8 @@ namespace Deak {
 
     bool OrthographicCameraController::OnMouseScrolled(MouseScrolledEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         m_ZoomLevel -= event.GetYOffset() * 0.25f;
         m_ZoomLevel = std::max(m_ZoomLevel, 0.25f);
         m_Camera.UpdateProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
@@ -73,12 +79,16 @@ namespace Deak {
 
     bool OrthographicCameraController::OnWindowResized(WindowResizeEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         SetViewportSize((float)event.GetWidth(), (float)event.GetHeight());
         return false;
     }
 
     void OrthographicCameraController::SetViewportSize(float width, float height)
     {
+        DK_PROFILE_FUNC();
+
         m_AspectRatio = width / height;
         m_Camera.UpdateProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
     }

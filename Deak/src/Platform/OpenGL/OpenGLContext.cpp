@@ -14,6 +14,8 @@ namespace Deak {
 
     void OpenGLContext::Init()
     {
+        DK_PROFILE_FUNC();
+
         glfwMakeContextCurrent(m_WindowHandle);
         int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
         DK_CORE_ASSERT(status, "Failed to initialize Glad!");
@@ -26,6 +28,8 @@ namespace Deak {
 
     void OpenGLContext::SwapBuffers()
     {
+        DK_PROFILE_FUNC();
+
         glfwSwapBuffers(m_WindowHandle);
     }
 

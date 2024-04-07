@@ -14,6 +14,8 @@ namespace Deak
 
     Application::Application()
     {
+        DK_PROFILE_FUNC();
+
         DK_CORE_ASSERT(!s_Instance, "Application already exists!");
         s_Instance = this;
 
@@ -28,30 +30,40 @@ namespace Deak
 
     Application::~Application()
     {
+        DK_PROFILE_FUNC();
+
         Renderer::Shutdown();
     }
 
     void Application::PushLayer(Layer* layer)
     {
+        DK_PROFILE_FUNC();
+
         m_LayerStack.PushLayer(layer);
+        layer->OnAttach();
     }
 
     void Application::PushOverlay(Layer* layer)
     {
+        DK_PROFILE_FUNC();
+
         m_LayerStack.PushOverlay(layer);
+        layer->OnAttach();
     }
 
     void Application::OnEvent(Event& event)
     {
+        DK_PROFILE_FUNC();
+
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<WindowCloseEvent>(DK_BIND_EVENT_FN(Application::OnWindowClose));
         dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(Application::OnWindowResize));
         dispatcher.Dispatch<WindowMinimizedEvent>(DK_BIND_EVENT_FN(Application::OnWindowMinimized));
         dispatcher.Dispatch<WindowRestoredEvent>(DK_BIND_EVENT_FN(Application::OnWindowRestored));
 
-        for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
+        for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
         {
-            (*--it)->OnEvent(event);
+            (*it)->OnEvent(event);
             if (event.Handled)
                 break;
         }
@@ -59,22 +71,34 @@ namespace Deak
 
     void Application::Run()
     {
+        DK_PROFILE_FUNC();
+
         while (m_Running)
         {
+            DK_PROFILE_SCOPE("Runloop");
+
             float time = Time::GetTime();
             Timestep timestep = time - m_LastFrameTime;
             m_LastFrameTime = time;
 
             if (!m_Minimized)
             {
-                for (Layer* layer : m_LayerStack)
-                    layer->OnUpdate(timestep);
-            }
+                {
+                    DK_PROFILE_SCOPE("LayerStack OnUpdate");
 
-            m_ImGuiLayer->Begin();
-            for (Layer* layer : m_LayerStack)
-                layer->OnImGuiRender();
-            m_ImGuiLayer->End();
+                    for (Layer* layer : m_LayerStack)
+                        layer->OnUpdate(timestep);
+                }
+
+                m_ImGuiLayer->Begin();
+                {
+                    DK_PROFILE_SCOPE("LayerStack OnImGuiRender");
+
+                    for (Layer* layer : m_LayerStack)
+                        layer->OnImGuiRender();
+                }
+                m_ImGuiLayer->End();
+            }
 
             m_Window->OnUpdate();
 
@@ -98,6 +122,8 @@ namespace Deak
 
     bool Application::OnWindowResize(WindowResizeEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         Renderer::OnWindowResize(event.GetWidth(), event.GetHeight());
 
         return false;
@@ -105,12 +131,16 @@ namespace Deak
 
     bool Application::OnWindowMinimized(WindowMinimizedEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         m_Minimized = true;
         return true;
     }
 
     bool Application::OnWindowRestored(WindowRestoredEvent& event)
     {
+        DK_PROFILE_FUNC();
+
         m_Minimized = false;
         return true;
     }
