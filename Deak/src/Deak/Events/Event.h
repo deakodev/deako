@@ -41,7 +41,6 @@ namespace Deak {
         virtual EventType GetEventType() const = 0;
         virtual const char* GetName() const = 0;
         virtual int GetCategoryFlags() const = 0;
-        virtual std::string ToString() const { return GetName(); }
 
         bool IsInCategory(EventCategory category)
         {
@@ -72,11 +71,6 @@ namespace Deak {
     private:
         Event& m_Event;
     };
-
-    inline std::ostream& operator<<(std::ostream& os, const Event& e)
-    {
-        return os << e.ToString();
-    }
 
 }
 

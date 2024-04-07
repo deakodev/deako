@@ -7,7 +7,7 @@
 
 namespace Deak {
 
-    static GLenum ShaderTypeFromString(const std::string& type)
+    static GLenum ShaderTypeFromString(std::string_view type)
     {
         if (type == "vertex") return GL_VERTEX_SHADER;
         if (type == "fragment" || type == "pixel") return GL_FRAGMENT_SHADER;
@@ -16,7 +16,7 @@ namespace Deak {
         return 0;
     }
 
-    OpenGLShader::OpenGLShader(const std::string& filePath)
+    OpenGLShader::OpenGLShader(std::string_view filePath)
     {
         std::string source = ReadFile(filePath);
         auto shaderSources = PreProcess(source);
@@ -29,7 +29,7 @@ namespace Deak {
         m_Name = filePath.substr(lastSlash, count);
     }
 
-    OpenGLShader::OpenGLShader(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource)
+    OpenGLShader::OpenGLShader(std::string_view name, const std::string& vertexSource, const std::string& fragmentSource)
         : m_Name(name)
     {
         std::unordered_map<GLenum, std::string> sources;
@@ -43,7 +43,7 @@ namespace Deak {
         glDeleteProgram(m_RendererID);
     }
 
-    std::string OpenGLShader::ReadFile(const std::string& filePath)
+    std::string OpenGLShader::ReadFile(std::string_view filePath)
     {
         std::string result;
         std::ifstream in(filePath, std::ios::in | std::ios::binary);

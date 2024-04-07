@@ -31,13 +31,6 @@ namespace Deak {
 
         bool IsRepeat() const { return m_IsRepeat; }
 
-        std::string ToString() const override
-        {
-            std::stringstream ss;
-            ss << "KeyPressedEvent: " << m_KeyCode << " (repeat = " << m_IsRepeat << ")";
-            return ss.str();
-        }
-
         EVENT_CLASS_TYPE(KeyPressed)
 
     private:
@@ -52,12 +45,6 @@ namespace Deak {
         {
         }
 
-        std::string ToString() const override
-        {
-            std::stringstream ss;
-            ss << "KeyReleasedEvent: " << m_KeyCode;
-            return ss.str();
-        }
 
         EVENT_CLASS_TYPE(KeyReleased)
     };
@@ -68,13 +55,6 @@ namespace Deak {
         KeyTypedEvent(const KeyCode keycode)
             : KeyEvent(keycode)
         {
-        }
-
-        std::string ToString() const override
-        {
-            std::stringstream ss;
-            ss << "KeyTypedEvent: " << m_KeyCode;
-            return ss.str();
         }
 
         EVENT_CLASS_TYPE(KeyTyped)

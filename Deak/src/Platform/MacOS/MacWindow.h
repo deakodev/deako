@@ -36,7 +36,7 @@ namespace Deak {
 
         struct WindowData
         {
-            std::string Title;
+            const char* Title;
             uint32_t Width;
             uint32_t Height;
             bool VSync;

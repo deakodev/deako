@@ -30,7 +30,7 @@ namespace Deak {
 
     struct BufferElement
     {
-        std::string Name;
+        std::string_view Name;
         ShaderDataType Type;
         size_t Offset;
         uint32_t Size;
@@ -38,7 +38,7 @@ namespace Deak {
 
         BufferElement() = default;
 
-        BufferElement(ShaderDataType type, const std::string& name, bool normalized = false)
+        BufferElement(ShaderDataType type, std::string_view name, bool normalized = false)
             : Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized)
         {
         }
