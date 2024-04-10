@@ -49,6 +49,11 @@ namespace Deak {
 
         void UpdateProjection(float left, float right, float bottom, float top);
         void UpdateView(const glm::vec3& position, float rotation);
+
+        void SetPosition(const glm::vec3& position) { m_Position = position; UpdateView(m_Position, 0.0f); }
+
+    private:
+        glm::vec3 m_Position;
     };
 
 }
