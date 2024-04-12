@@ -5,8 +5,6 @@
 
 namespace Deak {
 
-    Scope<Input> Input::s_Instance = CreateScope<MacInput>();
-
     bool MacInput::IsKeyPressedImpl(KeyCode keycode)
     {
         auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());

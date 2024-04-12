@@ -18,7 +18,9 @@ namespace Deak {
         inline static float GetMouseX() { return s_Instance->GetMouseXImpl(); }
         inline static float GetMouseY() { return s_Instance->GetMouseYImpl(); }
 
-        // Purpose for the below virtual functions is so that the implentation of the above can be plateform specific
+        static Scope<Input> Create();
+
+        // Purpose for below virtuals is so that the implentation of the above can be plateform specific
     protected:
         virtual bool IsKeyPressedImpl(KeyCode keycode) = 0;
 

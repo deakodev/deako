@@ -78,9 +78,8 @@ Makefile.*
 bin/
 bin-int/
 obj/
-Debug/
-Release/
-Dist/
+Sandbox/debug/
+*.log
 
 ## Dear ImGui artifacts
 imgui.ini

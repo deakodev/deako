@@ -9,6 +9,8 @@
 #include "Deak/Events/ApplicationEvent.h"
 #include "Deak/ImGui/ImGuiLayer.h"
 
+int main(int argc, char** argv);
+
 namespace Deak
 {
     class Application
@@ -16,8 +18,6 @@ namespace Deak
     public:
         Application();
         virtual ~Application();
-
-        void Run();
 
         void Close();
         void OnEvent(Event& event);
@@ -28,6 +28,8 @@ namespace Deak
         inline Window& GetWindow() { return *m_Window; }
 
     private:
+        friend int ::main(int argc, char** argv);
+        void Run();
         bool OnWindowClose(WindowCloseEvent& event);
         bool OnWindowResize(WindowResizeEvent& event);
         bool OnWindowMinimized(WindowMinimizedEvent& event);
