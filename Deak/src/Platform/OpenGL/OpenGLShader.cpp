@@ -199,6 +199,13 @@ namespace Deak {
         UploadUniformInt(name, value);
     }
 
+    void OpenGLShader::SetFloat(const std::string& name, float value)
+    {
+        DK_PROFILE_FUNC();
+
+        UploadUniformFloat(name, value);
+    }
+
     void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value)
     {
         DK_PROFILE_FUNC();
