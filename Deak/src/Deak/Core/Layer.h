@@ -18,7 +18,7 @@ namespace Deak {
         virtual void OnImGuiRender() {};
         virtual void OnEvent(Event& event) {}
 
-        inline const std::string_view GetName() const { return m_DebugName; }
+        const std::string_view GetName() const { return m_DebugName; }
 
     protected:
         std::string_view m_DebugName;

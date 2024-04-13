@@ -199,6 +199,13 @@ namespace Deak {
         UploadUniformInt(name, value);
     }
 
+    void OpenGLShader::SetIntArray(const std::string& name, int* values, uint32_t count)
+    {
+        DK_PROFILE_FUNC();
+
+        UploadUniformIntArray(name, values, count);
+    }
+
     void OpenGLShader::SetFloat(const std::string& name, float value)
     {
         DK_PROFILE_FUNC();
@@ -252,6 +259,11 @@ namespace Deak {
     void OpenGLShader::UploadUniformInt(const std::string& name, int value) const
     {
         glUniform1i(GetUniformLocation(name), value);
+    }
+
+    void OpenGLShader::UploadUniformIntArray(const std::string& name, int* values, uint32_t count) const
+    {
+        glUniform1iv(GetUniformLocation(name), count, values);
     }
 
     void OpenGLShader::UploadUniformFloat(const std::string& name, float value) const

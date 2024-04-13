@@ -12,14 +12,14 @@ namespace Deak {
 
         RenderCommand::Init();
         Renderer2D::Init();
-        Renderer3D::Init();
+        // Renderer3D::Init();
     }
 
     void Renderer::Shutdown()
     {
         DK_PROFILE_FUNC();
 
-        Renderer3D::Shutdown();
+        // Renderer3D::Shutdown();
         Renderer2D::Shutdown();
     }
 

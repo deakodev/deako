@@ -21,10 +21,10 @@ namespace Deak {
         virtual void SetClearColor(const glm::vec4& color) = 0;
         virtual void Clear() = 0;
 
-        virtual void DrawIndexed(const Ref<VertexArray>& vertexArray) = 0;
+        virtual void DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount = 0) = 0;
 
-        inline static void SetAPI(API rendererAPI) { s_API = rendererAPI; }
-        inline static API GetAPI() { return s_API; }
+        static void SetAPI(API rendererAPI) { s_API = rendererAPI; }
+        static API GetAPI() { return s_API; }
 
         static Scope<RendererAPI> Create();
 

@@ -51,7 +51,7 @@ namespace Deak {
 
             int success = glfwInit();
 
-            DK_CORE_ASSERT(success, "Could not intialize GLFW!");
+            DK_CORE_ASSERT(success, "Could not initialize GLFW!");
 
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
