@@ -23,7 +23,7 @@ namespace Deak {
         static const uint32_t maxQuads = 20000;
         static const uint32_t maxVertices = maxQuads * 4;
         static const uint32_t maxIndices = maxQuads * 6;
-        static const uint32_t maxTextureSlots = 16; //TODO RenderCaps
+        static const uint32_t maxTextureSlots = 16;
 
         Ref<VertexArray> vertexArray;
         Ref<VertexBuffer> vertexBuffer;
@@ -42,30 +42,30 @@ namespace Deak {
         Renderer2D::Statistics stats;
     };
 
-    static Renderer2DData s_2DData;
+    static Renderer2DData s_Data2D;
 
     void Renderer2D::Init()
     {
         DK_PROFILE_FUNC();
 
-        s_2DData.vertexArray = VertexArray::Create();
+        s_Data2D.vertexArray = VertexArray::Create();
 
-        s_2DData.vertexBuffer = VertexBuffer::Create(s_2DData.maxVertices * sizeof(QuadVertex));
-        s_2DData.vertexBuffer->SetLayout({
+        s_Data2D.vertexBuffer = VertexBuffer::Create(s_Data2D.maxVertices * sizeof(QuadVertex));
+        s_Data2D.vertexBuffer->SetLayout({
             { ShaderDataType::Float3, "a_Position" },
             { ShaderDataType::Float4, "a_Color" },
             { ShaderDataType::Float2, "a_TexCoord" },
             { ShaderDataType::Float, "a_TexIndex" },
             { ShaderDataType::Float, "a_TexScalar" }
             });
-        s_2DData.vertexArray->AddVertexBuffer(s_2DData.vertexBuffer);
+        s_Data2D.vertexArray->AddVertexBuffer(s_Data2D.vertexBuffer);
 
-        s_2DData.quadVertexBufferBase = new QuadVertex[s_2DData.maxVertices];
+        s_Data2D.quadVertexBufferBase = new QuadVertex[s_Data2D.maxVertices];
 
-        uint32_t* indices = new uint32_t[s_2DData.maxIndices];
+        uint32_t* indices = new uint32_t[s_Data2D.maxIndices];
 
         uint32_t offset = 0;
-        for (uint32_t i = 0; i < s_2DData.maxIndices; i += 6)
+        for (uint32_t i = 0; i < s_Data2D.maxIndices; i += 6)
         {
             indices[i + 0] = offset + 0;
             indices[i + 1] = offset + 1;
@@ -78,28 +78,28 @@ namespace Deak {
             offset += 4;
         }
 
-        Ref<IndexBuffer> indexBuffer = IndexBuffer::Create(indices, s_2DData.maxIndices);
-        s_2DData.vertexArray->AddIndexBuffer(indexBuffer);
+        Ref<IndexBuffer> indexBuffer = IndexBuffer::Create(indices, s_Data2D.maxIndices);
+        s_Data2D.vertexArray->AddIndexBuffer(indexBuffer);
         delete[] indices;
 
-        s_2DData.whiteTexture = Texture2D::Create(1, 1);
+        s_Data2D.whiteTexture = Texture2D::Create(1, 1);
         uint32_t whiteTextureData = 0xffffffff;
-        s_2DData.whiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
+        s_Data2D.whiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 
-        int32_t samplers[s_2DData.maxTextureSlots];
-        for (uint32_t i = 0; i < s_2DData.maxTextureSlots; i++)
+        int32_t samplers[s_Data2D.maxTextureSlots];
+        for (uint32_t i = 0; i < s_Data2D.maxTextureSlots; i++)
             samplers[i] = i;
 
-        s_2DData.textureShader = Shader::Create("Sandbox/assets/shaders/Example2D.glsl");
-        s_2DData.textureShader->Bind();
-        s_2DData.textureShader->SetIntArray("u_Textures", samplers, s_2DData.maxTextureSlots);
+        s_Data2D.textureShader = Shader::Create("Sandbox/assets/shaders/Example2D.glsl");
+        s_Data2D.textureShader->Bind();
+        s_Data2D.textureShader->SetIntArray("u_Textures", samplers, s_Data2D.maxTextureSlots);
 
-        s_2DData.textureSlots[0] = s_2DData.whiteTexture;
+        s_Data2D.textureSlots[0] = s_Data2D.whiteTexture;
 
-        s_2DData.quadVertexPositions[0] = { -0.5f, -0.5f, 0.0f, 1.0f };
-        s_2DData.quadVertexPositions[1] = { 0.5f, -0.5f, 0.0f, 1.0f };
-        s_2DData.quadVertexPositions[2] = { 0.5f, 0.5f, 0.0f, 1.0f };
-        s_2DData.quadVertexPositions[3] = { -0.5f, 0.5f, 0.0f, 1.0f };
+        s_Data2D.quadVertexPositions[0] = { -0.5f, -0.5f, 0.0f, 1.0f };
+        s_Data2D.quadVertexPositions[1] = { 0.5f, -0.5f, 0.0f, 1.0f };
+        s_Data2D.quadVertexPositions[2] = { 0.5f, 0.5f, 0.0f, 1.0f };
+        s_Data2D.quadVertexPositions[3] = { -0.5f, 0.5f, 0.0f, 1.0f };
     }
 
     void Renderer2D::Shutdown()
@@ -111,21 +111,21 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        s_2DData.textureShader->Bind();
-        s_2DData.textureShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
+        s_Data2D.textureShader->Bind();
+        s_Data2D.textureShader->SetMat4("u_ViewProjection", camera.GetViewProjection());
 
-        s_2DData.quadIndexCount = 0;
-        s_2DData.quadVertexBufferPtr = s_2DData.quadVertexBufferBase;
+        s_Data2D.quadIndexCount = 0;
+        s_Data2D.quadVertexBufferPtr = s_Data2D.quadVertexBufferBase;
 
-        s_2DData.textureSlotIndex = 1;
+        s_Data2D.textureSlotIndex = 1;
     }
 
     void Renderer2D::EndScene()
     {
         DK_PROFILE_FUNC();
 
-        uint32_t dataSize = (uint32_t)((uint8_t*)s_2DData.quadVertexBufferPtr - (uint8_t*)s_2DData.quadVertexBufferBase);
-        s_2DData.vertexBuffer->SetData(s_2DData.quadVertexBufferBase, dataSize);
+        uint32_t dataSize = (uint32_t)((uint8_t*)s_Data2D.quadVertexBufferPtr - (uint8_t*)s_Data2D.quadVertexBufferBase);
+        s_Data2D.vertexBuffer->SetData(s_Data2D.quadVertexBufferBase, dataSize);
 
         Flush();
     }
@@ -135,11 +135,11 @@ namespace Deak {
         DK_PROFILE_FUNC();
 
         // Bind textures
-        for (uint32_t i = 0; i < s_2DData.textureSlotIndex; i++)
-            s_2DData.textureSlots[i]->Bind(i);
+        for (uint32_t i = 0; i < s_Data2D.textureSlotIndex; i++)
+            s_Data2D.textureSlots[i]->Bind(i);
 
-        RenderCommand::DrawIndexed(s_2DData.vertexArray, s_2DData.quadIndexCount);
-        s_2DData.stats.drawCalls++;
+        RenderCommand::DrawIndexed(s_Data2D.vertexArray, s_Data2D.quadIndexCount);
+        s_Data2D.stats.drawCalls++;
     }
 
     void Renderer2D::FlushAndReset()
@@ -148,10 +148,10 @@ namespace Deak {
 
         EndScene();
 
-        s_2DData.quadIndexCount = 0;
-        s_2DData.quadVertexBufferPtr = s_2DData.quadVertexBufferBase;
+        s_Data2D.quadIndexCount = 0;
+        s_Data2D.quadVertexBufferPtr = s_Data2D.quadVertexBufferBase;
 
-        s_2DData.textureSlotIndex = 1;
+        s_Data2D.textureSlotIndex = 1;
     }
 
     void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color)
@@ -163,7 +163,7 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        if (s_2DData.quadIndexCount >= Renderer2DData::maxIndices)
+        if (s_Data2D.quadIndexCount >= Renderer2DData::maxIndices)
             FlushAndReset();
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), position)
@@ -176,17 +176,17 @@ namespace Deak {
 
         for (size_t i = 0; i < vertexCount; i++)
         {
-            s_2DData.quadVertexBufferPtr->position = model * s_2DData.quadVertexPositions[i];
-            s_2DData.quadVertexBufferPtr->color = color;
-            s_2DData.quadVertexBufferPtr->textureCoord = textureCoords[i];
-            s_2DData.quadVertexBufferPtr->textureIndex = textureIndex;
-            s_2DData.quadVertexBufferPtr->textureScalar = textureScalar;
-            s_2DData.quadVertexBufferPtr++;
+            s_Data2D.quadVertexBufferPtr->position = model * s_Data2D.quadVertexPositions[i];
+            s_Data2D.quadVertexBufferPtr->color = color;
+            s_Data2D.quadVertexBufferPtr->textureCoord = textureCoords[i];
+            s_Data2D.quadVertexBufferPtr->textureIndex = textureIndex;
+            s_Data2D.quadVertexBufferPtr->textureScalar = textureScalar;
+            s_Data2D.quadVertexBufferPtr++;
         }
 
-        s_2DData.quadIndexCount += 6;
+        s_Data2D.quadIndexCount += 6;
 
-        s_2DData.stats.quadCount++;
+        s_Data2D.stats.quadCount++;
     }
 
     void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
@@ -198,14 +198,14 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        if (s_2DData.quadIndexCount >= Renderer2DData::maxIndices)
+        if (s_Data2D.quadIndexCount >= Renderer2DData::maxIndices)
             FlushAndReset();
 
         float textureIndex = 0.0f;
 
-        for (uint32_t i = 1; i < s_2DData.textureSlotIndex; i++)
+        for (uint32_t i = 1; i < s_Data2D.textureSlotIndex; i++)
         {
-            if (*s_2DData.textureSlots[i] == *texture)
+            if (*s_Data2D.textureSlots[i] == *texture)
             {
                 textureIndex = (float)i;
                 break;
@@ -214,12 +214,12 @@ namespace Deak {
 
         if (textureIndex == 0)
         {
-            if (s_2DData.textureSlotIndex >= Renderer2DData::maxTextureSlots)
+            if (s_Data2D.textureSlotIndex >= Renderer2DData::maxTextureSlots)
                 FlushAndReset();
 
-            textureIndex = (float)s_2DData.textureSlotIndex;
-            s_2DData.textureSlots[s_2DData.textureSlotIndex] = texture;
-            s_2DData.textureSlotIndex++;
+            textureIndex = (float)s_Data2D.textureSlotIndex;
+            s_Data2D.textureSlots[s_Data2D.textureSlotIndex] = texture;
+            s_Data2D.textureSlotIndex++;
         }
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), position)
@@ -231,17 +231,17 @@ namespace Deak {
 
         for (size_t i = 0; i < vertexCount; i++)
         {
-            s_2DData.quadVertexBufferPtr->position = model * s_2DData.quadVertexPositions[i];
-            s_2DData.quadVertexBufferPtr->color = textureTint;
-            s_2DData.quadVertexBufferPtr->textureCoord = textureCoords[i];
-            s_2DData.quadVertexBufferPtr->textureIndex = textureIndex;
-            s_2DData.quadVertexBufferPtr->textureScalar = textureScalar;
-            s_2DData.quadVertexBufferPtr++;
+            s_Data2D.quadVertexBufferPtr->position = model * s_Data2D.quadVertexPositions[i];
+            s_Data2D.quadVertexBufferPtr->color = textureTint;
+            s_Data2D.quadVertexBufferPtr->textureCoord = textureCoords[i];
+            s_Data2D.quadVertexBufferPtr->textureIndex = textureIndex;
+            s_Data2D.quadVertexBufferPtr->textureScalar = textureScalar;
+            s_Data2D.quadVertexBufferPtr++;
         }
 
-        s_2DData.quadIndexCount += 6;
+        s_Data2D.quadIndexCount += 6;
 
-        s_2DData.stats.quadCount++;
+        s_Data2D.stats.quadCount++;
     }
 
     void Renderer2D::DrawRotQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const glm::vec4& color)
@@ -253,7 +253,7 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        if (s_2DData.quadIndexCount >= Renderer2DData::maxIndices)
+        if (s_Data2D.quadIndexCount >= Renderer2DData::maxIndices)
             FlushAndReset();
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), position)
@@ -267,17 +267,17 @@ namespace Deak {
 
         for (size_t i = 0; i < vertexCount; i++)
         {
-            s_2DData.quadVertexBufferPtr->position = model * s_2DData.quadVertexPositions[i];
-            s_2DData.quadVertexBufferPtr->color = color;
-            s_2DData.quadVertexBufferPtr->textureCoord = textureCoords[i];
-            s_2DData.quadVertexBufferPtr->textureIndex = textureIndex;
-            s_2DData.quadVertexBufferPtr->textureScalar = textureScalar;
-            s_2DData.quadVertexBufferPtr++;
+            s_Data2D.quadVertexBufferPtr->position = model * s_Data2D.quadVertexPositions[i];
+            s_Data2D.quadVertexBufferPtr->color = color;
+            s_Data2D.quadVertexBufferPtr->textureCoord = textureCoords[i];
+            s_Data2D.quadVertexBufferPtr->textureIndex = textureIndex;
+            s_Data2D.quadVertexBufferPtr->textureScalar = textureScalar;
+            s_Data2D.quadVertexBufferPtr++;
         }
 
-        s_2DData.quadIndexCount += 6;
+        s_Data2D.quadIndexCount += 6;
 
-        s_2DData.stats.quadCount++;
+        s_Data2D.stats.quadCount++;
     }
 
     void Renderer2D::DrawRotQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
@@ -289,14 +289,14 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        if (s_2DData.quadIndexCount >= Renderer2DData::maxIndices)
+        if (s_Data2D.quadIndexCount >= Renderer2DData::maxIndices)
             FlushAndReset();
 
         float textureIndex = 0.0f;
 
-        for (uint32_t i = 1; i < s_2DData.textureSlotIndex; i++)
+        for (uint32_t i = 1; i < s_Data2D.textureSlotIndex; i++)
         {
-            if (*s_2DData.textureSlots[i] == *texture)
+            if (*s_Data2D.textureSlots[i] == *texture)
             {
                 textureIndex = (float)i;
                 break;
@@ -305,12 +305,12 @@ namespace Deak {
 
         if (textureIndex == 0)
         {
-            if (s_2DData.textureSlotIndex >= Renderer2DData::maxTextureSlots)
+            if (s_Data2D.textureSlotIndex >= Renderer2DData::maxTextureSlots)
                 FlushAndReset();
 
-            textureIndex = (float)s_2DData.textureSlotIndex;
-            s_2DData.textureSlots[s_2DData.textureSlotIndex] = texture;
-            s_2DData.textureSlotIndex++;
+            textureIndex = (float)s_Data2D.textureSlotIndex;
+            s_Data2D.textureSlots[s_Data2D.textureSlotIndex] = texture;
+            s_Data2D.textureSlotIndex++;
         }
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), position)
@@ -322,27 +322,27 @@ namespace Deak {
 
         for (size_t i = 0; i < vertexCount; i++)
         {
-            s_2DData.quadVertexBufferPtr->position = model * s_2DData.quadVertexPositions[i];
-            s_2DData.quadVertexBufferPtr->color = textureTint;
-            s_2DData.quadVertexBufferPtr->textureCoord = textureCoords[i];
-            s_2DData.quadVertexBufferPtr->textureIndex = textureIndex;
-            s_2DData.quadVertexBufferPtr->textureScalar = textureScalar;
-            s_2DData.quadVertexBufferPtr++;
+            s_Data2D.quadVertexBufferPtr->position = model * s_Data2D.quadVertexPositions[i];
+            s_Data2D.quadVertexBufferPtr->color = textureTint;
+            s_Data2D.quadVertexBufferPtr->textureCoord = textureCoords[i];
+            s_Data2D.quadVertexBufferPtr->textureIndex = textureIndex;
+            s_Data2D.quadVertexBufferPtr->textureScalar = textureScalar;
+            s_Data2D.quadVertexBufferPtr++;
         }
 
-        s_2DData.quadIndexCount += 6;
+        s_Data2D.quadIndexCount += 6;
 
-        s_2DData.stats.quadCount++;
+        s_Data2D.stats.quadCount++;
     }
 
     void Renderer2D::ResetStats()
     {
-        memset(&s_2DData.stats, 0, sizeof(Statistics));
+        memset(&s_Data2D.stats, 0, sizeof(Statistics));
     }
 
     Renderer2D::Statistics Renderer2D::GetStats()
     {
-        return s_2DData.stats;
+        return s_Data2D.stats;
     }
 
 }

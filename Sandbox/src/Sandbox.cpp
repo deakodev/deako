@@ -9,8 +9,8 @@ class Sandbox : public Deak::Application
 public:
     Sandbox()
     {
-        PushLayer(new Example2D());
-        // PushLayer(new Example3D());
+        // PushLayer(new Example2D());
+        PushLayer(new Example3D());
     }
 
     ~Sandbox()

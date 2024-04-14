@@ -27,6 +27,7 @@ void Example3D::OnUpdate(Deak::Timestep timestep)
 
     m_CameraController.OnUpdate(timestep);
 
+    Deak::Renderer3D::ResetStats();
     {
         DK_PROFILE_SCOPE("Renderer Prep");
         Deak::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
@@ -37,9 +38,14 @@ void Example3D::OnUpdate(Deak::Timestep timestep)
         DK_PROFILE_SCOPE("Renderer Draw");
         Deak::Renderer3D::BeginScene(m_CameraController.GetCamera());
 
-        Deak::Renderer3D::DrawQuad({ 1.0f, 1.0f }, { 0.8f, 0.8f, 0.8f }, { 0.8f, 0.2f, 0.3f, 1.0f });
-        Deak::Renderer3D::DrawQuad({ -1.0f, -1.0f }, { 0.5f, 0.75f, 0.5f }, { 0.2f, 0.3f, 0.8f, 1.0f });
-        Deak::Renderer3D::DrawQuad({ 0.0f, 0.0f , 2.0f }, { 1.0f, 1.0f, 1.0f }, m_BoxTexture);
+        for (float y = -25.0f; y < 25.0f; y += 0.5f)
+        {
+            for (float x = -25.0f; x < 25.0f; x += 0.5f)
+            {
+                glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
+                Deak::Renderer3D::DrawCube({ x, y, 1.0f }, { 0.25f, 0.25f, 0.25f }, m_BoxTexture, 1.0f, color);
+            }
+        }
 
         Deak::Renderer3D::EndScene();
     }
@@ -54,7 +60,11 @@ void Example3D::OnImGuiRender()
 {
     DK_PROFILE_FUNC();
 
-    // ImGui::Begin("Example3D");
-    // ImGui::ColorEdit3("Square Color", glm::value_ptr(m_ColorModifier));
-    // ImGui::End();
+    auto stats = Deak::Renderer3D::GetStats();
+    ImGui::Begin("Render3D Stats:");
+    ImGui::Text("Draw Calls: %d", stats.drawCalls);
+    ImGui::Text("Cube Count: %d", stats.cubeCount);
+    ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
+    ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+    ImGui::End();
 }
