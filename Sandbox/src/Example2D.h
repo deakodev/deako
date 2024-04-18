@@ -14,9 +14,9 @@ public:
     virtual void OnUpdate(Deak::Timestep timestep) override;
     virtual void OnEvent(Deak::Event& event) override;
 
-    virtual void OnImGuiRender() override;
+    virtual void OnImGuiRender(Deak::Timestep timestep) override;
 
 private:
-    Deak::OrthographicCameraController  m_CameraController;
+    Deak::OrthographicCamera m_Camera;
     Deak::Ref<Deak::Texture2D> m_BoxTexture;
 };

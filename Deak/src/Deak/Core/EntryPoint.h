@@ -8,15 +8,15 @@ int main(int argc, char** argv)
 {
     Deak::Log::Init();
 
-    DK_PROFILE_BEGIN("Startup", "Sandbox/debug/DeakProfile-Startup.json");
+    DK_PROFILE_BEGIN("Startup", "Sandbox/debug/Profile-Startup.json");
     auto app = Deak::CreateApplication();
     DK_PROFILE_END();
 
-    DK_PROFILE_BEGIN("Runtime", "Sandbox/debug/DeakProfile-Runtime.json");
+    DK_PROFILE_BEGIN("Runtime", "Sandbox/debug/Profile-Runtime.json");
     app->Run();
     DK_PROFILE_END();
 
-    DK_PROFILE_BEGIN("Shutdown", "Sandbox/debug/DeakProfile-Shutdown.json");
+    DK_PROFILE_BEGIN("Shutdown", "Sandbox/debug/Profile-Shutdown.json");
     delete app;
     DK_PROFILE_END();
 }

@@ -95,7 +95,7 @@ namespace Deak
                     DK_PROFILE_SCOPE("LayerStack OnImGuiRender");
 
                     for (Layer* layer : m_LayerStack)
-                        layer->OnImGuiRender();
+                        layer->OnImGuiRender(timestep); // temporary to get FPS stat in ImGui
                 }
                 m_ImGuiLayer->End();
             }

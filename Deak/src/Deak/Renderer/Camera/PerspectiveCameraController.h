@@ -15,7 +15,7 @@ namespace Deak {
     const float FOV = 45.0f;
     const float NEARPLANE = 0.1f;
     const float FARPLANE = 1000.0f;
-    const float DISTANCE = 8.0f;
+    const float DISTANCE = 15.0f;
     const float PITCH = 0.0f;
     const float YAW = 0.0f;
     const float V_WIDTH = 1280;

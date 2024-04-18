@@ -14,7 +14,7 @@ public:
     virtual void OnUpdate(Deak::Timestep timestep) override;
     virtual void OnEvent(Deak::Event& event) override;
 
-    virtual void OnImGuiRender() override;
+    virtual void OnImGuiRender(Deak::Timestep timestep) override;
 
 private:
     Deak::PerspectiveCameraController  m_CameraController;

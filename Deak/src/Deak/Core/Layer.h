@@ -15,7 +15,8 @@ namespace Deak {
         virtual void OnAttach() {}
         virtual void OnDetach() {}
         virtual void OnUpdate(Timestep timestep) {}
-        virtual void OnImGuiRender() {};
+        virtual void OnImGuiRender() {}
+        virtual void OnImGuiRender(Deak::Timestep timestep) {}
         virtual void OnEvent(Event& event) {}
 
         const std::string_view GetName() const { return m_DebugName; }

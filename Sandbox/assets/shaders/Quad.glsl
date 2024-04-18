@@ -1,5 +1,3 @@
-// Basic texture shader
-
 #type vertex
 #version 330 core
 
@@ -9,12 +7,12 @@ layout(location = 2) in vec2 a_TexureCoord;
 layout(location = 3) in float a_TexureIndex;
 layout(location = 4) in float a_TexureScalar;
 
-layout(std140, binding = 0) uniform Camera { mat4 u_ViewProjection; };
-
 out vec4 v_Color;
 out vec2 v_TexureCoord;
 out float v_TexureIndex;
 out float v_TexureScalar;
+
+uniform mat4 u_ViewProjection;
 
 void main()
 {

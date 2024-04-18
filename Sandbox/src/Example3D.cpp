@@ -25,29 +25,36 @@ void Example3D::OnUpdate(Deak::Timestep timestep)
 {
     DK_PROFILE_FUNC();
 
+    // Update light position
+    static float lightAngle = 0;
+    lightAngle += timestep * 0.5f; // time * speed
+    float lightX = 6.0f * cos(lightAngle); // radius * cos(angle)
+    float lightZ = 6.0f * sin(lightAngle); // radius * sin(angle)
+    glm::vec3 lightPosition = glm::vec3(lightX, 8.0f, lightZ);
+
     m_CameraController.OnUpdate(timestep);
 
-    Deak::Renderer3D::ResetStats();
+    Deak::Renderer::ResetStats();
     {
         DK_PROFILE_SCOPE("Renderer Prep");
-        Deak::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1 });
+        Deak::RenderCommand::SetClearColor({ 0.12f, 0.12f, 0.12f, 1.0f });
         Deak::RenderCommand::Clear();
-
     }
     {
         DK_PROFILE_SCOPE("Renderer Draw");
-        Deak::Renderer3D::BeginScene(m_CameraController.GetCamera());
+        Deak::Renderer::BeginScene(m_CameraController, lightPosition);
 
-        for (float y = -25.0f; y < 25.0f; y += 0.5f)
-        {
-            for (float x = -25.0f; x < 25.0f; x += 0.5f)
-            {
-                glm::vec4 color = { (x + 5.0f) / 10.0f, 0.4f, (y + 5.0f) / 10.0f, 0.7f };
-                Deak::Renderer3D::DrawCube({ x, y, 1.0f }, { 0.25f, 0.25f, 0.25f }, m_BoxTexture, 1.0f, color);
-            }
-        }
+        // Wall and Floor
+        Deak::Renderer3D::DrawCube({ 0.0f, 1.5f, -4.9f }, { 10.0f, 4.0f, 0.2f }, { 0.332, 0.304, 0.288, 1.0 });
+        Deak::Renderer3D::DrawCube({ 0.0f, -0.6f, 0.0f }, { 10.0f, 0.2f, 10.0f }, { 0.332, 0.304, 0.288, 1.0 });
 
-        Deak::Renderer3D::EndScene();
+        // Box 
+        Deak::Renderer3D::DrawCube({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, m_BoxTexture, 1.0f, glm::vec4(1.0f));
+
+        // Light
+        Deak::Renderer3D::DrawCube(lightPosition, { 0.5f, 0.5f, 0.5f }, glm::vec4(1.0f));
+
+        Deak::Renderer::EndScene();
     }
 }
 
@@ -56,15 +63,17 @@ void Example3D::OnEvent(Deak::Event& event)
     m_CameraController.OnEvent(event);
 }
 
-void Example3D::OnImGuiRender()
+void Example3D::OnImGuiRender(Deak::Timestep timestep)
 {
     DK_PROFILE_FUNC();
 
-    auto stats = Deak::Renderer3D::GetStats();
-    ImGui::Begin("Render3D Stats:");
-    ImGui::Text("Draw Calls: %d", stats.drawCalls);
-    ImGui::Text("Cube Count: %d", stats.cubeCount);
-    ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
-    ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+    auto stats = Deak::Renderer::GetRendererStats();
+    ImGui::Begin("Render2D Stats:");
+    ImGui::Text("Draw Calls: %d", stats->drawCalls);
+    ImGui::Text("Primitive Count: %d", stats->primitiveCount);
+    ImGui::Text("Vertices: %d", stats->vertexCount);
+    ImGui::Text("Indices: %d", stats->indexCount);
+    ImGui::Text("");
+    ImGui::Text("%.2f FPS", (1.0f / timestep));
     ImGui::End();
 }
