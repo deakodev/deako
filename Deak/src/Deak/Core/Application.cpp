@@ -63,9 +63,9 @@ namespace Deak
 
         for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
         {
-            (*it)->OnEvent(event);
             if (event.Handled)
                 break;
+            (*it)->OnEvent(event);
         }
     }
 

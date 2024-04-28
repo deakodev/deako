@@ -64,5 +64,24 @@ void main()
 
     vec4 lightResult = vec4(ambient + diffuse + specular, 1.0) * v_Color;
 
-    fragColor = texture(u_Textures[int(v_TexureIndex)], v_TexureCoord * v_TexureScalar) * lightResult;
+    vec4 textureColor = lightResult;
+	switch(int(v_TexureIndex))
+	{
+		case 0: textureColor *= texture(u_Textures[0], v_TexureCoord * v_TexureScalar); break;
+		case 1: textureColor *= texture(u_Textures[1], v_TexureCoord * v_TexureScalar); break;
+		case 2: textureColor *= texture(u_Textures[2], v_TexureCoord * v_TexureScalar); break;
+		case 3: textureColor *= texture(u_Textures[3], v_TexureCoord * v_TexureScalar); break;
+		case 5: textureColor *= texture(u_Textures[5], v_TexureCoord * v_TexureScalar); break;
+		case 6: textureColor *= texture(u_Textures[6], v_TexureCoord * v_TexureScalar); break;
+		case 7: textureColor *= texture(u_Textures[7], v_TexureCoord * v_TexureScalar); break;
+		case 8: textureColor *= texture(u_Textures[8], v_TexureCoord * v_TexureScalar); break;
+		case 9: textureColor *= texture(u_Textures[9], v_TexureCoord * v_TexureScalar); break;
+		case 10: textureColor *= texture(u_Textures[10], v_TexureCoord * v_TexureScalar); break;
+		case 11: textureColor *= texture(u_Textures[11], v_TexureCoord * v_TexureScalar); break;
+		case 12: textureColor *= texture(u_Textures[12], v_TexureCoord * v_TexureScalar); break;
+		case 13: textureColor *= texture(u_Textures[13], v_TexureCoord * v_TexureScalar); break;
+		case 14: textureColor *= texture(u_Textures[14], v_TexureCoord * v_TexureScalar); break;
+		case 15: textureColor *= texture(u_Textures[15], v_TexureCoord * v_TexureScalar); break;
+	}
+	fragColor = textureColor;
 }

@@ -67,6 +67,9 @@ namespace Deak {
 
     void Renderer::Flush()
     {
+        if (s_Data->totalIndices == 0)
+            return; // Nothing to draw
+
         DK_PROFILE_FUNC();
 
         Renderer2D::Flush();
