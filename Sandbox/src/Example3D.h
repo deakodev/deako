@@ -19,6 +19,7 @@ public:
 private:
     Deak::PerspectiveCameraController  m_CameraController;
     Deak::Ref<Deak::Texture2D> m_BoxTexture;
+    Deak::Ref<Deak::Framebuffer> m_Framebuffer;
     glm::vec3 m_ColorModifier = { 0.75f, 0.5f, 0.25f };
 
 };

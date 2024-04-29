@@ -18,6 +18,7 @@
 #include "Deak/Renderer/Shader.h"
 #include "Deak/Renderer/Texture.h"
 #include "Deak/Renderer/Buffer.h"
+#include "Deak/Renderer/Framebuffer.h"
 #include "Deak/Renderer/VertexArray.h"
 
 #include "Deak/Renderer/Camera/Camera.h"

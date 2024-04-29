@@ -59,7 +59,7 @@ namespace Deak {
             // Have to specify these on macOS
             glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
             // to prevent 1200x800 from becoming 2400x1600
-            glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
+            // glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
             glfwSetErrorCallback(GLFWErrorCallback);
         }
