@@ -37,20 +37,20 @@ namespace Deak {
 
         if (Input::IsKeyPressed(Key::A))
         {
-            m_FocalPoint.x += m_TranslationSpeed * timestep;
+            m_FocalPoint.x -= m_TranslationSpeed * timestep;
         }
         else if (Input::IsKeyPressed(Key::D))
         {
-            m_FocalPoint.x -= m_TranslationSpeed * timestep;
+            m_FocalPoint.x += m_TranslationSpeed * timestep;
         }
 
         if (Input::IsKeyPressed(Key::W))
         {
-            m_FocalPoint.y -= m_TranslationSpeed * timestep;
+            m_FocalPoint.y += m_TranslationSpeed * timestep;
         }
         else if (Input::IsKeyPressed(Key::S))
         {
-            m_FocalPoint.y += m_TranslationSpeed * timestep;
+            m_FocalPoint.y -= m_TranslationSpeed * timestep;
         }
 
         m_Camera.UpdateView(UpdatePosition(), GetOrientation());

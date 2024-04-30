@@ -16,7 +16,7 @@ namespace Deak
     class Application
     {
     public:
-        Application();
+        Application(const char* name = "Deak App");
         virtual ~Application();
 
         void Close();

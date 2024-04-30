@@ -14,12 +14,6 @@ void Example3D::OnAttach()
     DK_PROFILE_FUNC();
 
     m_BoxTexture = Deak::Texture2D::Create("Sandbox/assets/textures/container.jpg");
-
-    Deak::FramebufferSpec fbSpec;
-    fbSpec.width = 1280;
-    fbSpec.height = 720;
-    m_Framebuffer = Deak::Framebuffer::Create(fbSpec);
-
 }
 
 void Example3D::OnDetach()
@@ -43,7 +37,6 @@ void Example3D::OnUpdate(Deak::Timestep timestep)
     Deak::Renderer::ResetStats();
     {
         DK_PROFILE_SCOPE("Renderer Prep");
-        m_Framebuffer->Bind();
         Deak::RenderCommand::SetClearColor({ 0.12f, 0.12f, 0.12f, 1.0f });
         Deak::RenderCommand::Clear();
     }
@@ -62,7 +55,6 @@ void Example3D::OnUpdate(Deak::Timestep timestep)
         Deak::Renderer3D::DrawCube(lightPosition, { 0.5f, 0.5f, 0.5f }, glm::vec4(1.0f));
 
         Deak::Renderer::EndScene();
-        m_Framebuffer->Unbind();
     }
 }
 
@@ -75,93 +67,13 @@ void Example3D::OnImGuiRender(Deak::Timestep timestep)
 {
     DK_PROFILE_FUNC();
 
-    static bool dockingEnabled = true;
-    if (dockingEnabled)
-    {
-        static bool opt_fullscreen = true;
-        static bool opt_padding = false;
-        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-        if (opt_fullscreen)
-        {
-            const ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->WorkPos);
-            ImGui::SetNextWindowSize(viewport->WorkSize);
-            ImGui::SetNextWindowViewport(viewport->ID);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-        }
-        else
-        {
-            dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-        }
-
-        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-            window_flags |= ImGuiWindowFlags_NoBackground;
-
-        if (!opt_padding)
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-        ImGui::Begin("DockSpace Demo", &dockingEnabled, window_flags);
-
-        if (!opt_padding)
-            ImGui::PopStyleVar();
-
-        if (opt_fullscreen)
-            ImGui::PopStyleVar(2);
-
-        // Submit the DockSpace
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-        {
-            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-        }
-
-        if (ImGui::BeginMenuBar())
-        {
-            if (ImGui::BeginMenu("File"))
-            {
-                ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
-                ImGui::MenuItem("Padding", NULL, &opt_padding);
-                ImGui::Separator();
-
-                if (ImGui::MenuItem("Exit")) Deak::Application::Get().Close();
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMenuBar();
-        }
-
-        auto stats = Deak::Renderer::GetRendererStats();
-        ImGui::Begin("Render2D Stats:");
-        ImGui::Text("Draw Calls: %d", stats->drawCalls);
-        ImGui::Text("Primitive Count: %d", stats->primitiveCount);
-        ImGui::Text("Vertices: %d", stats->vertexCount);
-        ImGui::Text("Indices: %d", stats->indexCount);
-        ImGui::Text("");
-        ImGui::Text("%.2f FPS", (1.0f / timestep));
-
-        uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
-        ImGui::Image((void*)(intptr_t)textureID, ImVec2{ 1280.0f, 720.0f }, ImVec2(0, 1), ImVec2(1, 0));
-        ImGui::End();
-
-        ImGui::End();
-    }
-    else
-    {
-        auto stats = Deak::Renderer::GetRendererStats();
-        ImGui::Begin("Render2D Stats:");
-        ImGui::Text("Draw Calls: %d", stats->drawCalls);
-        ImGui::Text("Primitive Count: %d", stats->primitiveCount);
-        ImGui::Text("Vertices: %d", stats->vertexCount);
-        ImGui::Text("Indices: %d", stats->indexCount);
-        ImGui::Text("");
-        ImGui::Text("%.2f FPS", (1.0f / timestep));
-        ImGui::End();
-    }
+    auto stats = Deak::Renderer::GetRendererStats();
+    ImGui::Begin("Render2D Stats:");
+    ImGui::Text("Draw Calls: %d", stats->drawCalls);
+    ImGui::Text("Primitive Count: %d", stats->primitiveCount);
+    ImGui::Text("Vertices: %d", stats->vertexCount);
+    ImGui::Text("Indices: %d", stats->indexCount);
+    ImGui::Text("");
+    ImGui::Text("%.2f FPS", (1.0f / timestep));
+    ImGui::End();
 }

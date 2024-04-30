@@ -8,17 +8,25 @@ namespace Deak {
     OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpec& spec)
         : m_Specification(spec)
     {
-        glViewport(0, 0, 1280, 720);
         Invalidate();
     }
 
     OpenGLFramebuffer::~OpenGLFramebuffer()
     {
         glDeleteFramebuffers(1, &m_RendererID);
+        glDeleteTextures(1, &m_ColorAttachment);
+        glDeleteRenderbuffers(1, &m_DepthAttachment);
     }
 
     void OpenGLFramebuffer::Invalidate()
     {
+        if (m_RendererID)
+        {
+            glDeleteFramebuffers(1, &m_RendererID);
+            glDeleteTextures(1, &m_ColorAttachment);
+            glDeleteRenderbuffers(1, &m_DepthAttachment);
+        }
+
         glGenFramebuffers(1, &m_RendererID);
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 
@@ -56,11 +64,19 @@ namespace Deak {
     void OpenGLFramebuffer::Bind()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+          glViewport(0, 0, m_Specification.width, m_Specification.height);
     }
 
     void OpenGLFramebuffer::Unbind()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height)
+    {
+        m_Specification.width = width;
+        m_Specification.height = height;
+        Invalidate();
     }
 
 }

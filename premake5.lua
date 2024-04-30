@@ -96,6 +96,7 @@ project "Deak"
 		runtime "Release"
 		optimize "on"
 
+		
 project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
@@ -149,3 +150,58 @@ project "Sandbox"
 		defines "DK_DIST"
 		runtime "Release"
 		optimize "on"
+
+
+project "Deak-Editor"
+location "Deak-Editor"
+kind "ConsoleApp"
+language "C++"
+cppdialect "C++20"
+staticruntime "on"
+
+targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+files
+{
+	"%{prj.name}/src/**.h",
+	"%{prj.name}/src/**.cpp"
+}
+
+includedirs
+{
+	"Deak/vendor/spdlog/include",
+	"Deak/src",
+	"Deak/vendor",
+	"%{IncludeDir.glm}"
+}
+
+links
+{
+	"Deak",
+	"GLFW",
+	"Glad",
+	"ImGui",
+	"OpenGL.framework",
+	"Cocoa.framework",
+	"IOKit.framework",
+	"CoreVideo.framework"
+}
+
+filter "system:macosx"
+	systemversion "11.0"
+
+filter "configurations:Debug"
+	defines "DK_DEBUG"
+	runtime "Debug"
+	symbols "on"
+
+filter "configurations:Release"
+	defines "DK_RELEASE"
+	runtime "Release"
+	optimize "on"
+
+filter "configurations:Dist"
+	defines "DK_DIST"
+	runtime "Release"
+	optimize "on"

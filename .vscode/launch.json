@@ -2,6 +2,50 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Debug Editor",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Deak-Editor/Deak-Editor",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build editor debug",
+            "environment": [
+                {
+                    "name": "OS_ACTIVITY_MODE",
+                    "value": "disable"
+                }
+            ],
+        },
+        {
+            "name": "Release Editor",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Deak-Editor/Deak-Editor",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build editor release"
+        },
+        {
+            "name": "Dist Editor",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Deak-Editor/Deak-Editor",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "lldb",
+            "preLaunchTask": "build editor dist"
+        },
+        {
             "name": "Debug Sandbox",
             "type": "cppdbg",
             "request": "launch",
