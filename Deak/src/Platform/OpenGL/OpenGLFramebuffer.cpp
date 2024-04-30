@@ -5,6 +5,9 @@
 
 namespace Deak {
 
+    // Temp: should determine max framebuffer size from gpu being used
+    static const uint32_t s_MaxFramebufferSize = 8192;
+
     OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpec& spec)
         : m_Specification(spec)
     {
@@ -64,7 +67,7 @@ namespace Deak {
     void OpenGLFramebuffer::Bind()
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
-          glViewport(0, 0, m_Specification.width, m_Specification.height);
+        glViewport(0, 0, m_Specification.width, m_Specification.height);
     }
 
     void OpenGLFramebuffer::Unbind()
@@ -74,6 +77,12 @@ namespace Deak {
 
     void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height)
     {
+        if (width == 0 || height == 0 || width > s_MaxFramebufferSize || height > s_MaxFramebufferSize)
+        {
+            DK_CORE_WARN("Attempted to resize framebuffer to {0}, {1}", width, height);
+            return;
+        }
+
         m_Specification.width = width;
         m_Specification.height = height;
         Invalidate();
