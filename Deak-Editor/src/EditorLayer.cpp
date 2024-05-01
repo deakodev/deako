@@ -37,6 +37,15 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
+        // Resize framebuffer
+        if (Deak::FramebufferSpec spec = m_Framebuffer->GetSpecification();
+            m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && // zero sized framebuffer is invalid
+            (spec.width != m_ViewportSize.x || spec.height != m_ViewportSize.y))
+        {
+            m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+            m_CameraController.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+        }
+
         // Update camera
         if (m_ViewportFocused)
             m_CameraController.OnUpdate(timestep);
@@ -171,12 +180,7 @@ namespace Deak {
         Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered);
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-        if (m_ViewportSize != *((glm::vec2*)&viewportPanelSize) && viewportPanelSize.x > 0 && viewportPanelSize.y > 0)
-        {
-            m_Framebuffer->Resize((uint32_t)viewportPanelSize.x, (uint32_t)viewportPanelSize.y);
-            m_CameraController.SetViewportSize(viewportPanelSize.x, viewportPanelSize.y);
-            m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-        }
+        m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
         uint32_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
         ImGui::Image((void*)(intptr_t)textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 1), ImVec2(1, 0));
         ImGui::End();
