@@ -198,11 +198,28 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        if (s_RendererData->totalIndices >= s_RendererData->MAX_INDICES)
-            Renderer::NextBatch();
-
         glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, position.z })
             * glm::scale(glm::mat4(1.0f), { size.x, size.y, size.z });
+
+        DrawCube(transform, color);
+    }
+
+    void Renderer3D::DrawCube(const glm::vec3& position, const glm::vec3& size, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
+    {
+        DK_PROFILE_FUNC();
+
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, 0.0f })
+            * glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
+
+        DrawCube(transform, texture, textureScalar, textureTint);
+    }
+
+    void Renderer3D::DrawCube(const glm::mat4& transform, const glm::vec4& color)
+    {
+        DK_PROFILE_FUNC();
+
+        if (s_RendererData->totalIndices >= s_RendererData->MAX_INDICES)
+            Renderer::NextBatch();
 
         constexpr size_t verticesPerCube = 24;
         constexpr size_t indicesPerCube = 36;
@@ -225,7 +242,7 @@ namespace Deak {
         s_RendererStats->AddPrimitive(verticesPerCube, indicesPerCube, 6);
     }
 
-    void Renderer3D::DrawCube(const glm::vec3& position, const glm::vec3& size, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
+    void Renderer3D::DrawCube(const glm::mat4& transform, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
     {
         DK_PROFILE_FUNC();
 
@@ -252,9 +269,6 @@ namespace Deak {
             s_RendererData->textureSlots[s_RendererData->textureSlotIndex] = texture;
             s_RendererData->textureSlotIndex++;
         }
-
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, 0.0f })
-            * glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
 
         constexpr size_t verticesPerCube = 24;
         constexpr size_t indicesPerCube = 36;

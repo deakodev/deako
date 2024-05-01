@@ -27,3 +27,6 @@
 
 #include "Deak/ImGui/ImGuiLayer.h"
 
+#include "Deak/Scene/Scene.h"
+#include "Deak/Scene/Entity.h"
+#include "Deak/Scene/Components.h"

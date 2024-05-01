@@ -17,6 +17,7 @@ IncludeDir["Glad"] = "Deak/vendor/Glad/include"
 IncludeDir["ImGui"] = "Deak/vendor/imgui"
 IncludeDir["stb_image"] = "Deak/vendor/stb_image"
 IncludeDir["glm"] = "Deak/vendor/glm"
+IncludeDir["entt"] = "Deak/vendor/entt/include"
 
 include "Deak/vendor/GLFW"
 include "Deak/vendor/Glad"
@@ -43,7 +44,6 @@ project "Deak"
 		"%{prj.name}/vendor/stb_image/**.cpp",
 		"%{prj.name}/glm/glm/**.hpp",
 		"%{prj.name}/glm/glm/**.inl"
-
     }
 
 	defines
@@ -59,7 +59,8 @@ project "Deak"
         "%{IncludeDir.Glad}",
         "%{IncludeDir.ImGui}",
 		"%{IncludeDir.stb_image}",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.entt}"
     }
 
     links 
@@ -118,7 +119,8 @@ project "Sandbox"
 		"Deak/vendor/spdlog/include",
 		"Deak/src",
 		"Deak/vendor",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.entt}"
 	}
 
 	links
@@ -173,7 +175,8 @@ includedirs
 	"Deak/vendor/spdlog/include",
 	"Deak/src",
 	"Deak/vendor",
-	"%{IncludeDir.glm}"
+	"%{IncludeDir.glm}",
+	"%{IncludeDir.entt}"
 }
 
 links

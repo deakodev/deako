@@ -21,6 +21,11 @@ namespace Deak {
         fbSpec.width = 1280;
         fbSpec.height = 720;
         m_Framebuffer = Framebuffer::Create(fbSpec);
+
+        m_ActiveScene = CreateRef<Scene>();
+
+        m_Box = m_ActiveScene->CreateEntity("Box");
+        m_Box.AddComponent<TextureComponent>(m_BoxTexture);
     }
 
     void EditorLayer::OnDetach()
@@ -32,40 +37,41 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        // Update light position
+        // Update camera
+        if (m_ViewportFocused)
+            m_CameraController.OnUpdate(timestep);
+
+        // Temp: Update light position
         static float lightAngle = 0;
         lightAngle += timestep * 0.5f; // time * speed
         float lightX = 6.0f * cos(lightAngle); // radius * cos(angle)
         float lightZ = 6.0f * sin(lightAngle); // radius * sin(angle)
         glm::vec3 lightPosition = glm::vec3(lightX, 8.0f, lightZ);
 
-        if (m_ViewportFocused)
-            m_CameraController.OnUpdate(timestep);
-
+        // Render setup
         Renderer::ResetStats();
-        {
-            DK_PROFILE_SCOPE("Renderer Prep");
-            m_Framebuffer->Bind();
-            RenderCommand::SetClearColor({ 0.12f, 0.12f, 0.12f, 1.0f });
-            RenderCommand::Clear();
-        }
-        {
-            DK_PROFILE_SCOPE("Renderer Draw");
-            Renderer::BeginScene(m_CameraController, lightPosition);
+        m_Framebuffer->Bind();
+        RenderCommand::SetClearColor({ 0.12f, 0.12f, 0.12f, 1.0f });
+        RenderCommand::Clear();
 
-            // Wall and Floor
-            Renderer3D::DrawCube({ 0.0f, 1.5f, -4.9f }, { 10.0f, 4.0f, 0.2f }, { 0.332, 0.304, 0.288, 1.0 });
-            Renderer3D::DrawCube({ 0.0f, -0.6f, 0.0f }, { 10.0f, 0.2f, 10.0f }, { 0.332, 0.304, 0.288, 1.0 });
+        Renderer::BeginScene(m_CameraController, lightPosition);
 
-            // Box 
-            Renderer3D::DrawCube({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, m_BoxTexture, 1.0f, glm::vec4(1.0f));
+        // Update scene
+        m_ActiveScene->OnUpdate(timestep);
 
-            // Light
-            Renderer3D::DrawCube(lightPosition, { 0.5f, 0.5f, 0.5f }, glm::vec4(1.0f));
+        // Wall and Floor
+        Renderer3D::DrawCube({ 0.0f, 1.5f, -4.9f }, { 10.0f, 4.0f, 0.2f }, { 0.332, 0.304, 0.288, 1.0 });
+        Renderer3D::DrawCube({ 0.0f, -0.6f, 0.0f }, { 10.0f, 0.2f, 10.0f }, { 0.332, 0.304, 0.288, 1.0 });
 
-            Renderer::EndScene();
-            m_Framebuffer->Unbind();
-        }
+        // Box 
+        // Renderer3D::DrawCube({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, m_BoxTexture, 1.0f, glm::vec4(1.0f));
+
+        // Light
+        Renderer3D::DrawCube(lightPosition, { 0.5f, 0.5f, 0.5f }, glm::vec4(1.0f));
+
+        Renderer::EndScene();
+
+        m_Framebuffer->Unbind();
     }
 
     void EditorLayer::OnEvent(Event& event)
@@ -137,6 +143,7 @@ namespace Deak {
             ImGui::EndMenuBar();
         }
 
+        //// SIDE PANEL ////
         ImGui::Begin("Render Stats:");
         auto stats = Renderer::GetRendererStats();
         ImGui::Text("Draw Calls: %d", stats->drawCalls);
@@ -145,8 +152,17 @@ namespace Deak {
         ImGui::Text("Indices: %d", stats->indexCount);
         ImGui::Text("");
         ImGui::Text("%.2f FPS", (1.0f / timestep));
+
+        if (m_Box)
+        {
+            ImGui::Separator();
+            ImGui::Text("%s", m_Box.GetComponent<TagComponent>().tag.c_str());
+            ImGui::Separator();
+        }
+
         ImGui::End();
 
+        //// VIEWPORT ////
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
         ImGui::Begin("Viewport");
 
