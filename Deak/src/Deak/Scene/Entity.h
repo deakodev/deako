@@ -44,7 +44,8 @@ namespace Deak {
         operator bool() const { return m_EntityHandle != entt::null; }
 
     private:
-        entt::entity m_EntityHandle;
+        entt::entity m_EntityHandle{ entt::null };
+
         // we dont want the Scene to be owned by Entity, could potentially use a weak_ref too
         Scene* m_Scene = nullptr;
     };
