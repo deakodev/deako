@@ -139,40 +139,33 @@ namespace Deak {
         delete[] s_Data2D.quadVBBase;
     }
 
-    void Renderer2D::BeginScene(const Camera& camera)
+    void Renderer2D::PrepareScene(const SceneCamera& camera, const glm::mat4& transform)
     {
         DK_PROFILE_FUNC();
 
-        // Temp: remove once shader system can handle uniform bindings
-        glm::mat4 viewProjection = camera.GetViewProjection();
+        glm::mat4 viewProjection = camera.GetProjection() * glm::inverse(transform);
         s_Data2D.quadShader->Bind();
         s_Data2D.quadShader->SetMat4("u_ViewProjection", viewProjection);
         s_Data2D.triangleShader->Bind();
         s_Data2D.triangleShader->SetMat4("u_ViewProjection", viewProjection);
     }
 
-    void Renderer2D::BeginScene(const OrthographicCameraController& cameraController)
+    void Renderer2D::PrepareScene(const OrthographicCameraController& cameraController)
     {
         DK_PROFILE_FUNC();
 
-        // Temp: ?? remove once shader system can handle uniform bindings
         glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
-        // glm::vec3 viewPosition = cameraController.GetPosition(); // needed if doing lighting in 2D
-
         s_Data2D.quadShader->Bind();
         s_Data2D.quadShader->SetMat4("u_ViewProjection", viewProjection);
         s_Data2D.triangleShader->Bind();
         s_Data2D.triangleShader->SetMat4("u_ViewProjection", viewProjection);
     }
 
-    void Renderer2D::BeginScene(const PerspectiveCameraController& cameraController)
+    void Renderer2D::PrepareScene(const PerspectiveCameraController& cameraController)
     {
         DK_PROFILE_FUNC();
 
-        // Temp: ?? remove once shader system can handle uniform bindings
         glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
-        // glm::vec3 viewPosition = cameraController.GetPosition(); // needed if doing lighting in 2D
-
         s_Data2D.quadShader->Bind();
         s_Data2D.quadShader->SetMat4("u_ViewProjection", viewProjection);
         s_Data2D.triangleShader->Bind();
@@ -300,6 +293,33 @@ namespace Deak {
         s_RendererData->totalIndices += indicesPerTriangle;
 
         s_RendererStats->AddPrimitive(verticesPerTriangle, indicesPerTriangle);
+    }
+
+    void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
+    {
+        DK_PROFILE_FUNC();
+
+        if (s_RendererData->totalIndices >= s_RendererData->MAX_INDICES)
+            Renderer::NextBatch();
+
+        constexpr size_t verticesPerQuad = 4;
+        constexpr size_t indicesPerQuad = 6;
+        constexpr glm::vec2 textureCoords[] = { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } };
+
+        for (size_t i = 0; i < verticesPerQuad; i++)
+        {
+            s_Data2D.quadVBPtr->position = transform * s_Data2D.quadVertPositions[i];
+            s_Data2D.quadVBPtr->color = color;
+            s_Data2D.quadVBPtr->textureCoord = textureCoords[i];
+            s_Data2D.quadVBPtr->textureIndex = 0.0f; // Default white texture
+            s_Data2D.quadVBPtr->textureScalar = 1.0f;
+            s_Data2D.quadVBPtr++;
+        }
+
+        s_Data2D.quadIndexCount += indicesPerQuad;
+        s_RendererData->totalIndices += indicesPerQuad;
+
+        s_RendererStats->AddPrimitive(verticesPerQuad, indicesPerQuad);
     }
 
     void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& color)

@@ -23,7 +23,14 @@ namespace Deak {
         Ref<Texture2D> m_BoxTexture;
         Ref<Framebuffer> m_Framebuffer;
         Ref<Scene> m_ActiveScene;
-        Entity m_Box;
+        Entity m_BoxEntity;
+        Entity m_FloorEntity;
+        Entity m_WallEntity;
+        Entity m_HealthBarEntity;
+        Entity m_HUDCameraEntity;
+        Entity m_PrimaryCameraEntity;
+
+        bool m_PrimaryCamera = true;
 
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;

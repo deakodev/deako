@@ -33,11 +33,11 @@ void Example2D::OnUpdate(Deak::Timestep timestep)
     }
     {
         DK_PROFILE_SCOPE("Renderer Draw");
-        Deak::Renderer::BeginScene(m_Camera);
+        // Deak::Renderer::BeginScene(m_Camera);
 
-        Deak::Renderer2D::DrawQuad({ 0.0f, -9.0f }, { 5.0f, 0.5f }, { 0.8f, 0.2f, 0.2f, 0.5f });
+        // Deak::Renderer2D::DrawQuad({ 0.0f, -9.0f }, { 5.0f, 0.5f }, { 0.8f, 0.2f, 0.2f, 0.5f });
 
-        Deak::Renderer::EndScene();
+        // Deak::Renderer::EndScene();
     }
 }
 

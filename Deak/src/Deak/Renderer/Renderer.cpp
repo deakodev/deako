@@ -30,11 +30,12 @@ namespace Deak {
         Renderer2D::Shutdown();
     }
 
-    void Renderer::BeginScene(const Camera& camera)
+    void Renderer::BeginScene(const SceneCamera& camera, const glm::mat4& transform)
     {
         DK_PROFILE_FUNC();
 
-        Renderer2D::BeginScene(camera);
+        Renderer2D::PrepareScene(camera, transform);
+        Renderer3D::PrepareScene(camera, transform);
 
         StartBatch();
     }
@@ -43,8 +44,8 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        Renderer2D::BeginScene(cameraController); // to render 2D objects in 3D space
-        Renderer3D::BeginScene(cameraController, lightPosition);
+        Renderer2D::PrepareScene(cameraController);
+        Renderer3D::PrepareScene(cameraController, lightPosition);
 
         StartBatch();
     }
@@ -53,7 +54,7 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        Renderer2D::BeginScene(cameraController);
+        Renderer2D::PrepareScene(cameraController);
 
         StartBatch();
     }

@@ -24,8 +24,32 @@ namespace Deak {
 
         m_ActiveScene = CreateRef<Scene>();
 
-        m_Box = m_ActiveScene->CreateEntity("Box");
-        m_Box.AddComponent<TextureComponent>(m_BoxTexture);
+        m_BoxEntity = m_ActiveScene->CreateEntity("Box Entity");
+        m_BoxEntity.AddComponent<TextureComponent>(m_BoxTexture);
+
+        m_FloorEntity = m_ActiveScene->CreateEntity("Floor Entity");
+        m_FloorEntity.AddComponent<ColorComponent>(glm::vec4(0.332, 0.304, 0.288, 1.0));
+        auto& floorTransfromComp = m_FloorEntity.GetComponent<TransformComponent>();
+        floorTransfromComp.transform *= (glm::translate(glm::mat4(1.0f), { 0.0f, -0.6f, 0.0f })
+            * glm::scale(glm::mat4(1.0f), { 10.0f, 0.2f, 10.0f }));
+
+        m_HealthBarEntity = m_ActiveScene->CreateEntity("Healthbar Entity");
+        m_HealthBarEntity.AddComponent<OverlayComponent>(glm::vec4(1.0, 0.304, 0.288, 1.0));
+        auto& healthbarTransfromComp = m_HealthBarEntity.GetComponent<TransformComponent>();
+        healthbarTransfromComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0, -4.5f, 0.0f })
+            * glm::scale(glm::mat4(1.0f), { 5.0f, 0.35f, 1.0f });
+
+        m_PrimaryCameraEntity = m_ActiveScene->CreateEntity("Primary Camera Entity");
+        auto& primaryCameraComp = m_PrimaryCameraEntity.AddComponent<CameraComponent>(Perspective);
+        primaryCameraComp.primary = true;
+        auto& primaryTransformComp = m_PrimaryCameraEntity.GetComponent<TransformComponent>();
+        primaryTransformComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 10.0f });
+
+        m_HUDCameraEntity = m_ActiveScene->CreateEntity("HUD Camera Entity");
+        auto& hudCameraComp = m_HUDCameraEntity.AddComponent<CameraComponent>(Orthographic);
+        hudCameraComp.hud = true;
+        auto& hudTransformComp = m_HUDCameraEntity.GetComponent<TransformComponent>();
+        hudTransformComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 10.0f });
     }
 
     void EditorLayer::OnDetach()
@@ -38,24 +62,18 @@ namespace Deak {
         DK_PROFILE_FUNC();
 
         // Resize framebuffer
-        if (Deak::FramebufferSpec spec = m_Framebuffer->GetSpecification();
-            m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f && // zero sized framebuffer is invalid
+        FramebufferSpec spec = m_Framebuffer->GetSpecification();
+        if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
             (spec.width != m_ViewportSize.x || spec.height != m_ViewportSize.y))
         {
             m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
             m_CameraController.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+            m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
         }
 
         // Update camera
         if (m_ViewportFocused)
             m_CameraController.OnUpdate(timestep);
-
-        // Temp: Update light position
-        static float lightAngle = 0;
-        lightAngle += timestep * 0.5f; // time * speed
-        float lightX = 6.0f * cos(lightAngle); // radius * cos(angle)
-        float lightZ = 6.0f * sin(lightAngle); // radius * sin(angle)
-        glm::vec3 lightPosition = glm::vec3(lightX, 8.0f, lightZ);
 
         // Render setup
         Renderer::ResetStats();
@@ -63,23 +81,8 @@ namespace Deak {
         RenderCommand::SetClearColor({ 0.12f, 0.12f, 0.12f, 1.0f });
         RenderCommand::Clear();
 
-        Renderer::BeginScene(m_CameraController, lightPosition);
-
         // Update scene
         m_ActiveScene->OnUpdate(timestep);
-
-        // Wall and Floor
-        Renderer3D::DrawCube({ 0.0f, 1.5f, -4.9f }, { 10.0f, 4.0f, 0.2f }, { 0.332, 0.304, 0.288, 1.0 });
-        Renderer3D::DrawCube({ 0.0f, -0.6f, 0.0f }, { 10.0f, 0.2f, 10.0f }, { 0.332, 0.304, 0.288, 1.0 });
-
-        // Box 
-        // Renderer3D::DrawCube({ 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, m_BoxTexture, 1.0f, glm::vec4(1.0f));
-
-        // Light
-        Renderer3D::DrawCube(lightPosition, { 0.5f, 0.5f, 0.5f }, glm::vec4(1.0f));
-
-        Renderer::EndScene();
-
         m_Framebuffer->Unbind();
     }
 
@@ -162,11 +165,25 @@ namespace Deak {
         ImGui::Text("");
         ImGui::Text("%.2f FPS", (1.0f / timestep));
 
-        if (m_Box)
+        if (m_BoxEntity)
         {
             ImGui::Separator();
-            ImGui::Text("%s", m_Box.GetComponent<TagComponent>().tag.c_str());
+            ImGui::Text("%s", m_BoxEntity.GetComponent<TagComponent>().tag.c_str());
             ImGui::Separator();
+        }
+
+        ImGui::Separator();
+        ImGui::DragFloat3("Orthographic Transform",
+            glm::value_ptr(m_HUDCameraEntity.GetComponent<TransformComponent>().transform[3]));
+        ImGui::DragFloat3("Perspective Transform",
+            glm::value_ptr(m_PrimaryCameraEntity.GetComponent<TransformComponent>().transform[3]));
+        ImGui::Separator();
+
+        {
+            auto& camera = m_HUDCameraEntity.GetComponent<CameraComponent>().camera;
+            float orthoSize = camera.GetOrthographicSize();
+            if (ImGui::DragFloat("Ortho Camera Size", &orthoSize))
+                camera.SetOrthographicSize(orthoSize);
         }
 
         ImGui::End();

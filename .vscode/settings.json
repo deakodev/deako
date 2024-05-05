@@ -66,6 +66,10 @@
     "algorithm": "cpp",
     "execution": "cpp",
     "type_traits": "cpp",
-    "__memory": "cpp"
+    "__memory": "cpp",
+    "__tree": "cpp",
+    "list": "cpp",
+    "map": "cpp",
+    "set": "cpp"
   }
 }

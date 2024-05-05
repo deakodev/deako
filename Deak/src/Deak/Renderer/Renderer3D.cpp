@@ -23,7 +23,7 @@ namespace Deak {
 
     struct PrimitiveData3D
     {
-        // cube
+        // Cube
         Ref<VertexArray> cubeVA;
         Ref<VertexBuffer> cubeVB;
         Ref<Shader> cubeShader;
@@ -141,7 +141,6 @@ namespace Deak {
         s_Data3D.cubeNormals[21] = { 0.0f, -1.0f, 0.0f };  // Bottom front left
         s_Data3D.cubeNormals[22] = { 0.0f, -1.0f, 0.0f };   // Bottom front right
         s_Data3D.cubeNormals[23] = { 0.0f, -1.0f, 0.0f };  // Bottom back right
-
     }
 
     void Renderer3D::Shutdown()
@@ -151,18 +150,24 @@ namespace Deak {
         delete[] s_Data3D.cubeVBBase;
     }
 
-    void Renderer3D::BeginScene(const PerspectiveCameraController& cameraController, const glm::vec3& lightPosition)
+    void Renderer3D::PrepareScene(const SceneCamera& camera, const glm::mat4& transform)
     {
         DK_PROFILE_FUNC();
 
-        // Temp: ?? remove once shader system can handle uniform bindings
-        glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
-        glm::vec3 viewPosition = cameraController.GetPosition();
-
+        glm::mat4 viewProjection = camera.GetProjection() * glm::inverse(transform);
         s_Data3D.cubeShader->Bind();
         s_Data3D.cubeShader->SetMat4("u_ViewProjection", viewProjection);
-        s_Data3D.cubeShader->SetFloat3("u_ViewPosition", viewPosition);
-        s_Data3D.cubeShader->SetFloat3("u_LightPosition", lightPosition);
+        s_Data3D.cubeShader->SetFloat3("u_ViewPosition", transform[3]);
+        s_Data3D.cubeShader->SetFloat3("u_LightPosition", { 5.0f, 8.0f, 3.0f });
+    }
+
+    void Renderer3D::PrepareScene(const PerspectiveCameraController& cameraController, const glm::vec3& lightPosition)
+    {
+        DK_PROFILE_FUNC();
+
+        glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
+        s_Data3D.cubeShader->Bind();
+        s_Data3D.cubeShader->SetMat4("u_ViewProjection", viewProjection);
     }
 
     void Renderer3D::Flush()
@@ -204,16 +209,6 @@ namespace Deak {
         DrawCube(transform, color);
     }
 
-    void Renderer3D::DrawCube(const glm::vec3& position, const glm::vec3& size, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
-    {
-        DK_PROFILE_FUNC();
-
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, 0.0f })
-            * glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
-
-        DrawCube(transform, texture, textureScalar, textureTint);
-    }
-
     void Renderer3D::DrawCube(const glm::mat4& transform, const glm::vec4& color)
     {
         DK_PROFILE_FUNC();
@@ -240,6 +235,16 @@ namespace Deak {
         s_RendererData->totalIndices += indicesPerCube;
 
         s_RendererStats->AddPrimitive(verticesPerCube, indicesPerCube, 6);
+    }
+
+    void Renderer3D::DrawCube(const glm::vec3& position, const glm::vec3& size, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
+    {
+        DK_PROFILE_FUNC();
+
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, position.z })
+            * glm::scale(glm::mat4(1.0f), { size.x, size.y, size.z });
+
+        DrawCube(transform, texture, textureScalar, textureTint);
     }
 
     void Renderer3D::DrawCube(const glm::mat4& transform, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)

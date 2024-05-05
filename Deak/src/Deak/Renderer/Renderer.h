@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Camera/Camera.h"
+#include "Deak/Scene/SceneCamera.h"
 #include "Camera/PerspectiveCameraController.h"
 #include "Camera/OrthographicCameraController.h"
 #include "RendererAPI.h"
@@ -53,7 +53,7 @@ namespace Deak {
         static void Init();
         static void Shutdown();
 
-        static void BeginScene(const Camera& camera);
+        static void BeginScene(const SceneCamera& camera, const glm::mat4& transform);
         static void BeginScene(const PerspectiveCameraController& cameraController, const glm::vec3& lightPosition);
         static void BeginScene(const OrthographicCameraController& cameraController);
         static void EndScene();
