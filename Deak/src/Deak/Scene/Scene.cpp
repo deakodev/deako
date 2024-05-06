@@ -23,6 +23,21 @@ namespace Deak {
 
     void Scene::OnUpdate(Timestep timestep)
     {
+        // Update Scripts
+        m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nativeScriptComp)
+            {
+                //TODO: move to scene play
+                if (!nativeScriptComp.instance)
+                {
+                    nativeScriptComp.instance = nativeScriptComp.InstantiateScript();
+                    nativeScriptComp.instance->m_Entity = Entity{ entity, this };
+                    nativeScriptComp.instance->OnCreate();
+                }
+
+                nativeScriptComp.instance->OnUpdate(timestep);
+            });
+
+
         SceneCamera* mainCamera = nullptr;
         SceneCamera* hudCamera = nullptr;
         glm::mat4* cameraTransform = nullptr; // main and hud cameras share this transform
@@ -30,7 +45,7 @@ namespace Deak {
             auto view = m_Registry.view<CameraComponent, TransformComponent>();
             for (auto entity : view)
             {
-                const auto& [cameraComp, transformComp] = view.get<CameraComponent, TransformComponent>(entity);
+                auto [cameraComp, transformComp] = view.get<CameraComponent, TransformComponent>(entity);
 
                 if (cameraComp.primary)
                 {
@@ -54,7 +69,7 @@ namespace Deak {
                 auto group = m_Registry.group<ColorComponent>(entt::get<TransformComponent>);
                 for (auto entity : group)
                 {
-                    const auto& [colorComp, transformComp] = group.get<ColorComponent, TransformComponent>(entity);
+                    auto [colorComp, transformComp] = group.get<ColorComponent, TransformComponent>(entity);
 
                     Renderer3D::DrawCube(transformComp, colorComp);
                 }
@@ -64,7 +79,7 @@ namespace Deak {
                 auto group = m_Registry.group<TextureComponent>(entt::get<TransformComponent>);
                 for (auto entity : group)
                 {
-                    const auto& [textureComp, transformComp] = group.get<TextureComponent, TransformComponent>(entity);
+                    auto [textureComp, transformComp] = group.get<TextureComponent, TransformComponent>(entity);
 
                     Renderer3D::DrawCube(transformComp, textureComp.texture, 1.0f, glm::vec4(1.0f));
                 }
@@ -82,7 +97,7 @@ namespace Deak {
                 auto group = m_Registry.group<OverlayComponent>(entt::get<TransformComponent>);
                 for (auto entity : group)
                 {
-                    const auto& [overlayComp, transformComp] = group.get<OverlayComponent, TransformComponent>(entity);
+                    auto [overlayComp, transformComp] = group.get<OverlayComponent, TransformComponent>(entity);
 
                     glm::mat4 quadTransform = (*cameraTransform) * transformComp.transform;
 

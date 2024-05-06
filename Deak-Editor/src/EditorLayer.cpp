@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
 namespace Deak {
 
     EditorLayer::EditorLayer()
@@ -50,6 +51,38 @@ namespace Deak {
         hudCameraComp.hud = true;
         auto& hudTransformComp = m_HUDCameraEntity.GetComponent<TransformComponent>();
         hudTransformComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 10.0f });
+
+        class CameraController : public ScriptableEntity
+        {
+        public:
+            void OnUpdate(Timestep timestep)
+            {
+                auto& transform = GetComponent<TransformComponent>().transform;
+
+                if (Input::IsKeyPressed(Key::A))
+                    transform[3][0] -= 5.0f * timestep;
+                else if (Input::IsKeyPressed(Key::D))
+                    transform[3][0] += 5.0f * timestep;
+
+                if (Input::IsKeyPressed(Key::W))
+                    transform[3][1] += 5.0f * timestep;
+                else if (Input::IsKeyPressed(Key::S))
+                    transform[3][1] -= 5.0f * timestep;
+
+                if (Input::IsKeyPressed(Key::Up))
+                    transform[3][2] -= 5.0f * timestep;
+                else if (Input::IsKeyPressed(Key::Down))
+                    transform[3][2] += 5.0f * timestep;
+
+                if (Input::IsKeyPressed(Key::Left))
+                    transform *= glm::rotate(glm::mat4(1.0f), glm::radians(1.0f), { 0.0f, 1.0f, 0.0f });
+                else if (Input::IsKeyPressed(Key::Right))
+                    transform *= glm::rotate(glm::mat4(1.0f), glm::radians(-1.0f), { 0.0f, 1.0f, 0.0f });
+            }
+        };
+
+        m_PrimaryCameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
     }
 
     void EditorLayer::OnDetach()

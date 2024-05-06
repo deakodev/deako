@@ -30,6 +30,8 @@ namespace Deak {
         Entity m_HUDCameraEntity;
         Entity m_PrimaryCameraEntity;
 
+        glm::vec2 m_InitialMousePosition = { 0.0f, 0.0f };
+
         bool m_PrimaryCamera = true;
 
         bool m_ViewportFocused = false;

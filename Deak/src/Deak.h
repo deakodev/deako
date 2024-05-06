@@ -29,4 +29,5 @@
 
 #include "Deak/Scene/Scene.h"
 #include "Deak/Scene/Entity.h"
+#include "Deak/Scene/ScriptableEntity.h"
 #include "Deak/Scene/Components.h"

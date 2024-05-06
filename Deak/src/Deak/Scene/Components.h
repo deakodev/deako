@@ -2,6 +2,7 @@
 
 #include "Deak/Renderer/Texture.h"
 #include "Deak/Scene/SceneCamera.h"
+#include "Deak/Scene/ScriptableEntity.h"
 
 #include <glm/glm.hpp>
 
@@ -74,7 +75,6 @@ namespace Deak {
         }
     };
 
-
     struct CameraComponent
     {
         SceneCamera camera;
@@ -87,6 +87,22 @@ namespace Deak {
             :camera(projectionType)
         {
         }
+    };
+
+    struct NativeScriptComponent
+    {
+        ScriptableEntity* instance = nullptr;
+
+        ScriptableEntity* (*InstantiateScript)();
+        void (*DestroyScript)(NativeScriptComponent*);
+
+        template<typename T>
+        void Bind()
+        {
+            InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
+            DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->instance; nsc->instance = nullptr; };
+        }
+
     };
 
 }
