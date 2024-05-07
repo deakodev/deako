@@ -13,3 +13,6 @@
 	path = Deak/vendor/imgui
 	url = https://github.com/deak1zm/imgui
 	branch = docking
+[submodule "Deak/vendor/yaml-cpp"]
+	path = Deak/vendor/yaml-cpp
+	url = https://github.com/deak1zm/yaml-cpp.git
