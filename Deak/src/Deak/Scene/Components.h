@@ -5,6 +5,7 @@
 #include "Deak/Scene/ScriptableEntity.h"
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace Deak {
 
@@ -22,29 +23,32 @@ namespace Deak {
 
     struct TransformComponent
     {
-        glm::mat4 transform = glm::mat4(1.0f);
+        glm::vec3 translation = { 0.0f, 0.0f, 0.0f };
+        glm::vec3 rotation = { 0.0f, 0.0f, 0.0f };
+        glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
 
         TransformComponent() = default;
         TransformComponent(const TransformComponent&) = default;
-        TransformComponent(const glm::mat4& transform)
-            : transform(transform)
-        {
-        }
 
-        operator glm::mat4& () { return transform; }
-        operator const glm::mat4& () const { return transform; }
+        glm::mat4 GetTransform() const
+        {
+            glm::mat4 _rotation = glm::rotate(glm::mat4(1.0f), rotation.x, { 1, 0, 0 })
+                * glm::rotate(glm::mat4(1.0f), rotation.y, { 0, 1, 0 })
+                * glm::rotate(glm::mat4(1.0f), rotation.z, { 0, 0, 1 });
+
+            return glm::translate(glm::mat4(1.0f), translation)
+                * _rotation * glm::scale(glm::mat4(1.0f), scale);
+        }
     };
 
     struct ColorComponent
     {
-        glm::vec4 color;
+        glm::vec4 color = glm::vec4(1.0f);
 
         ColorComponent() = default;
         ColorComponent(const ColorComponent&) = default;
         ColorComponent(const glm::vec4& color)
-            : color(color)
-        {
-        }
+            : color(color) {}
 
         operator glm::vec4& () { return color; }
         operator const glm::vec4& () const { return color; }
@@ -57,36 +61,46 @@ namespace Deak {
         TextureComponent() = default;
         TextureComponent(const TextureComponent&) = default;
         TextureComponent(const Ref<Texture2D>& texture)
-            : texture(texture)
-        {
-        }
-
+            : texture(texture) {}
     };
 
     struct OverlayComponent // for now this is used for the heads-up display
     {
+        Ref<Texture2D> texture = nullptr;
         glm::vec4 color = glm::vec4(1.0f); // default white color
 
         OverlayComponent() = default;
         OverlayComponent(const OverlayComponent&) = default;
         OverlayComponent(const glm::vec4& color)
-            : color(color)
-        {
-        }
+            : color(color) {}
+        OverlayComponent(const Ref<Texture2D>& texture, const glm::vec4& color = glm::vec4(1.0f))
+            : texture(texture), color(color) {}
+    };
+
+    struct SpriteRendererComponent
+    {
+        Ref<Texture2D> texture = nullptr;
+        glm::vec4 color = glm::vec4(1.0f); // default white color
+
+        SpriteRendererComponent() = default;
+        SpriteRendererComponent(const SpriteRendererComponent&) = default;
+        SpriteRendererComponent(const glm::vec4& color)
+            : color(color) {}
+        SpriteRendererComponent(const Ref<Texture2D>& texture, const glm::vec4& color = glm::vec4(1.0f))
+            : texture(texture), color(color) {}
     };
 
     struct CameraComponent
     {
-        SceneCamera camera;
+        SceneCamera camera = { Perspective };
         bool primary = false;
         bool hud = false; // heads-up display
         bool fixedAspectRatio = false;
 
+        CameraComponent() = default;
         CameraComponent(const CameraComponent&) = default;
         CameraComponent(ProjectionType projectionType)
-            :camera(projectionType)
-        {
-        }
+            :camera(projectionType) {}
     };
 
     struct NativeScriptComponent

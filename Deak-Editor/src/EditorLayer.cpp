@@ -16,7 +16,8 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
-        m_BoxTexture = Texture2D::Create("Sandbox/assets/textures/container.jpg");
+        m_BoxTexture = Texture2D::Create("Deak-Editor/assets/textures/container.jpg");
+        m_HealthBarTexture = Texture2D::Create("Deak-Editor/assets/textures/healthbar.png");
 
         FramebufferSpec fbSpec;
         fbSpec.width = 1280;
@@ -25,64 +26,65 @@ namespace Deak {
 
         m_ActiveScene = CreateRef<Scene>();
 
-        m_BoxEntity = m_ActiveScene->CreateEntity("Box Entity");
+        m_BoxEntity = m_ActiveScene->CreateEntity("Box");
         m_BoxEntity.AddComponent<TextureComponent>(m_BoxTexture);
 
-        m_FloorEntity = m_ActiveScene->CreateEntity("Floor Entity");
+        m_FloorEntity = m_ActiveScene->CreateEntity("Floor");
         m_FloorEntity.AddComponent<ColorComponent>(glm::vec4(0.332, 0.304, 0.288, 1.0));
         auto& floorTransfromComp = m_FloorEntity.GetComponent<TransformComponent>();
-        floorTransfromComp.transform *= (glm::translate(glm::mat4(1.0f), { 0.0f, -0.6f, 0.0f })
-            * glm::scale(glm::mat4(1.0f), { 10.0f, 0.2f, 10.0f }));
+        floorTransfromComp.translation = { 0.0f, -0.6f, 0.0f };
+        floorTransfromComp.scale = { 10.0f, 0.2f, 10.0f };
 
-        m_HealthBarEntity = m_ActiveScene->CreateEntity("Healthbar Entity");
-        m_HealthBarEntity.AddComponent<OverlayComponent>(glm::vec4(1.0, 0.304, 0.288, 1.0));
+        m_HealthBarEntity = m_ActiveScene->CreateEntity("Healthbar");
+        m_HealthBarEntity.AddComponent<OverlayComponent>(m_HealthBarTexture);
         auto& healthbarTransfromComp = m_HealthBarEntity.GetComponent<TransformComponent>();
-        healthbarTransfromComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0, -4.5f, 0.0f })
-            * glm::scale(glm::mat4(1.0f), { 5.0f, 0.35f, 1.0f });
+        healthbarTransfromComp.translation = { 0.0, -4.5f, 0.0f };
+        healthbarTransfromComp.scale = { 4.0f, 0.35f, 1.0f };
 
-        m_PrimaryCameraEntity = m_ActiveScene->CreateEntity("Primary Camera Entity");
+        m_PrimaryCameraEntity = m_ActiveScene->CreateEntity("Camera A");
         auto& primaryCameraComp = m_PrimaryCameraEntity.AddComponent<CameraComponent>(Perspective);
         primaryCameraComp.primary = true;
         auto& primaryTransformComp = m_PrimaryCameraEntity.GetComponent<TransformComponent>();
-        primaryTransformComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 10.0f });
+        primaryTransformComp.translation = { 0.0f, 0.0f, 10.0f };
 
-        m_HUDCameraEntity = m_ActiveScene->CreateEntity("HUD Camera Entity");
+        m_HUDCameraEntity = m_ActiveScene->CreateEntity("Camera B");
         auto& hudCameraComp = m_HUDCameraEntity.AddComponent<CameraComponent>(Orthographic);
         hudCameraComp.hud = true;
-        auto& hudTransformComp = m_HUDCameraEntity.GetComponent<TransformComponent>();
-        hudTransformComp.transform *= glm::translate(glm::mat4(1.0f), { 0.0f, 0.0f, 10.0f });
 
         class CameraController : public ScriptableEntity
         {
         public:
             void OnUpdate(Timestep timestep)
             {
-                auto& transform = GetComponent<TransformComponent>().transform;
+                auto& transformComp = GetComponent<TransformComponent>();
+                auto& translation = transformComp.translation;
+                auto& rotation = transformComp.rotation;
 
                 if (Input::IsKeyPressed(Key::A))
-                    transform[3][0] -= 5.0f * timestep;
+                    translation.x -= 5.0f * timestep;
                 else if (Input::IsKeyPressed(Key::D))
-                    transform[3][0] += 5.0f * timestep;
+                    translation.x += 5.0f * timestep;
 
                 if (Input::IsKeyPressed(Key::W))
-                    transform[3][1] += 5.0f * timestep;
+                    transformComp.translation.z -= 5.0f * timestep;
                 else if (Input::IsKeyPressed(Key::S))
-                    transform[3][1] -= 5.0f * timestep;
+                    translation.z += 5.0f * timestep;
 
                 if (Input::IsKeyPressed(Key::Up))
-                    transform[3][2] -= 5.0f * timestep;
+                    translation.y += 5.0f * timestep;
                 else if (Input::IsKeyPressed(Key::Down))
-                    transform[3][2] += 5.0f * timestep;
+                    translation.y -= 5.0f * timestep;
 
-                if (Input::IsKeyPressed(Key::Left))
-                    transform *= glm::rotate(glm::mat4(1.0f), glm::radians(1.0f), { 0.0f, 1.0f, 0.0f });
-                else if (Input::IsKeyPressed(Key::Right))
-                    transform *= glm::rotate(glm::mat4(1.0f), glm::radians(-1.0f), { 0.0f, 1.0f, 0.0f });
+                if (Input::IsKeyPressed(Key::Q))
+                    rotation.y += 5.0f * timestep;
+                else if (Input::IsKeyPressed(Key::E))
+                    rotation.y -= 5.0f * timestep;
             }
         };
 
         m_PrimaryCameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
 
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
 
     void EditorLayer::OnDetach()
@@ -101,7 +103,7 @@ namespace Deak {
         {
             m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
             m_CameraController.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-            m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+            m_ActiveScene->OnViewportResize(m_ViewportSize.x, m_ViewportSize.y);
         }
 
         // Update camera
@@ -166,11 +168,14 @@ namespace Deak {
 
         // Submit the DockSpace
         ImGuiIO& io = ImGui::GetIO();
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.WindowMinSize.x = 360.0f;
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         {
             ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
+        style.WindowMinSize.x = 32.0f;
 
         if (ImGui::BeginMenuBar())
         {
@@ -188,37 +193,25 @@ namespace Deak {
             ImGui::EndMenuBar();
         }
 
-        //// SIDE PANEL ////
-        ImGui::Begin("Render Stats:");
+        //// SCENE HIERARCHY ////
+        m_SceneHierarchyPanel.OnImGuiRender();
+
+        //// STATS OVERLAY ////
+        bool overlayOpen = true;
+        ImGuiWindowFlags overlayflags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        ImGui::Begin("Renderer stats overlay", &overlayOpen, overlayflags);
         auto stats = Renderer::GetRendererStats();
-        ImGui::Text("Draw Calls: %d", stats->drawCalls);
-        ImGui::Text("Primitive Count: %d", stats->primitiveCount);
+        ImGui::Text("Draws: %d", stats->drawCalls);
+        ImGui::SameLine(0.0f, 20.0f);
+        ImGui::Text("Primitives: %d", stats->primitiveCount);
+        ImGui::SameLine(0.0f, 20.0f);
         ImGui::Text("Vertices: %d", stats->vertexCount);
+        ImGui::SameLine(0.0f, 20.0f);
         ImGui::Text("Indices: %d", stats->indexCount);
-        ImGui::Text("");
-        ImGui::Text("%.2f FPS", (1.0f / timestep));
-
-        if (m_BoxEntity)
-        {
-            ImGui::Separator();
-            ImGui::Text("%s", m_BoxEntity.GetComponent<TagComponent>().tag.c_str());
-            ImGui::Separator();
-        }
-
-        ImGui::Separator();
-        ImGui::DragFloat3("Orthographic Transform",
-            glm::value_ptr(m_HUDCameraEntity.GetComponent<TransformComponent>().transform[3]));
-        ImGui::DragFloat3("Perspective Transform",
-            glm::value_ptr(m_PrimaryCameraEntity.GetComponent<TransformComponent>().transform[3]));
-        ImGui::Separator();
-
-        {
-            auto& camera = m_HUDCameraEntity.GetComponent<CameraComponent>().camera;
-            float orthoSize = camera.GetOrthographicSize();
-            if (ImGui::DragFloat("Ortho Camera Size", &orthoSize))
-                camera.SetOrthographicSize(orthoSize);
-        }
-
+        ImGui::SameLine(0.0f, 20.0f);
+        ImGui::Text("Framerate: %.0f ", (1.0f / timestep));
+        ImGui::SameLine(0.0f, -1.0f);
         ImGui::End();
 
         //// VIEWPORT ////
@@ -237,6 +230,8 @@ namespace Deak {
         ImGui::PopStyleVar();
 
         ImGui::End();
+
+        // ImGui::ShowDemoWindow();
     }
 
 }

@@ -40,7 +40,7 @@ namespace Deak {
 
         SceneCamera* mainCamera = nullptr;
         SceneCamera* hudCamera = nullptr;
-        glm::mat4* cameraTransform = nullptr; // main and hud cameras share this transform
+        glm::mat4 cameraTransform; // main and hud cameras share this transform
         {
             auto view = m_Registry.view<CameraComponent, TransformComponent>();
             for (auto entity : view)
@@ -50,7 +50,7 @@ namespace Deak {
                 if (cameraComp.primary)
                 {
                     mainCamera = &cameraComp.camera;
-                    cameraTransform = &transformComp.transform;
+                    cameraTransform = transformComp.GetTransform();
                 }
 
                 if (cameraComp.hud)
@@ -63,7 +63,7 @@ namespace Deak {
         // Game world view - perspective for now
         if (mainCamera)
         {
-            Renderer::BeginScene(*mainCamera, *cameraTransform);
+            Renderer::BeginScene(*mainCamera, cameraTransform);
 
             {
                 auto group = m_Registry.group<ColorComponent>(entt::get<TransformComponent>);
@@ -71,7 +71,7 @@ namespace Deak {
                 {
                     auto [colorComp, transformComp] = group.get<ColorComponent, TransformComponent>(entity);
 
-                    Renderer3D::DrawCube(transformComp, colorComp);
+                    Renderer3D::DrawCube(transformComp.GetTransform(), colorComp);
                 }
             }
 
@@ -81,7 +81,7 @@ namespace Deak {
                 {
                     auto [textureComp, transformComp] = group.get<TextureComponent, TransformComponent>(entity);
 
-                    Renderer3D::DrawCube(transformComp, textureComp.texture, 1.0f, glm::vec4(1.0f));
+                    Renderer3D::DrawCube(transformComp.GetTransform(), textureComp.texture, 1.0f, glm::vec4(1.0f));
                 }
             }
 
@@ -89,9 +89,9 @@ namespace Deak {
         }
 
         // Heads-Up Display - orthographic camera shadows/follows the main camera's transform
-        if (hudCamera)
+        if (hudCamera && mainCamera)
         {
-            Renderer::BeginScene(*hudCamera, *cameraTransform);
+            Renderer::BeginScene(*hudCamera, cameraTransform);
 
             {
                 auto group = m_Registry.group<OverlayComponent>(entt::get<TransformComponent>);
@@ -99,9 +99,9 @@ namespace Deak {
                 {
                     auto [overlayComp, transformComp] = group.get<OverlayComponent, TransformComponent>(entity);
 
-                    glm::mat4 quadTransform = (*cameraTransform) * transformComp.transform;
+                    glm::mat4 quadTransform = cameraTransform * transformComp.GetTransform();
 
-                    Renderer2D::DrawQuad(quadTransform, overlayComp.color);
+                    Renderer2D::DrawQuad(quadTransform, overlayComp.texture, 1.0f, overlayComp.color);
                 }
             }
 
@@ -109,7 +109,23 @@ namespace Deak {
         }
     }
 
-    void Scene::OnViewportResize(uint32_t width, uint32_t height)
+    Entity Scene::CreateEntity(const std::string& name)
+    {
+        Entity entity = { m_Registry.create(), this };
+
+        entity.AddComponent<TransformComponent>();
+        auto& tagComp = entity.AddComponent<TagComponent>();
+        tagComp.tag = name.empty() ? "Entity" : name;
+
+        return entity;
+    }
+
+    void Scene::DestroyEntity(Entity entity)
+    {
+        m_Registry.destroy(entity);
+    }
+
+    void Scene::OnViewportResize(float width, float height)
     {
         m_ViewportWidth = width;
         m_ViewportHeight = height;
@@ -125,15 +141,51 @@ namespace Deak {
         }
     }
 
-    Entity Scene::CreateEntity(const std::string& name)
+    template<typename T>
+    void Scene::OnComponentAdded(Entity entity, T& component)
     {
-        Entity entity = { m_Registry.create(), this };
+        // static_assert(false);
+    }
 
-        entity.AddComponent<TransformComponent>();
-        auto& tag = entity.AddComponent<TagComponent>();
-        tag.tag = name.empty() ? "Entity" : name;
+    template<>
+    void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component)
+    {
+        component.camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
+    }
 
-        return entity;
+    template<>
+    void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<SpriteRendererComponent>(Entity entity, SpriteRendererComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<OverlayComponent>(Entity entity, OverlayComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<TextureComponent>(Entity entity, TextureComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<ColorComponent>(Entity entity, ColorComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component)
+    {
     }
 
 }

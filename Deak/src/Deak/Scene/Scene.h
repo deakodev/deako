@@ -14,17 +14,23 @@ namespace Deak {
         ~Scene();
 
         void OnUpdate(Timestep timestep);
-        void OnViewportResize(uint32_t width, uint32_t height);
+        void OnViewportResize(float width, float height);
 
         Entity CreateEntity(const std::string& name = std::string());
+        void DestroyEntity(Entity entity);
+
+    private:
+        template<typename T>
+        void OnComponentAdded(Entity entity, T& component);
 
     private:
         entt::registry m_Registry;
 
-        uint32_t m_ViewportWidth = 0;
-        uint32_t m_ViewportHeight = 0;
+        float m_ViewportWidth = 0.0f;
+        float m_ViewportHeight = 0.0f;
 
         friend class Entity;
+        friend class SceneHierarchyPanel;
     };
 
 }

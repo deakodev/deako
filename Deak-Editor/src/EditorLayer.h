@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Deak.h"
+#include "Panels/SceneHierarchyPanel.h"
 
 namespace Deak {
 
@@ -21,6 +22,7 @@ namespace Deak {
     private:
         PerspectiveCameraController  m_CameraController;
         Ref<Texture2D> m_BoxTexture;
+        Ref<Texture2D> m_HealthBarTexture;
         Ref<Framebuffer> m_Framebuffer;
         Ref<Scene> m_ActiveScene;
         Entity m_BoxEntity;
@@ -38,6 +40,9 @@ namespace Deak {
         bool m_ViewportHovered = false;
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
         glm::vec3 m_ColorModifier = { 0.75f, 0.5f, 0.25f };
+
+        // Panels
+        SceneHierarchyPanel m_SceneHierarchyPanel;
 
     };
 

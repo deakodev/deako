@@ -368,6 +368,16 @@ namespace Deak {
     {
         DK_PROFILE_FUNC();
 
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, position.z })
+            * glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
+
+        DrawQuad(transform, texture, textureScalar, textureTint);
+    }
+
+    void Renderer2D::DrawQuad(const glm::mat4& transform, const Ref<Texture2D>& texture, float textureScalar, const glm::vec4 textureTint)
+    {
+        DK_PROFILE_FUNC();
+
         if (s_RendererData->totalIndices >= s_RendererData->MAX_INDICES)
             Renderer::NextBatch();
 
@@ -391,9 +401,6 @@ namespace Deak {
             s_RendererData->textureSlots[s_RendererData->textureSlotIndex] = texture;
             s_RendererData->textureSlotIndex++;
         }
-
-        glm::mat4 transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, position.z })
-            * glm::scale(glm::mat4(1.0f), { size.x, size.y, 1.0f });
 
         constexpr size_t verticesPerQuad = 4;
         constexpr size_t indicesPerQuad = 6;

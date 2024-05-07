@@ -9,7 +9,6 @@ namespace Deak {
         : m_ProjectionType(projectionType)
     {
         SetUpdateFunction();
-        UpdateProjection();
     }
 
     void SceneCamera::SetProjectionType(ProjectionType type)
@@ -20,27 +19,25 @@ namespace Deak {
         }
     }
 
-    void SceneCamera::SetProjection(float sizeOrFov, float nearPlane, float farPlane)
+    void SceneCamera::SetOrthographic(float size, float nearClip, float farClip)
     {
-        if (m_ProjectionType == Orthographic)
-        {
-            m_OrthographicSize = sizeOrFov;
-            m_OrthographicNear = nearPlane;
-            m_OrthographicFar = farPlane;
-        }
-        else
-        {
-            m_PerspectiveFov = sizeOrFov;
-            m_PerspectiveNear = nearPlane;
-            m_PerspectiveFar = farPlane;
-        }
-
+        m_OrthographicSize = size;
+        m_OrthographicNear = nearClip;
+        m_OrthographicFar = farClip;
+        UpdateProjection();
+    }
+    void SceneCamera::SetPerspective(float verticalFov, float nearClip, float farClip)
+    {
+        m_PerspectiveFov = verticalFov;
+        m_PerspectiveNear = nearClip;
+        m_PerspectiveFar = farClip;
         UpdateProjection();
     }
 
-    void SceneCamera::SetViewportSize(uint32_t width, uint32_t height)
+    void SceneCamera::SetViewportSize(float width, float height)
     {
-        m_AspectRatio = (float)width / (float)height;
+        if (width > 0.0f && height > 0.0f)
+            m_AspectRatio = width / height;
         UpdateProjection();
     }
 
@@ -50,6 +47,8 @@ namespace Deak {
             m_UpdateProjectionFn = &SceneCamera::UpdateOrthographicProjection;
         else
             m_UpdateProjectionFn = &SceneCamera::UpdatePerspectiveProjection;
+
+        UpdateProjection();
     }
 
     void SceneCamera::UpdateProjection()
@@ -70,7 +69,7 @@ namespace Deak {
 
     void SceneCamera::UpdatePerspectiveProjection()
     {
-        m_Projection = glm::perspective(glm::radians(m_PerspectiveFov),
+        m_Projection = glm::perspective(m_PerspectiveFov,
             m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
     }
 
