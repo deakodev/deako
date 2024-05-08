@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Deak.h"
 #include "Panels/SceneHierarchyPanel.h"
 
 namespace Deak {
@@ -18,6 +17,17 @@ namespace Deak {
         virtual void OnEvent(Event& event) override;
 
         virtual void OnImGuiRender(Timestep timestep) override;
+
+    private:
+        bool OnKeyPressed(KeyPressedEvent& event);
+        bool OnEditorClose(WindowCloseEvent& event);
+
+        void NewScene();
+        void OpenScene();
+        void SaveScene();
+        void SaveSceneAs();
+
+        void Close();
 
     private:
         PerspectiveCameraController  m_CameraController;

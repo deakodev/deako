@@ -85,6 +85,16 @@ namespace Deak {
                 }
             }
 
+            {
+                auto group = m_Registry.group<SpriteRendererComponent>(entt::get<TransformComponent>);
+                for (auto entity : group)
+                {
+                    auto [spriteRendererComp, transformComp] = group.get<SpriteRendererComponent, TransformComponent>(entity);
+
+                    Renderer3D::DrawCube(transformComp.GetTransform(), spriteRendererComp.color);
+                }
+            }
+
             Renderer::EndScene();
         }
 

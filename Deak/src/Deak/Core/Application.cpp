@@ -4,7 +4,6 @@
 #include "Input.h"
 #include "Deak/Events/ApplicationEvent.h"
 #include "Deak/Renderer/Renderer.h"
-
 #include "Deak/Utils/PlatformUtils.h"
 
 namespace Deak
@@ -56,7 +55,7 @@ namespace Deak
         DK_PROFILE_FUNC();
 
         EventDispatcher dispatcher(event);
-        dispatcher.Dispatch<WindowCloseEvent>(DK_BIND_EVENT_FN(Application::OnWindowClose));
+        // dispatcher.Dispatch<WindowCloseEvent>(DK_BIND_EVENT_FN(Application::OnWindowClose));
         dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(Application::OnWindowResize));
         dispatcher.Dispatch<WindowMinimizedEvent>(DK_BIND_EVENT_FN(Application::OnWindowMinimized));
         dispatcher.Dispatch<WindowRestoredEvent>(DK_BIND_EVENT_FN(Application::OnWindowRestored));
@@ -101,23 +100,7 @@ namespace Deak
             }
 
             m_Window->OnUpdate();
-
-            // TODO: Remove later
-            if (Input::IsKeyPressed(Deak::Key::Escape))
-                Application::Close();
         }
-    }
-
-    void Application::Close()
-    {
-        m_Running = false;
-    }
-
-
-    bool Application::OnWindowClose(WindowCloseEvent& event)
-    {
-        m_Running = false;
-        return true;
     }
 
     bool Application::OnWindowResize(WindowResizeEvent& event)
@@ -143,6 +126,17 @@ namespace Deak
 
         m_Minimized = false;
         return true;
+    }
+
+    bool Application::OnWindowClose(WindowCloseEvent& event)
+    {
+        // m_Running = false;
+        return true;
+    }
+
+    void Application::Close()
+    {
+        m_Running = false;
     }
 
 }

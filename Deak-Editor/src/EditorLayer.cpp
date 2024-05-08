@@ -1,9 +1,11 @@
 #include "EditorLayer.h"
 
+#include "Deak/Scene/SceneSerializer.h"
+#include "Deak/Utils/PlatformUtils.h"
+
 #include <imgui/imgui.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 
 namespace Deak {
 
@@ -26,8 +28,10 @@ namespace Deak {
 
         m_ActiveScene = CreateRef<Scene>();
 
+        #if 0
         m_BoxEntity = m_ActiveScene->CreateEntity("Box");
-        m_BoxEntity.AddComponent<TextureComponent>(m_BoxTexture);
+        // m_BoxEntity.AddComponent<TextureComponent>(m_BoxTexture);
+        m_BoxEntity.AddComponent<SpriteRendererComponent>();
 
         m_FloorEntity = m_ActiveScene->CreateEntity("Floor");
         m_FloorEntity.AddComponent<ColorComponent>(glm::vec4(0.332, 0.304, 0.288, 1.0));
@@ -83,6 +87,7 @@ namespace Deak {
         };
 
         m_PrimaryCameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+        #endif
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
@@ -121,22 +126,18 @@ namespace Deak {
         m_Framebuffer->Unbind();
     }
 
-    void EditorLayer::OnEvent(Event& event)
-    {
-        m_CameraController.OnEvent(event);
-    }
-
     void EditorLayer::OnImGuiRender(Timestep timestep)
     {
         DK_PROFILE_FUNC();
 
         static bool dockingEnabled = true;
-        static bool opt_fullscreen = true;
-        static bool opt_padding = false;
-        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+        static bool fullscreenEnabled = true;
+        static bool paddingEnabled = false;
 
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-        if (opt_fullscreen)
+        static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
+        static ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+
+        if (fullscreenEnabled)
         {
             const ImGuiViewport* viewport = ImGui::GetMainViewport();
             ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -144,26 +145,26 @@ namespace Deak {
             ImGui::SetNextWindowViewport(viewport->ID);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+            windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
         }
         else
         {
-            dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+            dockspaceFlags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
         }
 
-        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-            window_flags |= ImGuiWindowFlags_NoBackground;
+        if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+            windowFlags |= ImGuiWindowFlags_NoBackground;
 
-        if (!opt_padding)
+        if (!paddingEnabled)
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-        ImGui::Begin("DockSpace Demo", &dockingEnabled, window_flags);
+        ImGui::Begin("DockSpace", &dockingEnabled, windowFlags);
 
-        if (!opt_padding)
+        if (!paddingEnabled)
             ImGui::PopStyleVar();
 
-        if (opt_fullscreen)
+        if (fullscreenEnabled)
             ImGui::PopStyleVar(2);
 
         // Submit the DockSpace
@@ -173,7 +174,7 @@ namespace Deak {
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         {
             ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspaceFlags);
         }
         style.WindowMinSize.x = 32.0f;
 
@@ -181,11 +182,13 @@ namespace Deak {
         {
             if (ImGui::BeginMenu("File"))
             {
-                ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
-                ImGui::MenuItem("Padding", NULL, &opt_padding);
+                if (ImGui::MenuItem("New...", "Cmd+N")) { NewScene(); }
+                if (ImGui::MenuItem("Open...", "Cmd+O")) { OpenScene(); }
                 ImGui::Separator();
-
-                if (ImGui::MenuItem("Exit")) Application::Get().Close();
+                if (ImGui::MenuItem("Save", "Cmd+S")) { SaveScene(); }
+                if (ImGui::MenuItem("Save As...", "Cmd+Shift+S")) { SaveSceneAs(); }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Exit Editor")) { Close(); }
 
                 ImGui::EndMenu();
             }
@@ -193,28 +196,24 @@ namespace Deak {
             ImGui::EndMenuBar();
         }
 
-        //// SCENE HIERARCHY ////
+        // SCENE HIERARCHY ////
         m_SceneHierarchyPanel.OnImGuiRender();
 
         //// STATS OVERLAY ////
         bool overlayOpen = true;
         ImGuiWindowFlags overlayflags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+        auto stats = Renderer::GetRendererStats();
         ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
         ImGui::Begin("Renderer stats overlay", &overlayOpen, overlayflags);
-        auto stats = Renderer::GetRendererStats();
-        ImGui::Text("Draws: %d", stats->drawCalls);
-        ImGui::SameLine(0.0f, 20.0f);
-        ImGui::Text("Primitives: %d", stats->primitiveCount);
-        ImGui::SameLine(0.0f, 20.0f);
-        ImGui::Text("Vertices: %d", stats->vertexCount);
-        ImGui::SameLine(0.0f, 20.0f);
-        ImGui::Text("Indices: %d", stats->indexCount);
-        ImGui::SameLine(0.0f, 20.0f);
-        ImGui::Text("Framerate: %.0f ", (1.0f / timestep));
-        ImGui::SameLine(0.0f, -1.0f);
+        ImGui::Text("Draws: %d", stats->drawCalls); ImGui::SameLine(0.0f, 20.0f);
+        ImGui::Text("Primitives: %d", stats->primitiveCount); ImGui::SameLine(0.0f, 20.0f);
+        ImGui::Text("Vertices: %d", stats->vertexCount); ImGui::SameLine(0.0f, 20.0f);
+        ImGui::Text("Indices: %d", stats->indexCount); ImGui::SameLine(0.0f, 20.0f);
+        ImGui::Text("Framerate: %.0f  ", (1.0f / timestep)); ImGui::SameLine(0.0f, -1.0f);
         ImGui::End();
 
         //// VIEWPORT ////
+        bool viewportOpen = true;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
         ImGui::Begin("Viewport");
 
@@ -232,6 +231,110 @@ namespace Deak {
         ImGui::End();
 
         // ImGui::ShowDemoWindow();
+    }
+
+    void EditorLayer::OnEvent(Event& event)
+    {
+        m_CameraController.OnEvent(event);
+
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyPressedEvent>(DK_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
+        dispatcher.Dispatch<WindowCloseEvent>(DK_BIND_EVENT_FN(EditorLayer::OnEditorClose));
+    }
+
+    bool EditorLayer::OnKeyPressed(KeyPressedEvent& event)
+    {
+        // Shortcuts
+        if (event.IsRepeat())
+            return false;
+
+        bool super = Input::IsKeyPressed(Key::LeftSuper) || Input::IsKeyPressed(Key::RightSuper); // On mac instead of Cmd
+        bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+        switch (event.GetKeyCode())
+        {
+        case Key::N: if (super) NewScene(); break;
+        case Key::O: if (super) OpenScene(); break;
+        case Key::S:
+            if (super && shift) { SaveSceneAs(); break; }
+            if (super && !shift) { SaveScene(); break; }
+        default: break;
+        }
+
+        return false;
+    }
+
+    void EditorLayer::NewScene()
+    {
+        FileUtils::EmptyFilePath();
+        m_ActiveScene = CreateRef<Scene>();
+        m_ActiveScene->OnViewportResize(m_ViewportSize.x, m_ViewportSize.y);
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        FileUtils::SetFileSaved(false);
+    }
+
+    void EditorLayer::OpenScene()
+    {
+        const std::string filePath = FileUtils::OpenFile("deak");
+        if (!filePath.empty())
+        {
+            m_ActiveScene = CreateRef<Scene>();
+            m_ActiveScene->OnViewportResize(m_ViewportSize.x, m_ViewportSize.y);
+            m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+            SceneSerializer serializer{ m_ActiveScene };
+            serializer.Deserialize(filePath);
+            FileUtils::SetFileSaved(false);
+        }
+    }
+
+    void EditorLayer::SaveScene()
+    {
+        const std::string& filePath = FileUtils::GetFilePath();
+        if (!filePath.empty())
+        {
+            SceneSerializer serializer{ m_ActiveScene };
+            serializer.Serialize(filePath);
+            FileUtils::SetFileSaved(true);
+        }
+        else
+        {
+            SaveSceneAs();
+        }
+    }
+
+    void EditorLayer::SaveSceneAs()
+    {
+        const std::string& filePath = FileUtils::SaveFile("deak");
+        if (!filePath.empty())
+        {
+            SceneSerializer serializer{ m_ActiveScene };
+            serializer.Serialize(filePath);
+            FileUtils::SetFileSaved(true);
+        }
+    }
+
+    void EditorLayer::Close()
+    {
+        enum class Response { Save = 0, DontSave = 1, Cancel = 2, Close = 3 };
+        Response response = Response::Close; // Default
+
+        bool fileSaved = FileUtils::IsCurrentFileSaved();
+        if (!fileSaved)
+            response = static_cast<Response>(FileUtils::PromptSaveOnClose());
+
+        switch (response)
+        {
+        case Response::Save: { SaveScene(); Application::Get().Close(); break; }
+        case Response::Close:
+        case Response::DontSave: { Application::Get().Close(); break; }
+        case Response::Cancel: break;
+        }
+    }
+
+    bool EditorLayer::OnEditorClose(WindowCloseEvent& event)
+    {
+        Close();
+        return true;
     }
 
 }

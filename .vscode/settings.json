@@ -70,6 +70,9 @@
     "__tree": "cpp",
     "list": "cpp",
     "map": "cpp",
-    "set": "cpp"
+    "set": "cpp",
+    "any": "cpp",
+    "forward_list": "cpp",
+    "valarray": "cpp"
   }
 }

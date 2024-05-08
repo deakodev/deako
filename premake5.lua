@@ -18,10 +18,12 @@ IncludeDir["ImGui"] = "Deak/vendor/imgui"
 IncludeDir["stb_image"] = "Deak/vendor/stb_image"
 IncludeDir["glm"] = "Deak/vendor/glm"
 IncludeDir["entt"] = "Deak/vendor/entt/include"
+IncludeDir["yaml_cpp"] = "Deak/vendor/yaml-cpp/include"
 
 include "Deak/vendor/GLFW"
 include "Deak/vendor/Glad"
 include "Deak/vendor/imgui"
+include "Deak/vendor/yaml-cpp"
 
 project "Deak"
     location "Deak"
@@ -40,6 +42,7 @@ project "Deak"
     {
         "%{prj.name}/src/**.h",
         "%{prj.name}/src/**.cpp",
+		"%{prj.name}/src/**.mm",
 		"%{prj.name}/vendor/stb_image/**.h",
 		"%{prj.name}/vendor/stb_image/**.cpp",
 		"%{prj.name}/glm/glm/**.hpp",
@@ -60,7 +63,8 @@ project "Deak"
         "%{IncludeDir.ImGui}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.glm}",
-		"%{IncludeDir.entt}"
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.yaml_cpp}"
     }
 
     links 
@@ -68,19 +72,27 @@ project "Deak"
         "GLFW",
         "Glad",
         "ImGui",
+		"yaml-cpp",
         "OpenGL.framework",
         "Cocoa.framework",
         "IOKit.framework",
         "CoreVideo.framework"
     }
 
-    filter "system:macosx"
-        systemversion "11.0"
+    filter {"system:macosx"}
+		systemversion "11.0"
 
         defines
         {
             "GLFW_INCLUDE_NONE"
         }
+	
+	filter {"files:**.mm"}
+		flags { "NoPCH" }
+		buildoptions 
+		{
+			"-x objective-c++"
+		}
 
     filter "configurations:Debug"
 		defines "DK_DEBUG"
@@ -176,7 +188,8 @@ includedirs
 	"Deak/src",
 	"Deak/vendor",
 	"%{IncludeDir.glm}",
-	"%{IncludeDir.entt}"
+	"%{IncludeDir.entt}",
+	"%{IncludeDir.yaml_cpp}"
 }
 
 links
@@ -185,6 +198,7 @@ links
 	"GLFW",
 	"Glad",
 	"ImGui",
+	"yaml-cpp",
 	"OpenGL.framework",
 	"Cocoa.framework",
 	"IOKit.framework",

@@ -30,6 +30,7 @@ namespace Deak {
         float m_ViewportHeight = 0.0f;
 
         friend class Entity;
+        friend class SceneSerializer;
         friend class SceneHierarchyPanel;
     };
 

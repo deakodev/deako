@@ -81,8 +81,9 @@ obj/
 Sandbox/debug/
 *.log
 
-## Dear ImGui artifacts
 imgui.ini
+
+*.deak
 
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,c++
