@@ -16,3 +16,6 @@
 [submodule "Deak/vendor/yaml-cpp"]
 	path = Deak/vendor/yaml-cpp
 	url = https://github.com/deak1zm/yaml-cpp.git
+[submodule "Deak/vendor/imguizmo"]
+	path = Deak/vendor/imguizmo
+	url = https://github.com/deak1zm/ImGuizmo.git
