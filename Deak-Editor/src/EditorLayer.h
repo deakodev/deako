@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Panels/SceneHierarchyPanel.h"
+#include "Deak/Renderer/Camera/EditorCameraController.h"
 
 namespace Deak {
 
@@ -30,7 +31,7 @@ namespace Deak {
         void Close();
 
     private:
-        PerspectiveCameraController  m_CameraController;
+        EditorCameraController  m_CameraController;
         Ref<Texture2D> m_BoxTexture;
         Ref<Texture2D> m_HealthBarTexture;
         Ref<Framebuffer> m_Framebuffer;
@@ -49,7 +50,6 @@ namespace Deak {
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
-        glm::vec3 m_ColorModifier = { 0.75f, 0.5f, 0.25f };
 
         int m_GizmoType = -1;
 

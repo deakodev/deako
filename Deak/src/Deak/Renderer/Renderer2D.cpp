@@ -150,26 +150,14 @@ namespace Deak {
         s_Data2D.triangleShader->SetMat4("u_ViewProjection", viewProjection);
     }
 
-    void Renderer2D::PrepareScene(const OrthographicCameraController& cameraController)
+    void Renderer2D::PrepareScene(const glm::mat4& editorCameraViewProjection)
     {
         DK_PROFILE_FUNC();
 
-        glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
         s_Data2D.quadShader->Bind();
-        s_Data2D.quadShader->SetMat4("u_ViewProjection", viewProjection);
+        s_Data2D.quadShader->SetMat4("u_ViewProjection", editorCameraViewProjection);
         s_Data2D.triangleShader->Bind();
-        s_Data2D.triangleShader->SetMat4("u_ViewProjection", viewProjection);
-    }
-
-    void Renderer2D::PrepareScene(const PerspectiveCameraController& cameraController)
-    {
-        DK_PROFILE_FUNC();
-
-        glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
-        s_Data2D.quadShader->Bind();
-        s_Data2D.quadShader->SetMat4("u_ViewProjection", viewProjection);
-        s_Data2D.triangleShader->Bind();
-        s_Data2D.triangleShader->SetMat4("u_ViewProjection", viewProjection);
+        s_Data2D.triangleShader->SetMat4("u_ViewProjection", editorCameraViewProjection);
     }
 
     void Renderer2D::Flush()

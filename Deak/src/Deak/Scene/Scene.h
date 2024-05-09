@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Deak/Renderer/Camera/EditorCameraController.h"
 #include "Deak/Core/Timestep.h"
 #include "entt.hpp"
 
@@ -13,7 +14,8 @@ namespace Deak {
         Scene();
         ~Scene();
 
-        void OnUpdate(Timestep timestep);
+        void OnUpdateEditor(Timestep timestep, EditorCameraController& cameraController);
+        void OnUpdateRuntime(Timestep timestep);
         void OnViewportResize(float width, float height);
 
         Entity CreateEntity(const std::string& name = std::string());

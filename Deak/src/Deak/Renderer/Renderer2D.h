@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Deak/Scene/SceneCamera.h"
-#include "Camera/OrthographicCameraController.h"
-#include "Camera/PerspectiveCameraController.h"
 #include "Texture.h"
 
 namespace Deak {
@@ -14,8 +12,7 @@ namespace Deak {
         static void Shutdown();
 
         static void PrepareScene(const SceneCamera& camera, const glm::mat4& transform);
-        static void PrepareScene(const OrthographicCameraController& cameraController);
-        static void PrepareScene(const PerspectiveCameraController& cameraController);
+        static void PrepareScene(const glm::mat4& editorCameraViewProjection);
 
         static void Flush();
 

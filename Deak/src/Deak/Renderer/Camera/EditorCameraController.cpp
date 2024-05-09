@@ -1,4 +1,4 @@
-#include "PerspectiveCameraController.h"
+#include "EditorCameraController.h"
 #include "dkpch.h"
 
 #include "Deak/Core/Input.h"
@@ -9,19 +9,23 @@
 
 namespace Deak {
 
-    PerspectiveCameraController::PerspectiveCameraController(float fov, float viewportWidth, float viewportHeight, float nearPlane, float farPlane)
-        : m_Camera(fov, viewportWidth / viewportHeight, nearPlane, farPlane)
-        , m_ViewportWidth(viewportWidth)
-        , m_ViewportHeight(viewportHeight)
+    EditorCameraController::EditorCameraController()
     {
         CalculatePanSpeed();
     }
 
-    void PerspectiveCameraController::OnUpdate(Timestep timestep)
+    EditorCameraController::EditorCameraController(float fov, float viewportWidth, float viewportHeight, float nearClip, float farClip)
+        : m_Camera(fov, viewportWidth / viewportHeight, nearClip, farClip), m_FOV(fov), m_ViewportWidth(viewportWidth), m_ViewportHeight(viewportHeight), m_NearClip(nearClip), m_FarClip(farClip)
+
+    {
+        CalculatePanSpeed();
+    }
+
+    void EditorCameraController::OnUpdate(Timestep timestep)
     {
         DK_PROFILE_FUNC();
 
-        if (Input::IsKeyPressed(Key::Space))
+        if (Input::IsKeyPressed(Key::LeftAlt))
         {
             const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
             glm::vec2 delta = (mouse - m_InitialMousePosition) * 0.003f;
@@ -35,37 +39,19 @@ namespace Deak {
                 HandleMouseZoom(delta.y);
         }
 
-        if (Input::IsKeyPressed(Key::A))
-        {
-            m_FocalPoint.x -= m_TranslationSpeed * timestep;
-        }
-        else if (Input::IsKeyPressed(Key::D))
-        {
-            m_FocalPoint.x += m_TranslationSpeed * timestep;
-        }
-
-        if (Input::IsKeyPressed(Key::W))
-        {
-            m_FocalPoint.y += m_TranslationSpeed * timestep;
-        }
-        else if (Input::IsKeyPressed(Key::S))
-        {
-            m_FocalPoint.y -= m_TranslationSpeed * timestep;
-        }
-
         m_Camera.UpdateView(UpdatePosition(), GetOrientation());
     }
 
-    void PerspectiveCameraController::OnEvent(Event& event)
+    void EditorCameraController::OnEvent(Event& event)
     {
         DK_PROFILE_FUNC();
 
         EventDispatcher dispatcher(event);
-        dispatcher.Dispatch<MouseScrolledEvent>(DK_BIND_EVENT_FN(PerspectiveCameraController::OnMouseScrolled));
-        dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(PerspectiveCameraController::OnWindowResized));
+        // dispatcher.Dispatch<MouseScrolledEvent>(DK_BIND_EVENT_FN(EditorCameraController::OnMouseScrolled));
+        dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(EditorCameraController::OnWindowResized));
     }
 
-    void PerspectiveCameraController::SetViewportSize(float width, float height)
+    void EditorCameraController::SetViewportSize(float width, float height)
     {
         DK_PROFILE_FUNC();
 
@@ -75,7 +61,7 @@ namespace Deak {
         CalculatePanSpeed();
     }
 
-    bool PerspectiveCameraController::OnMouseScrolled(MouseScrolledEvent& event)
+    bool EditorCameraController::OnMouseScrolled(MouseScrolledEvent& event)
     {
         DK_PROFILE_FUNC();
 
@@ -85,7 +71,7 @@ namespace Deak {
         return false;
     }
 
-    void PerspectiveCameraController::HandleMouseZoom(float delta)
+    void EditorCameraController::HandleMouseZoom(float delta)
     {
         DK_PROFILE_FUNC();
 
@@ -97,7 +83,7 @@ namespace Deak {
         }
     }
 
-    bool PerspectiveCameraController::OnWindowResized(WindowResizeEvent& event)
+    bool EditorCameraController::OnWindowResized(WindowResizeEvent& event)
     {
         DK_PROFILE_FUNC();
 
@@ -105,14 +91,14 @@ namespace Deak {
         return false;
     }
 
-    void PerspectiveCameraController::HandleCameraResize(float width, float height)
+    void EditorCameraController::HandleCameraResize(float width, float height)
     {
         DK_PROFILE_FUNC();
 
-        m_Camera.UpdateProjection(m_FOV, width / height, m_NearPlane, m_FarPlane);
+        m_Camera.UpdateProjection(m_FOV, width / height, m_NearClip, m_FarClip);
     }
 
-    void PerspectiveCameraController::HandleMousePan(const glm::vec2& delta)
+    void EditorCameraController::HandleMousePan(const glm::vec2& delta)
     {
         DK_PROFILE_FUNC();
 
@@ -121,7 +107,7 @@ namespace Deak {
         m_FocalPoint += GetUpDirection() * delta.y * ySpeed * m_Distance;
     }
 
-    void PerspectiveCameraController::HandleMouseRotate(const glm::vec2& delta)
+    void EditorCameraController::HandleMouseRotate(const glm::vec2& delta)
     {
         DK_PROFILE_FUNC();
 
@@ -130,7 +116,7 @@ namespace Deak {
         m_Pitch += delta.y * m_RotationSpeed;
     }
 
-    void PerspectiveCameraController::CalculatePanSpeed()
+    void EditorCameraController::CalculatePanSpeed()
     {
         DK_PROFILE_FUNC();
 
@@ -143,7 +129,7 @@ namespace Deak {
         m_PanSpeed = { xPanSpeed, yPanSpeed };
     }
 
-    float PerspectiveCameraController::CalculateZoomSpeed() const
+    float EditorCameraController::CalculateZoomSpeed() const
     {
         DK_PROFILE_FUNC();
 
@@ -154,35 +140,35 @@ namespace Deak {
         return speed;
     }
 
-    glm::vec3 PerspectiveCameraController::UpdatePosition() const
+    glm::vec3 EditorCameraController::UpdatePosition() const
     {
         DK_PROFILE_FUNC();
 
         return m_FocalPoint - GetForwardDirection() * m_Distance;
     }
 
-    glm::quat PerspectiveCameraController::GetOrientation() const
+    glm::quat EditorCameraController::GetOrientation() const
     {
         DK_PROFILE_FUNC();
 
         return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
     }
 
-    glm::vec3 PerspectiveCameraController::GetUpDirection() const
+    glm::vec3 EditorCameraController::GetUpDirection() const
     {
         DK_PROFILE_FUNC();
 
         return glm::rotate(GetOrientation(), glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    glm::vec3 PerspectiveCameraController::GetRightDirection() const
+    glm::vec3 EditorCameraController::GetRightDirection() const
     {
         DK_PROFILE_FUNC();
 
         return glm::rotate(GetOrientation(), glm::vec3(1.0f, 0.0f, 0.0f));
     }
 
-    glm::vec3 PerspectiveCameraController::GetForwardDirection() const
+    glm::vec3 EditorCameraController::GetForwardDirection() const
     {
         DK_PROFILE_FUNC();
 

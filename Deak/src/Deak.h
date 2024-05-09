@@ -21,9 +21,8 @@
 #include "Deak/Renderer/Framebuffer.h"
 #include "Deak/Renderer/VertexArray.h"
 
-#include "Deak/Renderer/Camera/Camera.h"
-#include "Deak/Renderer/Camera/PerspectiveCameraController.h"
-#include "Deak/Renderer/Camera/OrthographicCameraController.h"
+#include "Deak/Renderer/Camera/EditorCamera.h"
+#include "Deak/Renderer/Camera/EditorCameraController.h"
 
 #include "Deak/ImGui/ImGuiLayer.h"
 

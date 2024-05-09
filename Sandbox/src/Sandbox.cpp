@@ -1,16 +1,13 @@
 #include "Deak.h"
 #include "Deak/Core/EntryPoint.h"
 
-#include "Example2D.h"
-#include "Example3D.h"
-
 class Sandbox : public Deak::Application
 {
 public:
     Sandbox()
     {
-        PushLayer(new Example3D());
-        PushLayer(new Example2D());
+        // PushLayer(new Example3D());
+        // PushLayer(new Example2D());
     }
 
     ~Sandbox()

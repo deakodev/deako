@@ -21,7 +21,44 @@ namespace Deak {
     {
     }
 
-    void Scene::OnUpdate(Timestep timestep)
+    void Scene::OnUpdateEditor(Timestep timestep, EditorCameraController& cameraController)
+    {
+        Renderer::BeginScene(cameraController);
+
+        {
+            auto group = m_Registry.group<ColorComponent>(entt::get<TransformComponent>);
+            for (auto entity : group)
+            {
+                auto [colorComp, transformComp] = group.get<ColorComponent, TransformComponent>(entity);
+
+                Renderer3D::DrawCube(transformComp.GetTransform(), colorComp);
+            }
+        }
+
+        {
+            auto group = m_Registry.group<TextureComponent>(entt::get<TransformComponent>);
+            for (auto entity : group)
+            {
+                auto [textureComp, transformComp] = group.get<TextureComponent, TransformComponent>(entity);
+
+                Renderer3D::DrawCube(transformComp.GetTransform(), textureComp.texture, 1.0f, glm::vec4(1.0f));
+            }
+        }
+
+        {
+            auto group = m_Registry.group<SpriteRendererComponent>(entt::get<TransformComponent>);
+            for (auto entity : group)
+            {
+                auto [spriteRendererComp, transformComp] = group.get<SpriteRendererComponent, TransformComponent>(entity);
+
+                Renderer3D::DrawCube(transformComp.GetTransform(), spriteRendererComp.color);
+            }
+        }
+
+        Renderer::EndScene();
+    }
+
+    void Scene::OnUpdateRuntime(Timestep timestep)
     {
         // Update Scripts
         m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nativeScriptComp)

@@ -5,7 +5,6 @@
 #include "Renderer2D.h"
 #include "Renderer3D.h"
 
-
 namespace Deak {
 
     Ref<RendererStats> Renderer::s_Stats = CreateRef<RendererStats>();
@@ -40,21 +39,13 @@ namespace Deak {
         StartBatch();
     }
 
-    void Renderer::BeginScene(const PerspectiveCameraController& cameraController, const glm::vec3& lightPosition)
+    void Renderer::BeginScene(const EditorCameraController& cameraController)
     {
         DK_PROFILE_FUNC();
 
-        Renderer2D::PrepareScene(cameraController);
-        Renderer3D::PrepareScene(cameraController, lightPosition);
-
-        StartBatch();
-    }
-
-    void Renderer::BeginScene(const OrthographicCameraController& cameraController)
-    {
-        DK_PROFILE_FUNC();
-
-        Renderer2D::PrepareScene(cameraController);
+        const glm::mat4 editorCameraViewProjection = cameraController.GetCamera().GetViewProjection();
+        Renderer2D::PrepareScene(editorCameraViewProjection);
+        Renderer3D::PrepareScene(editorCameraViewProjection);
 
         StartBatch();
     }

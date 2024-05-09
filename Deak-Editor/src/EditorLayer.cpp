@@ -114,8 +114,8 @@ namespace Deak {
         }
 
         // Update camera
-        if (m_ViewportFocused)
-            m_CameraController.OnUpdate(timestep);
+        // if (m_ViewportFocused)
+        m_CameraController.OnUpdate(timestep);
 
         // Render setup
         Renderer::ResetStats();
@@ -124,7 +124,7 @@ namespace Deak {
         RenderCommand::Clear();
 
         // Update scene
-        m_ActiveScene->OnUpdate(timestep);
+        m_ActiveScene->OnUpdateEditor(timestep, m_CameraController);
         m_Framebuffer->Unbind();
     }
 
@@ -239,11 +239,16 @@ namespace Deak {
             float windowHeight = (float)ImGui::GetWindowHeight();
             ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
 
-            // Get our camera view projection
-            auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-            const auto& camera = cameraEntity.GetComponent<CameraComponent>().camera;
+            // Editor Camera
+            EditorCamera camera = m_CameraController.GetCamera();
             const glm::mat4& cameraProjection = camera.GetProjection();
-            glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+            glm::mat4 cameraView = camera.GetView();
+
+            // Runtime camera
+            // auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+            // const auto& camera = cameraEntity.GetComponent<CameraComponent>().camera;
+            // const glm::mat4& cameraProjection = camera.GetProjection();
+            // glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
 
             // Get the entity transform
             auto& transformComp = selectedEntity.GetComponent<TransformComponent>();

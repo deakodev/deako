@@ -161,13 +161,14 @@ namespace Deak {
         s_Data3D.cubeShader->SetFloat3("u_LightPosition", { 5.0f, 8.0f, 3.0f });
     }
 
-    void Renderer3D::PrepareScene(const PerspectiveCameraController& cameraController, const glm::vec3& lightPosition)
+    void Renderer3D::PrepareScene(const glm::mat4& editorCameraViewProjection)
     {
         DK_PROFILE_FUNC();
 
-        glm::mat4 viewProjection = cameraController.GetCamera().GetViewProjection();
         s_Data3D.cubeShader->Bind();
-        s_Data3D.cubeShader->SetMat4("u_ViewProjection", viewProjection);
+        s_Data3D.cubeShader->SetMat4("u_ViewProjection", editorCameraViewProjection);
+        s_Data3D.cubeShader->SetFloat3("u_ViewPosition", editorCameraViewProjection[3]);
+        s_Data3D.cubeShader->SetFloat3("u_LightPosition", { 5.0f, 8.0f, 3.0f });
     }
 
     void Renderer3D::Flush()
