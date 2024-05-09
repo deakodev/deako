@@ -81,8 +81,6 @@ obj/
 Sandbox/debug/
 *.log
 
-imgui.ini
-
 *.deak
 
 

@@ -17,7 +17,7 @@ namespace Deak {
         float GetY() const { return m_MouseY; }
 
         EVENT_CLASS_TYPE(MouseMoved)
-            EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+            EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput | EventCategoryMouseButton)
 
     private:
         float m_MouseX{};

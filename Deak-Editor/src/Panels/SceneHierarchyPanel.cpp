@@ -220,19 +220,29 @@ namespace Deak {
         {
             if (ImGui::MenuItem("Color"))
             {
-                m_SelectionContext.AddComponent<ColorComponent>();
+                if (!m_SelectionContext.HasComponent<ColorComponent>())
+                    m_SelectionContext.AddComponent<ColorComponent>();
+                else
+                    DK_CORE_WARN("This entity already has ColorComponent!");
                 ImGui::CloseCurrentPopup();
             }
 
             if (ImGui::MenuItem("Camera"))
             {
-                m_SelectionContext.AddComponent<CameraComponent>();
+                if (!m_SelectionContext.HasComponent<CameraComponent>())
+                    m_SelectionContext.AddComponent<CameraComponent>();
+                else
+                    DK_CORE_WARN("This entity already has CameraComponent!");
                 ImGui::CloseCurrentPopup();
             }
 
+
             if (ImGui::MenuItem("Sprite Renderer"))
             {
-                m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                if (!m_SelectionContext.HasComponent<SpriteRendererComponent>())
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                else
+                    DK_CORE_WARN("This entity already has SpriteRendererComponent!");
                 ImGui::CloseCurrentPopup();
             }
 
