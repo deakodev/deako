@@ -19,6 +19,7 @@ IncludeDir["stb_image"] = "Deak/vendor/stb_image"
 IncludeDir["glm"] = "Deak/vendor/glm"
 IncludeDir["entt"] = "Deak/vendor/entt/include"
 IncludeDir["yaml_cpp"] = "Deak/vendor/yaml-cpp/include"
+IncludeDir["imguizmo"] = "Deak/vendor/imguizmo"
 
 include "Deak/vendor/GLFW"
 include "Deak/vendor/Glad"
@@ -45,6 +46,8 @@ project "Deak"
 		"%{prj.name}/src/**.mm",
 		"%{prj.name}/vendor/stb_image/**.h",
 		"%{prj.name}/vendor/stb_image/**.cpp",
+		"%{prj.name}/vendor/imguizmo/Imguizmo.h",
+		"%{prj.name}/vendor/imguizmo/Imguizmo.cpp",
 		"%{prj.name}/glm/glm/**.hpp",
 		"%{prj.name}/glm/glm/**.inl"
     }
@@ -64,7 +67,8 @@ project "Deak"
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.yaml_cpp}"
+		"%{IncludeDir.yaml_cpp}",
+		"%{IncludeDir.imguizmo}"
     }
 
     links 
@@ -86,8 +90,11 @@ project "Deak"
         {
             "GLFW_INCLUDE_NONE"
         }
+
+	filter "files:vendor/imguizmo/**.cpp"
+		flags { "NoPCH" }
 	
-	filter {"files:**.mm"}
+	filter "files:**.mm"
 		flags { "NoPCH" }
 		buildoptions 
 		{
@@ -189,7 +196,8 @@ includedirs
 	"Deak/vendor",
 	"%{IncludeDir.glm}",
 	"%{IncludeDir.entt}",
-	"%{IncludeDir.yaml_cpp}"
+	"%{IncludeDir.yaml_cpp}",
+	"%{IncludeDir.imguizmo}"
 }
 
 links

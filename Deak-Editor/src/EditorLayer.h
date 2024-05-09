@@ -51,6 +51,8 @@ namespace Deak {
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
         glm::vec3 m_ColorModifier = { 0.75f, 0.5f, 0.25f };
 
+        int m_GizmoType = -1;
+
         // Panels
         SceneHierarchyPanel m_SceneHierarchyPanel;
 

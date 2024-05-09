@@ -1,13 +1,12 @@
 #include "ImGuiLayer.h"
-
 #include "dkpch.h"
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
 
 #include "Deak/Core/Application.h"
 
-// TEMPORARY
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <ImGuizmo.h>
 #include <GLFW/glfw3.h>
 namespace Deak {
 
@@ -80,6 +79,8 @@ namespace Deak {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        ImGuizmo::BeginFrame();
     }
 
     void ImGuiLayer::End()
