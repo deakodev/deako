@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Base.h"
+#include "Deako/Core/Base.h"
+#include "Deako/Core/Window.h"
 
 int main(int argc, char** argv);
 
@@ -20,6 +21,8 @@ namespace Deako {
 
     private:
         static Application* s_Instance;
+
+        Scope<Window> m_Window;
     };
 
     // To be defined client side

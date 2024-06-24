@@ -12,6 +12,10 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
+IncludeDir["glm"] = "Deako/vendor/glm"
+IncludeDir["GLFW"] = "Deako/vendor/glfw/include"
+
+include "Deako/vendor/glfw"
 
 project "Deako"
     location "Deako"
@@ -30,7 +34,9 @@ project "Deako"
     {
         "%{prj.name}/src/**.h",
         "%{prj.name}/src/**.cpp",
-		"%{prj.name}/src/**.mm"
+		"%{prj.name}/src/**.mm",
+		"%{prj.name}/glm/glm/**.hpp",
+		"%{prj.name}/glm/glm/**.inl"
     }
 
 	defines
@@ -41,11 +47,13 @@ project "Deako"
     includedirs
     {
         "%{prj.name}/src",
-		"%{prj.name}/vendor/spdlog/include"
+		"%{prj.name}/vendor/spdlog/include",
+		"%{IncludeDir.GLFW}",
     }
 
     links 
     { 
+		"GLFW"
     }
 
     filter "system:macosx"
@@ -53,7 +61,8 @@ project "Deako"
 
         defines
         {
-            "GLFW_INCLUDE_NONE"
+			"GLFW_INCLUDE_NONE"
+            -- "GLFW_INCLUDE_VULKAN"
         }
 
 	filter "files:vendor/imguizmo/**.cpp"
@@ -102,12 +111,14 @@ includedirs
 {
 	"Deako/src",
 	"Deako/vendor",
-	"Deako/vendor/spdlog/include"
+	"Deako/vendor/spdlog/include",
+	"%{IncludeDir.glm}"
 }
 
 links
 {
-	"Deako"
+	"Deako",
+	"GLFW"
 }
 
 filter "system:macosx"

@@ -1,3 +1,9 @@
 [submodule "Deako/vendor/spdlog"]
 	path = Deako/vendor/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "Deako/vendor/glm"]
+	path = Deako/vendor/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Deako/vendor/glfw"]
+	path = Deako/vendor/glfw
+	url = https://github.com/deak1zm/glfw.git

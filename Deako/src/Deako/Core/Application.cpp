@@ -10,6 +10,8 @@ namespace Deako
     {
         DK_CORE_ASSERT(!s_Instance, "Application already exists!");
         s_Instance = this;
+
+        m_Window = Window::Create(WindowProps(name));
     }
 
     Application::~Application()
@@ -18,8 +20,6 @@ namespace Deako
 
     void Application::Run()
     {
-        DK_CORE_ERROR("Assertion Failed: {0}", "Hello");
-
         while (true)
         {
 
