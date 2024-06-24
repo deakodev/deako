@@ -4,4 +4,4 @@
 
 #include "Deako/Core/Application.h"
 
-// #include "Deako/Core/Log.h"
+#include "Deako/Core/Log.h"

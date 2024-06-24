@@ -8,7 +8,7 @@ namespace Deako
 
     Application::Application(const char* name)
     {
-        // DK_CORE_ASSERT(!s_Instance, "Application already exists!");
+        DK_CORE_ASSERT(!s_Instance, "Application already exists!");
         s_Instance = this;
     }
 
@@ -18,7 +18,12 @@ namespace Deako
 
     void Application::Run()
     {
-        std::cout << "Hello world" << '\n';
+        DK_CORE_ERROR("Assertion Failed: {0}", "Hello");
+
+        while (true)
+        {
+
+        }
     }
 
 }

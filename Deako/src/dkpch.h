@@ -15,6 +15,4 @@
 #include <unordered_set>
 
 
-// #include "Deak/Core/Log.h"
-// #include "Deak/Debug/Instrumentor.h"
-
+#include "Deako/Core/Log.h"

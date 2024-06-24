@@ -40,7 +40,8 @@ project "Deako"
 
     includedirs
     {
-        "%{prj.name}/src"
+        "%{prj.name}/src",
+		"%{prj.name}/vendor/spdlog/include"
     }
 
     links 
@@ -100,7 +101,8 @@ files
 includedirs
 {
 	"Deako/src",
-	"Deako/vendor"
+	"Deako/vendor",
+	"Deako/vendor/spdlog/include"
 }
 
 links
