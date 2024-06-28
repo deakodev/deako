@@ -22,8 +22,6 @@ namespace Deako {
 
 }
 
-// TODO: Strip out macros in dist build
-
 // Core Log Macros
 #define DK_CORE_CRITICAL(...) ::Deako::Log::GetCoreLogger()->critical(__VA_ARGS__)
 #define DK_CORE_ERROR(...)    ::Deako::Log::GetCoreLogger()->error(__VA_ARGS__)

@@ -81,6 +81,6 @@ Sandbox/debug/
 
 *.log
 *.deak
-
+Deako/vendor/vulkan/
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,c++

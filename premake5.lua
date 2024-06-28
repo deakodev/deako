@@ -8,133 +8,176 @@ workspace "Deako"
 		"Dist"
 	}
 
-outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+    outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
--- Include directories relative to root folder (solution directory)
-IncludeDir = {}
-IncludeDir["glm"] = "Deako/vendor/glm"
-IncludeDir["GLFW"] = "Deako/vendor/glfw/include"
+    IncludeDir = {}
+    IncludeDir["glm"] = "Deako/vendor/glm"
+    IncludeDir["glfw"] = "Deako/vendor/glfw/include"
+    IncludeDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/include"
 
-include "Deako/vendor/glfw"
+    LibDir = {}
+    LibDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/lib"
+
+    include "Deako/vendor/glfw"
 
 project "Deako"
     location "Deako"
     kind "StaticLib"
     language "C++"
-	cppdialect "C++20"
-	staticruntime "on"
+    cppdialect "C++20"
+    staticruntime "on"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
-	pchheader "dkpch.h"
-	pchsource "Deako/src/dkpch.cpp"
+    pchheader "dkpch.h"
+    pchsource "Deako/src/dkpch.cpp"
 
     files
     {
         "%{prj.name}/src/**.h",
         "%{prj.name}/src/**.cpp",
-		"%{prj.name}/src/**.mm",
-		"%{prj.name}/glm/glm/**.hpp",
-		"%{prj.name}/glm/glm/**.inl"
+        "%{prj.name}/src/**.mm",
+        "%{prj.name}/glm/glm/**.hpp",
+        "%{prj.name}/glm/glm/**.inl"
     }
 
-	defines
-	{
-		"_CRT_SECURE_NO_WARNINGS"
-	}
+    defines
+    {
+        "_CRT_SECURE_NO_WARNINGS"
+    }
 
     includedirs
     {
         "%{prj.name}/src",
-		"%{prj.name}/vendor/spdlog/include",
-		"%{IncludeDir.GLFW}",
+        "%{prj.name}/vendor/spdlog/include",
+        "%{IncludeDir.glfw}",
+        "%{IncludeDir.vulkan}" 
+    }
+
+    libdirs
+    {
+        "%{LibDir.vulkan}"
     }
 
     links 
     { 
-		"GLFW"
+        "glfw",
+        "vulkan",
+        "Cocoa.framework",
+        "IOKit.framework",
+        "CoreVideo.framework"
     }
 
     filter "system:macosx"
-		systemversion "11.0"
+        systemversion "11.0"
 
         defines
         {
-			"GLFW_INCLUDE_NONE"
-            -- "GLFW_INCLUDE_VULKAN"
+            "GLFW_INCLUDE_VULKAN",
+            "VK_USE_PLATFORM_MACOS_MVK"
         }
 
-	filter "files:vendor/imguizmo/**.cpp"
-		flags { "NoPCH" }
-	
-	filter "files:**.mm"
-		flags { "NoPCH" }
-		buildoptions 
-		{
-			"-x objective-c++"
-		}
+    filter "files:vendor/imguizmo/**.cpp"
+        flags { "NoPCH" }
+    
+    filter "files:**.mm"
+        flags { "NoPCH" }
+
+        buildoptions 
+        {
+            "-x objective-c++"
+        }
 
     filter "configurations:Debug"
-		defines "DK_DEBUG"
-		runtime "Debug"
-		symbols "on"
+        defines 
+        {
+            "DK_DEBUG",
+            "VK_VALIDATION"
+        }
+        runtime "Debug"
+        symbols "on"
 
     filter "configurations:Release"
         defines "DK_RELEASE"
-		runtime "Release"
-		optimize "on"
+        runtime "Release"
+        optimize "on"
 
     filter "configurations:Dist"
         defines "DK_DIST"
-		runtime "Release"
-		optimize "on"
+        runtime "Release"
+        optimize "on"
 
 
 project "Deako-Editor"
-location "Deako-Editor"
-kind "ConsoleApp"
-language "C++"
-cppdialect "C++20"
-staticruntime "on"
+    location "Deako-Editor"
+    kind "ConsoleApp"
+    language "C++"
+    cppdialect "C++20"
+    staticruntime "on"
 
-targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
-files
-{
-	"%{prj.name}/src/**.h",
-	"%{prj.name}/src/**.cpp"
-}
+    files
+    {
+        "%{prj.name}/src/**.h",
+        "%{prj.name}/src/**.cpp"
+    }
 
-includedirs
-{
-	"Deako/src",
-	"Deako/vendor",
-	"Deako/vendor/spdlog/include",
-	"%{IncludeDir.glm}"
-}
+    includedirs
+    {
+        "Deako/src",
+        "Deako/vendor",
+        "Deako/vendor/spdlog/include",
+        "%{IncludeDir.glm}",
+        "%{IncludeDir.vulkan}" 
+    }
 
-links
-{
-	"Deako",
-	"GLFW"
-}
+    libdirs
+    {
+        "%{LibDir.vulkan}"
+    }
 
-filter "system:macosx"
-	systemversion "11.0"
+    links
+    {
+        "Deako",
+        "glfw",
+        "vulkan",
+        "Cocoa.framework",
+        "IOKit.framework",
+        "CoreVideo.framework"
+    }
 
-filter "configurations:Debug"
-	defines "DK_DEBUG"
-	runtime "Debug"
-	symbols "on"
+    linkoptions
+        {
+            "-rpath %{LibDir.vulkan}"
+        }
 
-filter "configurations:Release"
-	defines "DK_RELEASE"
-	runtime "Release"
-	optimize "on"
+    filter "system:macosx"
+        systemversion "11.0"
 
-filter "configurations:Dist"
-	defines "DK_DIST"
-	runtime "Release"
-	optimize "on"
+        defines
+        {
+            "GLFW_INCLUDE_VULKAN",
+            "VK_USE_PLATFORM_MACOS_MVK"
+        }
+
+    filter "configurations:Debug"
+        defines 
+        {
+            "DK_DEBUG",
+            "VK_VALIDATION"
+        }
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        defines "DK_RELEASE"
+        runtime "Release"
+        optimize "on"
+
+    filter "configurations:Dist"
+        defines "DK_DIST"
+        runtime "Release"
+        optimize "on"
