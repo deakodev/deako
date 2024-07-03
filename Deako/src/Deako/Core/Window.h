@@ -15,8 +15,8 @@ namespace Deako {
         uint32_t height;
 
         WindowProps(const char* title = "Deako Engine",
-            uint32_t width = 1600,
-            uint32_t height = 900)
+            uint32_t width = 600,
+            uint32_t height = 400)
             : title(title), width(width), height(height)
         {
         }
@@ -37,6 +37,7 @@ namespace Deako {
 
         virtual void SetVSync(bool enabled) = 0;
         virtual bool IsVSync() const = 0;
+        virtual std::pair<int, int> GetWindowFramebufferSize() = 0;
 
         virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
     };

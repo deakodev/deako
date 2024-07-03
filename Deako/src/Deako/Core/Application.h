@@ -19,6 +19,7 @@ namespace Deako {
         void OnEvent(Event& event);
 
         static Application& Get() { return *s_Instance; }
+        Window& GetWindow() { return *m_Window; }
 
     private:
         friend int ::main(int argc, char** argv);

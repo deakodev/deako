@@ -10,9 +10,9 @@ namespace Deako {
         VulkanBase::Init();
     }
 
-    void Renderer::CleanUp()
+    void Renderer::Shutdown()
     {
-        VulkanBase::CleanUp();
+        VulkanBase::Shutdown();
     }
 
 }

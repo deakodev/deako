@@ -42,7 +42,6 @@ namespace Deako {
             int success = glfwInit();
             DK_CORE_ASSERT(success, "GLFW was not initialized!");
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // default is OpenGL, so set to none
-            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // TODO: remove
             glfwSetErrorCallback(GLFWErrorCallback);
         }
 
@@ -189,6 +188,13 @@ namespace Deako {
     void MacWindow::SetVSync(bool enabled)
     {
         // TODO: vulkan
+    }
+
+    std::pair<int, int> MacWindow::GetWindowFramebufferSize()
+    {
+        int width, height;
+        glfwGetFramebufferSize(m_Window, &width, &height);
+        return { width, height };
     }
 
 }

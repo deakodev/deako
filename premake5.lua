@@ -51,6 +51,7 @@ project "Deako"
     {
         "%{prj.name}/src",
         "%{prj.name}/vendor/spdlog/include",
+        "%{IncludeDir.glm}",
         "%{IncludeDir.glfw}",
         "%{IncludeDir.vulkan}" 
     }
@@ -118,6 +119,12 @@ project "Deako-Editor"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+     -- Shader compilation commands
+     prebuildcommands {
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/shader.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.vert.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/shader.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.frag.spv"
+        }
 
     files
     {

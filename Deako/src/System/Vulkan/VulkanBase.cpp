@@ -2,12 +2,28 @@
 #include "dkpch.h"
 
 #include "VulkanDebug.h"
+#include "VulkanDevice.h"
+#include "VulkanSwapChain.h"
+#include "VulkanPipeline.h"
+#include "VulkanRenderPass.h"
+#include "VulkanFramebuffer.h"
+#include "VulkanCommand.h"
+#include "VulkanBuffer.h"
 
 namespace Deako {
 
     VkInstance VulkanBase::s_Instance{ VK_NULL_HANDLE };
     std::vector<const char*> VulkanBase::s_Extensions;
-    std::vector<const char*> VulkanBase::s_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
+    std::vector<const char*> VulkanBase::s_ValidationLayers{ "VK_LAYER_KHRONOS_validation" };
+    VkDevice VulkanBase::s_Device{ VK_NULL_HANDLE };
+    VkQueue VulkanBase::s_GraphicsQueue;
+    VkQueue VulkanBase::s_PresentQueue;
+    uint32_t VulkanBase::s_CurrentFrame = 0;
+    constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+    bool VulkanBase::s_FramebufferResized = false;
+    std::vector<VkSemaphore> VulkanBase::s_ImageAvailableSemaphores;
+    std::vector<VkSemaphore> VulkanBase::s_RenderFinishedSemaphores;
+    std::vector<VkFence> VulkanBase::s_InFlightFences;
     VulkanSettings VulkanBase::s_Settings;
 
     void VulkanBase::Init()
@@ -16,10 +32,66 @@ namespace Deako {
 
         if (s_Settings.validation)
             VulkanDebugMessenger::Create();
+
+        VulkanSwapChain::CreateSurface();
+        s_Device = VulkanDevice::Create();
+        s_GraphicsQueue = VulkanDevice::GetGraphicsQueue();
+        s_PresentQueue = VulkanDevice::GetPresentQueue();
+        VulkanSwapChain::Create();
+        VulkanRenderPass::Create();
+        VulkanBufferPool::CreateUniformBuffers();
+        VulkanPipeline::Create();
+        VulkanFramebufferPool::Create();
+        VulkanCommandPool::Create();
+        VulkanBufferPool::CreateVertexBuffers();
+        VulkanBufferPool::CreateIndexBuffer();
+
+        s_ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        s_RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        s_InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        VkFenceCreateInfo fenceInfo{};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so first call to vkWaitForFences() returns immediately since the fence is already signaled
+
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            VkResult result = vkCreateSemaphore(s_Device, &semaphoreInfo, nullptr, &s_ImageAvailableSemaphores[i]);
+            DK_CORE_ASSERT(!result, "Failed to create image available semaphore!");
+
+            result = vkCreateSemaphore(s_Device, &semaphoreInfo, nullptr, &s_RenderFinishedSemaphores[i]);
+            DK_CORE_ASSERT(!result, "Failed to create render finished semaphore!");
+
+            result = vkCreateFence(s_Device, &fenceInfo, nullptr, &s_InFlightFences[i]);
+            DK_CORE_ASSERT(!result, "Failed to create in-flight fence!");
+        }
     }
 
-    void VulkanBase::CleanUp()
+    void VulkanBase::Idle()
     {
+        vkDeviceWaitIdle(s_Device);
+    }
+
+    void VulkanBase::Shutdown()
+    {
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            vkDestroySemaphore(s_Device, s_RenderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(s_Device, s_ImageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(s_Device, s_InFlightFences[i], nullptr);
+        }
+
+        VulkanBufferPool::CleanUp();
+        VulkanCommandPool::CleanUp();
+        VulkanFramebufferPool::CleanUp();
+        VulkanPipeline::CleanUp();
+        VulkanRenderPass::CleanUp();
+        VulkanSwapChain::CleanUp();
+        VulkanDevice::CleanUp();
+
         if (s_Settings.validation)
             VulkanDebugMessenger::CleanUp();
 
@@ -141,6 +213,87 @@ namespace Deako {
         }
 
         return true;
+    }
+
+    void VulkanBase::DrawFrame()
+    {
+        VkSwapchainKHR swapChain = VulkanSwapChain::GetSwapChain();
+
+        VkSemaphore imageAvailableSemaphore = s_ImageAvailableSemaphores[s_CurrentFrame];
+        VkSemaphore renderFinishedSemaphore = s_RenderFinishedSemaphores[s_CurrentFrame];
+        VkFence inFlightFence = s_InFlightFences[s_CurrentFrame];
+
+        // (1) wait until previous frame is finished, so command buffer/semaphores are available to use. Waits on host for either any or all of the fences to be signaled before returning. VK_TRUE indicates to wait for all fences, last param is timeout that we set to the max value of UINT64_MAX, which effectively disables timeout
+        vkWaitForFences(s_Device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+
+        // (2) acquire an image from the swap chain
+        // third param specifies timeout in nanosecs for an image to become available. Max value of UINT64_MAX, which disables timeout, next two params specify synchronization
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(s_Device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+        // after waiting, and acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
+        vkResetFences(s_Device, 1, &inFlightFence);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            VulkanSwapChain::Recreate();
+            return;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            DK_CORE_ASSERT(false, "Failed to acquire swap chain image!");
+        }
+
+        // (3) record a command buffer which draws the scene onto that image
+        VkCommandBuffer commandBuffer = VulkanCommandPool::Record(s_CurrentFrame, imageIndex);
+
+        VulkanBufferPool::UpdateUniformBuffer(s_CurrentFrame);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = waitSemaphores;
+        submitInfo.pWaitDstStageMask = waitStages;
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer; // the recorded command buffer
+
+        VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+
+        // (4) submit info with recorded command buffer
+        result = vkQueueSubmit(s_GraphicsQueue, 1, &submitInfo, inFlightFence);
+        DK_CORE_ASSERT(!result, "Failed to submit draw command buffer!");
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = signalSemaphores;
+
+        VkSwapchainKHR swapChains[] = { swapChain };
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains;
+        presentInfo.pImageIndices = &imageIndex;
+        presentInfo.pResults = nullptr; // Optional
+
+        // (5) present the swap chain image
+        result = vkQueuePresentKHR(s_PresentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || s_FramebufferResized)
+        {
+            s_FramebufferResized = false;
+            VulkanSwapChain::Recreate();
+        }
+        else if (result != VK_SUCCESS)
+        {
+            DK_CORE_ASSERT(false, "Failed to present swap chain image!");
+        }
+
+        // Set current frame for the next frame
+        s_CurrentFrame = (s_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
 }

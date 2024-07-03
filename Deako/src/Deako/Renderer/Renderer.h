@@ -6,7 +6,7 @@ namespace Deako {
     {
     public:
         static void Init();
-        static void CleanUp();
+        static void Shutdown();
 
     };
 

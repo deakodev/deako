@@ -76,6 +76,13 @@
     "set": "cpp",
     "any": "cpp",
     "forward_list": "cpp",
-    "valarray": "cpp"
+    "valarray": "cpp",
+    "future": "cpp",
+    "source_location": "cpp",
+    "typeindex": "cpp"
+  },
+  "editor.tokenColorCustomizations": {
+    "comments": "",
+    "textMateRules": []
   }
 }

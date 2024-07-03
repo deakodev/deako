@@ -4,6 +4,8 @@
 #include "Deako/Events/WindowEvent.h"
 #include "Deako/Renderer/Renderer.h"
 
+#include "System/Vulkan/VulkanBase.h"
+
 namespace Deako
 {
 
@@ -22,7 +24,7 @@ namespace Deako
 
     Application::~Application()
     {
-        Renderer::CleanUp();
+        Renderer::Shutdown();
     }
 
     void Application::OnEvent(Event& event)
@@ -37,8 +39,11 @@ namespace Deako
     {
         while (m_Running)
         {
+            VulkanBase::DrawFrame();
             m_Window->OnUpdate();
         }
+
+        VulkanBase::Idle();
     }
 
     bool Application::OnWindowClose(WindowCloseEvent& event)
