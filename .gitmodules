@@ -7,3 +7,6 @@
 [submodule "Deako/vendor/glfw"]
 	path = Deako/vendor/glfw
 	url = https://github.com/deak1zm/glfw.git
+[submodule "Deako/vendor/imgui"]
+	path = Deako/vendor/imgui
+	url = https://github.com/deak1zm/imgui.git
