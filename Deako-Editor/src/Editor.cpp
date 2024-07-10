@@ -1,6 +1,8 @@
 #include <Deako.h>
 #include <Deako/Core/EntryPoint.h>
 
+#include "EditorLayer.h"
+
 namespace Deako {
 
     class DeakoEditor : public Application
@@ -9,7 +11,7 @@ namespace Deako {
         DeakoEditor()
             : Application("Deako")
         {
-            // PushLayer(new EditorLayer());
+            PushLayer(new EditorLayer());
         }
 
         ~DeakoEditor()

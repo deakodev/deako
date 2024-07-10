@@ -21,7 +21,7 @@ namespace Deako {
 
         static VkPhysicalDevice GetPhysical() { return s_PhysicalDevice; }
         static VkDevice GetLogical() { return s_LogicalDevice; }
-        static const QueueFamilyIndices& GetQueueFamilyIndices() { return s_QueueFamilyIndices; }
+        static QueueFamilyIndices& GetQueueFamilyIndices() { return s_QueueFamilyIndices; }
         static VkQueue GetGraphicsQueue() { return s_GraphicsQueue; }
         static VkQueue GetPresentQueue() { return s_PresentQueue; }
 

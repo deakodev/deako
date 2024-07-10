@@ -11,9 +11,10 @@ namespace Deako {
     {
         glm::vec2 position;
         glm::vec3 color;
+        glm::vec2 texCoord;
 
         static VkVertexInputBindingDescription GetBindingDescription();
-        static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions();
+        static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
     };
 
     struct UniformBufferObject
@@ -28,6 +29,9 @@ namespace Deako {
     public:
         Buffer(VkDevice device);
 
+        VkBuffer& GetBuffer() { return m_Buffer; }
+        VkDeviceMemory& GetMemory() { return m_Memory; }
+
         virtual void SetInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
         virtual void CopyStaging(VkBuffer stagingBuffer, VkBuffer receivingBuffer, VkDeviceSize size);
 
@@ -36,12 +40,9 @@ namespace Deako {
         virtual void Unmap();
         virtual void CopyTo(const void* data, VkDeviceSize size);
 
-        VkBuffer& GetBuffer() { return m_Buffer; }
-        VkDeviceMemory& GetMemory() { return m_Memory; }
         void*& Mapped() { return m_Mapped; }
 
-    private:
-        virtual uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+        static uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     private:
         VkDevice m_Device{ VK_NULL_HANDLE };
@@ -86,6 +87,7 @@ namespace Deako {
         static const Ref<VertexBuffer>& GetVertexBuffer() { return s_VertexBuffer; }
         static const Ref<IndexBuffer>& GetIndexBuffer() { return s_IndexBuffer; }
         static VkDescriptorSetLayout& GetDescriptorSetLayout() { return s_DescriptorSetLayout; }
+        static VkDescriptorPool& GetDescriptorPool() { return s_DescriptorPool; }
         static VkDescriptorSet& GetDescriptorSet(uint32_t currentImage) { return s_DescriptorSets[currentImage]; }
 
         static void UpdateUniformBuffer(uint32_t currentImage);

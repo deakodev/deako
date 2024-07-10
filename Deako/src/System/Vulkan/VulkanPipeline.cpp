@@ -148,11 +148,11 @@ namespace Deako {
         colorBlending.blendConstants[3] = 0.0f; // Optional
 
         //--- Pipeline layout ---//
-        // uniforms specified below
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &VulkanBufferPool::GetDescriptorSetLayout(); // Optional
+        VkDescriptorSetLayout setLayouts[1] = { VulkanBufferPool::GetDescriptorSetLayout() };
+        pipelineLayoutInfo.pSetLayouts = setLayouts;
         pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 

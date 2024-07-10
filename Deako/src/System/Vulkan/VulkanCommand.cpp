@@ -1,4 +1,7 @@
 #include "VulkanCommand.h"
+#include "dkpch.h"
+
+#include "Deako/Core/Application.h"
 
 #include "VulkanDevice.h"
 #include "VulkanRenderPass.h"
@@ -7,17 +10,22 @@
 #include "VulkanPipeline.h"
 #include "VulkanBuffer.h"
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+
 namespace Deako {
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
-    VkCommandPool VulkanCommandPool::s_CommandPool;
+    VkDevice VulkanCommandPool::s_Device{ VK_NULL_HANDLE };
+    VkCommandPool VulkanCommandPool::s_CommandPool{ VK_NULL_HANDLE };
     std::vector<VkCommandBuffer> VulkanCommandPool::s_CommandBuffers;
 
     // Command pools manage memory that is used to store buffers and command buffers are allocated from them
     void VulkanCommandPool::Create()
     {
-        VkDevice device = VulkanDevice::GetLogical();
+        s_Device = VulkanDevice::GetLogical();
         QueueFamilyIndices indices = VulkanDevice::GetQueueFamilyIndices();
 
         VkCommandPoolCreateInfo poolInfo{};
@@ -29,7 +37,7 @@ namespace Deako {
         // Command buffers are executed by submitting them on one of the device queues, like the graphics and presentation queues. Each command pool can only allocate command buffers that are submitted on a single type of queue
         poolInfo.queueFamilyIndex = indices.graphicsFamily.value();
 
-        VkResult result = vkCreateCommandPool(device, &poolInfo, nullptr, &s_CommandPool);
+        VkResult result = vkCreateCommandPool(s_Device, &poolInfo, nullptr, &s_CommandPool);
         DK_CORE_ASSERT(!result, "Failed to create command pool!");
 
         VulkanCommandPool::CreateBuffers();
@@ -37,15 +45,12 @@ namespace Deako {
 
     void VulkanCommandPool::CleanUp()
     {
-        VkDevice device = VulkanDevice::GetLogical();
-        vkDestroyCommandPool(device, s_CommandPool, nullptr);
+        vkDestroyCommandPool(s_Device, s_CommandPool, nullptr);
     }
 
     // Command buffers will be automatically freed when their command pool is destroyed
     void VulkanCommandPool::CreateBuffers()
     {
-        VkDevice device = VulkanDevice::GetLogical();
-
         s_CommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
@@ -57,7 +62,7 @@ namespace Deako {
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t)s_CommandBuffers.size();
 
-        VkResult result = vkAllocateCommandBuffers(device, &allocInfo, s_CommandBuffers.data());
+        VkResult result = vkAllocateCommandBuffers(s_Device, &allocInfo, s_CommandBuffers.data());
         DK_CORE_ASSERT(!result, "Failed to allocate command buffers!");
     }
 
@@ -65,7 +70,7 @@ namespace Deako {
     {
         VkCommandBuffer commandBuffer = s_CommandBuffers[currentFrame];
 
-        vkResetCommandBuffer(commandBuffer, 0);
+        vkResetCommandBuffer(commandBuffer, 0); // imgui tutorial said to remove
 
         // prepare recording to buffer
         VkCommandBufferBeginInfo beginInfo{};
@@ -74,7 +79,7 @@ namespace Deako {
         // • VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: command buffer will be rerecorded right after executing it once
         // • VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT: this is a secondary command buffer that will be entirely within a single render pass
         // • VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT: command buffer can be resubmitted while it is also already pending execution
-        beginInfo.flags = 0; // Optional
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // required for imgui
         // relevant for secondary command buffers, specifies which state to inherit from the calling primary command buffers
         beginInfo.pInheritanceInfo = nullptr; // Optional
 
@@ -141,6 +146,15 @@ namespace Deako {
         // ***Draw*** command for the triangle
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indexBuffer->GetIndices().size()), 1, 0, 0, 0);
 
+        // ImGui
+        LayerStack& layerStack = Application::Get().GetLayerStack();
+        ImGuiLayer& imguiLayer = Application::Get().GetImGuiLayer();
+
+        imguiLayer.Begin();
+        for (Layer* layer : layerStack)
+            layer->OnImGuiRender();
+        imguiLayer.End(commandBuffer, graphicsPipeline);
+
         // end the render pass
         vkCmdEndRenderPass(commandBuffer);
 
@@ -148,6 +162,43 @@ namespace Deako {
         DK_CORE_ASSERT(!result, "Failed to record command buffer!");
 
         return commandBuffer;
+    }
+
+    VkCommandBuffer VulkanCommandPool::BeginSingleTimeCommands()
+    {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = s_CommandPool;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(s_Device, &allocInfo, &commandBuffer);
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+        return commandBuffer;
+    }
+
+    void VulkanCommandPool::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+    {
+        vkEndCommandBuffer(commandBuffer);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &commandBuffer;
+
+        VkQueue graphicsQueue = VulkanDevice::GetGraphicsQueue();
+        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
+        vkQueueWaitIdle(graphicsQueue);
+
+        vkFreeCommandBuffers(s_Device, s_CommandPool, 1, &commandBuffer);
     }
 
 }

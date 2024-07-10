@@ -39,8 +39,9 @@ namespace Deako {
             queueCreateInfos.push_back(queueCreateInfo);
         }
 
-        // Features that we queried with vkGetPhysicalDeviceFeatures in VulkanPhysicalDevice.cpp, for now set we'll define and leave everything to VK_FALSE
+        // Features that we queried with vkGetPhysicalDeviceFeatures
         VkPhysicalDeviceFeatures deviceFeatures{};
+        deviceFeatures.samplerAnisotropy = VK_TRUE;
 
         VkDeviceCreateInfo deviceCreateInfo{};
         deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -132,8 +133,9 @@ namespace Deako {
         // Look for families, must have required families
         FindQueueFamilies(device);
 
-        // Must support required extensions
+        // Must support required extensions and features
         bool extensionsSupported = CheckDeviceExtensionSupport(device);
+        bool featuresSupported = deviceFeatures.samplerAnisotropy;
 
         // Must have adequate swap chain details
         bool swapChainAdequate = false;
@@ -144,7 +146,7 @@ namespace Deako {
                 && !swapChainSupport.presentModes.empty();
         }
 
-        bool suitable = extensionsSupported && swapChainAdequate && s_QueueFamilyIndices.IsComplete();
+        bool suitable = extensionsSupported && featuresSupported && swapChainAdequate && s_QueueFamilyIndices.IsComplete();
 
         return suitable ? score : 0;
     }

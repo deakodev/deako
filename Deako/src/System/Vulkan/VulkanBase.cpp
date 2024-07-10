@@ -9,6 +9,7 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanCommand.h"
 #include "VulkanBuffer.h"
+#include "VulkanTexture.h"
 
 namespace Deako {
 
@@ -39,12 +40,14 @@ namespace Deako {
         s_PresentQueue = VulkanDevice::GetPresentQueue();
         VulkanSwapChain::Create();
         VulkanRenderPass::Create();
-        VulkanBufferPool::CreateUniformBuffers();
+        VulkanBufferPool::CreateDescriptorSetLayout();
         VulkanPipeline::Create();
         VulkanFramebufferPool::Create();
         VulkanCommandPool::Create();
+        VulkanTexturePool::CreateTextures();
         VulkanBufferPool::CreateVertexBuffers();
         VulkanBufferPool::CreateIndexBuffer();
+        VulkanBufferPool::CreateUniformBuffers();
 
         s_ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
         s_RenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -85,6 +88,7 @@ namespace Deako {
         }
 
         VulkanBufferPool::CleanUp();
+        VulkanTexturePool::CleanUp();
         VulkanCommandPool::CleanUp();
         VulkanFramebufferPool::CleanUp();
         VulkanPipeline::CleanUp();
@@ -231,9 +235,6 @@ namespace Deako {
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(s_Device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-        // after waiting, and acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
-        vkResetFences(s_Device, 1, &inFlightFence);
-
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             VulkanSwapChain::Recreate();
@@ -244,10 +245,13 @@ namespace Deako {
             DK_CORE_ASSERT(false, "Failed to acquire swap chain image!");
         }
 
+        VulkanBufferPool::UpdateUniformBuffer(s_CurrentFrame);
+
+        // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
+        vkResetFences(s_Device, 1, &inFlightFence);
+
         // (3) record a command buffer which draws the scene onto that image
         VkCommandBuffer commandBuffer = VulkanCommandPool::Record(s_CurrentFrame, imageIndex);
-
-        VulkanBufferPool::UpdateUniformBuffer(s_CurrentFrame);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

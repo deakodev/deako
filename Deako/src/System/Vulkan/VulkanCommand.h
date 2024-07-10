@@ -15,7 +15,11 @@ namespace Deako {
 
         static VkCommandPool& GetPool() { return s_CommandPool; }
 
+        static VkCommandBuffer BeginSingleTimeCommands();
+        static void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
     private:
+        static VkDevice s_Device;
         static VkCommandPool s_CommandPool;
         static std::vector<VkCommandBuffer> s_CommandBuffers;
     };

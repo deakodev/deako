@@ -14,11 +14,14 @@ workspace "Deako"
     IncludeDir["glm"] = "Deako/vendor/glm"
     IncludeDir["glfw"] = "Deako/vendor/glfw/include"
     IncludeDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/include"
+    IncludeDir["imgui"] = "Deako/vendor/imgui"
+    IncludeDir["stb_image"] = "Deako/vendor/stb_image"
 
     LibDir = {}
     LibDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/lib"
 
     include "Deako/vendor/glfw"
+    include "Deako/vendor/imgui"
 
 project "Deako"
     location "Deako"
@@ -39,7 +42,9 @@ project "Deako"
         "%{prj.name}/src/**.cpp",
         "%{prj.name}/src/**.mm",
         "%{prj.name}/glm/glm/**.hpp",
-        "%{prj.name}/glm/glm/**.inl"
+        "%{prj.name}/glm/glm/**.inl",
+        "%{prj.name}/vendor/stb_image/**.h",
+		"%{prj.name}/vendor/stb_image/**.cpp"
     }
 
     defines
@@ -53,7 +58,9 @@ project "Deako"
         "%{prj.name}/vendor/spdlog/include",
         "%{IncludeDir.glm}",
         "%{IncludeDir.glfw}",
-        "%{IncludeDir.vulkan}" 
+        "%{IncludeDir.vulkan}",
+        "%{IncludeDir.imgui}",
+        "%{IncludeDir.stb_image}"
     }
 
     libdirs
@@ -65,6 +72,7 @@ project "Deako"
     { 
         "glfw",
         "vulkan",
+        "imgui",
         "Cocoa.framework",
         "IOKit.framework",
         "CoreVideo.framework"
@@ -151,6 +159,7 @@ project "Deako-Editor"
         "Deako",
         "glfw",
         "vulkan",
+        "imgui",
         "Cocoa.framework",
         "IOKit.framework",
         "CoreVideo.framework"

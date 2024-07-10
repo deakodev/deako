@@ -20,26 +20,60 @@ namespace Deako
         m_Window->SetEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();
+
+        m_ImGuiLayer = new ImGuiLayer();
+        PushOverlay(m_ImGuiLayer);
     }
 
     Application::~Application()
     {
+        if (m_ImGuiLayer)
+        {
+            m_LayerStack.PopOverlay(m_ImGuiLayer);
+            m_ImGuiLayer = nullptr;
+        }
+
         Renderer::Shutdown();
     }
 
     void Application::OnEvent(Event& event)
     {
         EventDispatcher dispatcher(event);
-
         dispatcher.Dispatch<WindowCloseEvent>(DK_BIND_EVENT_FN(Application::OnWindowClose));
         dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(Application::OnWindowResize));
+        dispatcher.Dispatch<WindowMinimizedEvent>(DK_BIND_EVENT_FN(Application::OnWindowMinimized));
+        dispatcher.Dispatch<WindowRestoredEvent>(DK_BIND_EVENT_FN(Application::OnWindowRestored));
+
+        for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
+        {
+            if (event.Handled)
+                break;
+            (*it)->OnEvent(event);
+        }
+    }
+
+    void Application::PushLayer(Layer* layer)
+    {
+        m_LayerStack.PushLayer(layer);
+        layer->OnAttach();
+    }
+
+    void Application::PushOverlay(Layer* layer)
+    {
+        m_LayerStack.PushOverlay(layer);
+        layer->OnAttach();
     }
 
     void Application::Run()
     {
         while (m_Running)
         {
-            VulkanBase::DrawFrame();
+            if (!m_Minimized)
+            {
+                for (Layer* layer : m_LayerStack)
+                    layer->OnUpdate();
+            }
+
             m_Window->OnUpdate();
         }
 
@@ -52,11 +86,24 @@ namespace Deako
         return true;
     }
 
+    // TODO: determine if necessary
     bool Application::OnWindowResize(WindowResizeEvent& event)
     {
         // Renderer::OnWindowResize(event.GetWidth(), event.GetHeight());
 
         return false;
+    }
+
+    bool Application::OnWindowMinimized(WindowMinimizedEvent& event)
+    {
+        m_Minimized = true;
+        return true;
+    }
+
+    bool Application::OnWindowRestored(WindowRestoredEvent& event)
+    {
+        m_Minimized = false;
+        return true;
     }
 
 }

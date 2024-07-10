@@ -22,7 +22,7 @@ namespace Deako {
 
         static VkSwapchainKHR GetSwapChain() { return s_SwapChain; }
         static VkSurfaceKHR GetSurface() { return s_Surface; }
-        static VkFormat GetImageFormat() { return s_Format; }
+        static VkFormat& GetImageFormat() { return s_Format; }
         static VkExtent2D& GetExtent() { return s_Extent; }
         static const std::vector<VkImageView>& GetImageViews() { return s_ImageViews; }
         static SwapChainSupportDetails QuerySupport(VkPhysicalDevice device);
