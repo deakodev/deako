@@ -10,7 +10,7 @@
 
 namespace Deako {
 
-    Ref<Texture> VulkanTexturePool::s_Texture;
+    Ref<Texture> VulkanTexturePool::s_ViewportTexture;
     Ref<TextureSampler> VulkanTexturePool::s_TextureSampler;
 
     Texture::Texture()
@@ -201,7 +201,7 @@ namespace Deako {
     {
         VulkanResources* vr = VulkanBase::GetResources();
 
-        s_Texture = CreateRef<Texture>();
+        s_ViewportTexture = CreateRef<Texture>();
         s_TextureSampler = CreateRef<TextureSampler>();
     }
 
@@ -211,9 +211,9 @@ namespace Deako {
 
         vkDestroySampler(vr->device, s_TextureSampler->GetSampler(), nullptr);
 
-        vkDestroyImageView(vr->device, s_Texture->GetImageView(), nullptr);
-        vkDestroyImage(vr->device, s_Texture->GetImage(), nullptr);
-        vkFreeMemory(vr->device, s_Texture->GetMemory(), nullptr);
+        vkDestroyImageView(vr->device, s_ViewportTexture->GetImageView(), nullptr);
+        vkDestroyImage(vr->device, s_ViewportTexture->GetImage(), nullptr);
+        vkFreeMemory(vr->device, s_ViewportTexture->GetMemory(), nullptr);
     }
 
 }

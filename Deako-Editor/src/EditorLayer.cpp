@@ -24,11 +24,91 @@ namespace Deako {
 
     void EditorLayer::OnImGuiRender()
     {
-        ImGui::ShowDemoWindow();
+        static bool dockingEnabled = true;
+        static bool fullscreenEnabled = true;
+        static bool paddingEnabled = false;
 
-        ImGui::Begin("Hello, world!");
-        ImGui::Text("This is some useful text.");
+        static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
+        static ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+
+        if (fullscreenEnabled)
+        {
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->WorkPos);
+            ImGui::SetNextWindowSize(viewport->WorkSize);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+        }
+        else
+        {
+            dockspaceFlags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+        }
+
+        if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+            windowFlags |= ImGuiWindowFlags_NoBackground;
+
+        if (!paddingEnabled)
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+        ImGui::Begin("DockSpace", &dockingEnabled, windowFlags);
+
+        if (!paddingEnabled)
+            ImGui::PopStyleVar();
+        if (fullscreenEnabled)
+            ImGui::PopStyleVar(2);
+
+        // Submit the DockSpace
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.WindowMinSize.x = 360.0f;
+        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+        {
+            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspaceFlags);
+        }
+        style.WindowMinSize.x = 32.0f;
+
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                // if (ImGui::MenuItem("New...", "Cmd+N")) { NewScene(); }
+                // if (ImGui::MenuItem("Open...", "Cmd+O")) { OpenScene(); }
+                // ImGui::Separator();
+                // if (ImGui::MenuItem("Save", "Cmd+S")) { SaveScene(); }
+                // if (ImGui::MenuItem("Save As...", "Cmd+Shift+S")) { SaveSceneAs(); }
+                // ImGui::Separator();
+                // if (ImGui::MenuItem("Exit Editor")) { Close(); }
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenuBar();
+        }
+
+        //// VIEWPORT ////
+        bool viewportOpen = true;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
+        ImGui::Begin("Viewport");
+
+        // m_ViewportFocused = ImGui::IsWindowFocused();
+        // m_ViewportHovered = ImGui::IsWindowHovered();
+        // Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+
+        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+        m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+        m_ViewportTextureID = Application::Get().GetImGuiLayer().GetViewportTextureID();
+        ImGui::Image((ImTextureID)m_ViewportTextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
+
         ImGui::End();
+        ImGui::PopStyleVar();
+
+        ImGui::End();
+
+        ImGui::ShowDemoWindow();
     }
 
     void EditorLayer::OnEvent(Event& event)

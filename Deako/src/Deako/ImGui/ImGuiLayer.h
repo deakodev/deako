@@ -21,8 +21,10 @@ namespace Deako {
         void Begin();
         void End(VkCommandBuffer commandBuffer, VkPipeline pipeline);
 
+        void* GetViewportTextureID() { return m_ViewportTextureID; }
         void BlockEvents(bool block) { m_BlockEvents = block; }
 
+    private:
         void SetDarkThemeColors();
 
     private:
@@ -30,6 +32,8 @@ namespace Deako {
         float m_Time = 0.0f;
 
         VkDescriptorPool m_ImguiPool;
+
+        void* m_ViewportTextureID = nullptr;
     };
 
 }

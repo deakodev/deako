@@ -2,6 +2,8 @@
 
 #include "Deako.h"
 
+#include <glm/glm.hpp>
+
 namespace Deako {
 
     class EditorLayer : public Layer
@@ -19,8 +21,8 @@ namespace Deako {
         virtual void OnImGuiRender() override;
 
     private:
-
-
+        glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
+        void* m_ViewportTextureID;
     };
 
 }

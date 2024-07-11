@@ -9,8 +9,9 @@
 #include "System/Vulkan/VulkanBuffer.h"
 #include "System/Vulkan/VulkanSwapChain.h"
 #include "System/Vulkan/VulkanRenderPass.h"
+#include "System/Vulkan/VulkanTexture.h"
 
-#include <imgui.h>
+// #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
@@ -34,8 +35,8 @@ namespace Deako {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
-        // io.Fonts->AddFontFromFileTTF("Deak-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 16.0f);
-        // io.FontDefault = io.Fonts->AddFontFromFileTTF("Deak-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 16.0f);
+        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 16.0f);
+        io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 16.0f);
 
         ImGuiStyle& style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -50,7 +51,7 @@ namespace Deako {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 8.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
-        ImGui::StyleColorsDark();
+        SetDarkThemeColors();
 
         GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
         ImGui_ImplGlfw_InitForVulkan(window, true);
@@ -76,11 +77,23 @@ namespace Deako {
         // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->imageFormat;
 
         ImGui_ImplVulkan_Init(&initInfo);
+
+        // Get Viewport TextureID for rendering viewport within imgui window
+        Ref<TextureSampler> viewportSampler = VulkanTexturePool::GetTextureSampler();
+        Ref<Texture> viewportTexture = VulkanTexturePool::GetViewportTexture();
+        VkSampler sampler = viewportSampler->GetSampler();
+        VkImageView imageView = viewportTexture->GetImageView();
+        VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        m_ViewportTextureID = ImGui_ImplVulkan_AddTexture(sampler, imageView, imageLayout);
     }
 
     void ImGuiLayer::OnDetach()
     {
         VulkanBase::Idle();
+
+        ImGui_ImplVulkan_RemoveTexture(reinterpret_cast<VkDescriptorSet>(m_ViewportTextureID));
+        m_ViewportTextureID = nullptr;
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -111,11 +124,12 @@ namespace Deako {
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-        // Update and Render additional Platform Windows
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
+            GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backupCurrentContext);
         }
     }
 

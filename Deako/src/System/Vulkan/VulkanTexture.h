@@ -41,11 +41,11 @@ namespace Deako {
         static void CreateTextures();
         static void CleanUp();
 
-        static Ref<Texture> GetTexture() { return s_Texture; }
+        static Ref<Texture> GetViewportTexture() { return s_ViewportTexture; }
         static Ref<TextureSampler> GetTextureSampler() { return s_TextureSampler; }
 
     private:
-        static Ref<Texture> s_Texture;
+        static Ref<Texture> s_ViewportTexture; // viewport
         static Ref<TextureSampler> s_TextureSampler;
     };
 

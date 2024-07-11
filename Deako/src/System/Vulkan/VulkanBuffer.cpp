@@ -310,7 +310,7 @@ namespace Deako {
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = VulkanTexturePool::GetTexture()->GetImageView();
+            imageInfo.imageView = VulkanTexturePool::GetViewportTexture()->GetImageView();
             imageInfo.sampler = VulkanTexturePool::GetTextureSampler()->GetSampler();
 
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
