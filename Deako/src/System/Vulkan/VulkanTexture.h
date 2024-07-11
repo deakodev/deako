@@ -7,7 +7,7 @@ namespace Deako {
     class Texture
     {
     public:
-        Texture(VkDevice device);
+        Texture();
 
         VkImage& GetImage() { return m_Image; }
         VkImageView& GetImageView() { return m_ImageView; }
@@ -19,7 +19,6 @@ namespace Deako {
         void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     private:
-        VkDevice m_Device{ VK_NULL_HANDLE };
         VkImage m_Image{ VK_NULL_HANDLE };
         VkImageView m_ImageView{ VK_NULL_HANDLE };
         VkDeviceMemory m_ImageMemory{ VK_NULL_HANDLE };
@@ -28,12 +27,11 @@ namespace Deako {
     class TextureSampler
     {
     public:
-        TextureSampler(VkDevice device);
+        TextureSampler();
 
         VkSampler& GetSampler() { return m_Sampler; }
 
     private:
-        VkDevice m_Device{ VK_NULL_HANDLE };
         VkSampler m_Sampler{ VK_NULL_HANDLE };
     };
 
@@ -47,7 +45,6 @@ namespace Deako {
         static Ref<TextureSampler> GetTextureSampler() { return s_TextureSampler; }
 
     private:
-        static VkDevice s_Device;
         static Ref<Texture> s_Texture;
         static Ref<TextureSampler> s_TextureSampler;
     };

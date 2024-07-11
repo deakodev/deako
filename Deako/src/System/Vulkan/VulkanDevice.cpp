@@ -6,24 +6,21 @@
 
 namespace Deako {
 
-    VkPhysicalDevice VulkanDevice::s_PhysicalDevice{ VK_NULL_HANDLE };
-    VkDevice VulkanDevice::s_LogicalDevice{ VK_NULL_HANDLE };
-    QueueFamilyIndices VulkanDevice::s_QueueFamilyIndices;
-    VkQueue VulkanDevice::s_GraphicsQueue;
-    VkQueue VulkanDevice::s_PresentQueue;
     const std::vector<const char*> VulkanDevice::s_DeviceExtensions = {
        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
        "VK_KHR_portability_subset"
     };
 
-    VkDevice VulkanDevice::Create()
+    void VulkanDevice::Create()
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         DeterminePhysical();
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
-            s_QueueFamilyIndices.graphicsFamily.value(),
-            s_QueueFamilyIndices.presentFamily.value()
+            vr->graphicsFamily.value(),
+            vr->presentFamily.value()
         };
 
         // Between 0.0 - 1.0; influences the scheduling of command buffer execution
@@ -65,33 +62,32 @@ namespace Deako {
         }
 
         // Finally we can create the logical device, note - queues are automatically created here
-        VkResult result = vkCreateDevice(s_PhysicalDevice, &deviceCreateInfo, nullptr, &s_LogicalDevice);
-        DK_CORE_ASSERT(!result, "Failed to create logical device!");
+        VkResult result = vkCreateDevice(vr->physicalDevice, &deviceCreateInfo, nullptr, &vr->device);
+        DK_CORE_ASSERT(!result);
 
-        vkGetDeviceQueue(s_LogicalDevice, s_QueueFamilyIndices.graphicsFamily.value(), 0, &s_GraphicsQueue);
-        vkGetDeviceQueue(s_LogicalDevice, s_QueueFamilyIndices.presentFamily.value(), 0, &s_PresentQueue);
-
-        return s_LogicalDevice;
+        vkGetDeviceQueue(vr->device, vr->graphicsFamily.value(), 0, &vr->graphicsQueue);
+        vkGetDeviceQueue(vr->device, vr->presentFamily.value(), 0, &vr->presentQueue);
     }
 
     void VulkanDevice::CleanUp()
     {
-        vkDestroyDevice(s_LogicalDevice, nullptr);
+        VulkanResources* vr = VulkanBase::GetResources();
+        vkDestroyDevice(vr->device, nullptr);
     }
 
     void VulkanDevice::DeterminePhysical()
     {
-        VkInstance instance = VulkanBase::GetInstance();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         // First check if any devices are supported
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, nullptr);
 
-        DK_CORE_ASSERT(deviceCount, "Failed to find GPUs with Vulkan support!");
+        DK_CORE_ASSERT(deviceCount);
 
         // Allocate an array to hold all of the VkPhysicalDevice handles
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, devices.data());
 
         std::multimap<int, VkPhysicalDevice> candidates;
 
@@ -104,16 +100,18 @@ namespace Deako {
 
         // Determine best candidate and set as physical device
         if (candidates.rbegin()->first > 0)
-            s_PhysicalDevice = candidates.rbegin()->second;
+            vr->physicalDevice = candidates.rbegin()->second;
         else
-            DK_CORE_ASSERT(false, "Failed to find a suitable GPU!");
+            DK_CORE_ASSERT(false);
 
         // Set family indices of our selected physical device
-        FindQueueFamilies(s_PhysicalDevice);
+        FindQueueFamilies(vr->physicalDevice);
     }
 
     int VulkanDevice::RatePhysical(VkPhysicalDevice device)
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
         VkPhysicalDeviceFeatures deviceFeatures;
@@ -132,6 +130,7 @@ namespace Deako {
 
         // Look for families, must have required families
         FindQueueFamilies(device);
+        bool queueFamiliesFound = vr->graphicsFamily.has_value() && vr->presentFamily.has_value();
 
         // Must support required extensions and features
         bool extensionsSupported = CheckDeviceExtensionSupport(device);
@@ -146,13 +145,15 @@ namespace Deako {
                 && !swapChainSupport.presentModes.empty();
         }
 
-        bool suitable = extensionsSupported && featuresSupported && swapChainAdequate && s_QueueFamilyIndices.IsComplete();
+        bool suitable = extensionsSupported && featuresSupported && swapChainAdequate && queueFamiliesFound;
 
         return suitable ? score : 0;
     }
 
     void VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -160,22 +161,20 @@ namespace Deako {
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-        VkSurfaceKHR surface = VulkanSwapChain::GetSurface();
-
         // Find queue families that are supported
         int i = 0;
         for (const auto& queueFamily : queueFamilies)
         {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-                s_QueueFamilyIndices.graphicsFamily = i;
+                vr->graphicsFamily = i;
 
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vr->surface, &presentSupport);
 
             if (presentSupport)
-                s_QueueFamilyIndices.presentFamily = i;
+                vr->presentFamily = i;
 
-            if (s_QueueFamilyIndices.IsComplete())
+            if (vr->graphicsFamily.has_value() && vr->presentFamily.has_value())
                 break;
 
             i++;

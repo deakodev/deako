@@ -4,8 +4,6 @@
 #include "Deako/Events/WindowEvent.h"
 #include "Deako/Renderer/Renderer.h"
 
-#include "System/Vulkan/VulkanBase.h"
-
 namespace Deako
 {
 
@@ -20,6 +18,7 @@ namespace Deako
         m_Window->SetEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
 
         Renderer::Init();
+
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);
@@ -76,8 +75,6 @@ namespace Deako
 
             m_Window->OnUpdate();
         }
-
-        VulkanBase::Idle();
     }
 
     bool Application::OnWindowClose(WindowCloseEvent& event)

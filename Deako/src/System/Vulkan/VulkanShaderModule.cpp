@@ -1,7 +1,7 @@
 #include "VulkanShaderModule.h"
 #include "dkpch.h"
 
-#include "VulkanDevice.h"
+#include "VulkanBase.h"
 
 #include <filesystem>
 
@@ -11,7 +11,7 @@ namespace Deako {
     {
         auto shaderCode = ReadShaderFile(filename);
 
-        VkDevice device = VulkanDevice::GetLogical();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -20,16 +20,17 @@ namespace Deako {
         createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
 
         VkShaderModule shaderModule;
-        VkResult result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
-        DK_CORE_ASSERT(!result, "Failed to create shader module!");
+        VkResult result = vkCreateShaderModule(vr->device, &createInfo, nullptr, &shaderModule);
+        DK_CORE_ASSERT(!result);
 
         return shaderModule;
     }
 
     void ShaderModule::CleanUp(VkShaderModule shaderModule)
     {
-        VkDevice device = VulkanDevice::GetLogical();
-        vkDestroyShaderModule(device, shaderModule, nullptr);
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        vkDestroyShaderModule(vr->device, shaderModule, nullptr);
     }
 
     std::vector<char> ShaderModule::ReadShaderFile(const std::string& filename)

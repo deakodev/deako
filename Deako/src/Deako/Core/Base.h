@@ -7,8 +7,15 @@
 #endif
 
 #ifdef DK_ENABLE_ASSERTS
+
 #define DK_ASSERT(x, ...) { if(!(x)) { DK_ERROR("Assertion Failed: {0}", __VA_ARGS__); raise(SIGTRAP); } }
-#define DK_CORE_ASSERT(x, ...) { if(!(x)) { DK_CORE_ERROR("Assertion Failed: {0}", __VA_ARGS__); raise(SIGTRAP); } }
+#define DK_CORE_ASSERT_IMPL(x, ...) \
+    if (!(x)) { \
+        ::Deako::Log::GetCoreLogger()->error("Assertion Failed: {0}", ##__VA_ARGS__); \
+        raise(SIGTRAP); \
+    }
+#define DK_CORE_ASSERT(x, ...) DK_CORE_ASSERT_IMPL(x, ##__VA_ARGS__)
+
 #else
 #define DK_ASSERT(x, ...) 
 #define DK_CORE_ASSERT(x, ...)
@@ -17,6 +24,22 @@
 #define BIT(x) (1 << x)
 
 #define DK_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
+
+// static void check_vk_result(VkResult err)
+// {
+//     if (err == 0)
+//         return;
+//     fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+//     if (err < 0)
+//         abort();
+// }
+
+// static void Check(VkResult result)
+// {
+//     if (!result)
+
+
+// }
 
 namespace Deako {
 

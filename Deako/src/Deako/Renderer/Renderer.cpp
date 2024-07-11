@@ -12,6 +12,7 @@ namespace Deako {
 
     void Renderer::Shutdown()
     {
+        VulkanBase::Idle();
         VulkanBase::Shutdown();
     }
 

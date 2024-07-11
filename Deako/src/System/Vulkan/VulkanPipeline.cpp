@@ -2,19 +2,14 @@
 #include "dkpch.h"
 
 #include "VulkanBase.h"
-#include "VulkanDevice.h"
 #include "VulkanShaderModule.h"
-#include "VulkanRenderPass.h"
 #include "VulkanBuffer.h"
 
 namespace Deako {
 
-    VkPipeline VulkanPipeline::s_GraphicsPipeline;
-    VkPipelineLayout VulkanPipeline::s_PipelineLayout;
-
     void VulkanPipeline::Create()
     {
-        VkDevice device = VulkanDevice::GetLogical();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         VkShaderModule vertShaderModule = ShaderModule::Create(
             "/Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.vert.spv");
@@ -151,13 +146,13 @@ namespace Deako {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        VkDescriptorSetLayout setLayouts[1] = { VulkanBufferPool::GetDescriptorSetLayout() };
+        VkDescriptorSetLayout setLayouts[1] = { vr->descriptorSetLayout };
         pipelineLayoutInfo.pSetLayouts = setLayouts;
         pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-        VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &s_PipelineLayout);
-        DK_CORE_ASSERT(!result, "Failed to create pipeline layout!");
+        VkResult result = vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &vr->pipelineLayout);
+        DK_CORE_ASSERT(!result);
 
         //--- One struct to rule them all ---//
         VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -174,15 +169,15 @@ namespace Deako {
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
 
-        pipelineInfo.layout = s_PipelineLayout;
+        pipelineInfo.layout = vr->pipelineLayout;
 
-        pipelineInfo.renderPass = VulkanRenderPass::GetRenderPass();
+        pipelineInfo.renderPass = vr->renderPass;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
         pipelineInfo.basePipelineIndex = -1; // Optional
 
-        result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_GraphicsPipeline);
-        DK_CORE_ASSERT(!result, "Failed to create graphics pipeline!");
+        result = vkCreateGraphicsPipelines(vr->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vr->graphicsPipeline);
+        DK_CORE_ASSERT(!result);
 
         // Clean up shaders
         ShaderModule::CleanUp(vertShaderModule);
@@ -191,9 +186,10 @@ namespace Deako {
 
     void VulkanPipeline::CleanUp()
     {
-        VkDevice device = VulkanDevice::GetLogical();
-        vkDestroyPipeline(device, s_GraphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, s_PipelineLayout, nullptr);
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        vkDestroyPipeline(vr->device, vr->graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(vr->device, vr->pipelineLayout, nullptr);
     }
 
 }

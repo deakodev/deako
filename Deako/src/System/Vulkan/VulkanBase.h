@@ -9,6 +9,37 @@ namespace Deako {
         bool validation = false;
     };
 
+    struct VulkanResources
+    {
+        VkInstance                         instance{ VK_NULL_HANDLE };
+        VkPhysicalDevice                   physicalDevice{ VK_NULL_HANDLE };
+        VkDevice                           device{ VK_NULL_HANDLE };
+
+        std::optional<uint32_t>            graphicsFamily;
+        std::optional<uint32_t>            presentFamily;
+        VkQueue                            graphicsQueue{ VK_NULL_HANDLE };
+        VkQueue                            presentQueue{ VK_NULL_HANDLE };
+
+        VkCommandPool                      commandPool{ VK_NULL_HANDLE };
+
+        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
+        VkDescriptorSetLayout              descriptorSetLayout{ VK_NULL_HANDLE };
+
+        VkPipeline                         graphicsPipeline{ VK_NULL_HANDLE };
+        VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
+
+        VkRenderPass                       renderPass{ VK_NULL_HANDLE };
+
+        VkSwapchainKHR                     swapChain{ VK_NULL_HANDLE };
+        VkSurfaceKHR                       surface{ VK_NULL_HANDLE };
+        VkFormat                           imageFormat;
+        VkExtent2D                         imageExtent;
+
+        uint32_t                        minImageCount{ 2 };
+        uint32_t                        imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
+        VkSampleCountFlagBits           MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
+    };
+
     class VulkanBase
     {
     public:
@@ -16,14 +47,12 @@ namespace Deako {
         static void Idle();
         static void Shutdown();
 
-        static VkInstance GetInstance() { return s_Instance; }
+        static VulkanResources* GetResources() { return &s_Resources; }
         static const std::vector<const char*>& GetValidations() { return s_ValidationLayers; };
 
         static bool ValidationsEnabled() { return s_Settings.validation; }
 
         static void DrawFrame();
-
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
     private:
         static void CreateInstance();
@@ -31,13 +60,8 @@ namespace Deako {
         static bool AreValidationsAvailable();
 
     private:
-        static VkInstance s_Instance;
         static std::vector<const char*> s_Extensions;
         static std::vector<const char*> s_ValidationLayers;
-
-        static VkDevice s_Device;
-        static VkQueue s_GraphicsQueue;
-        static VkQueue s_PresentQueue;
 
         static uint32_t s_CurrentFrame;
         static bool s_FramebufferResized;
@@ -47,6 +71,7 @@ namespace Deako {
         static std::vector<VkFence> s_InFlightFences;
 
         static VulkanSettings s_Settings;
+        static VulkanResources s_Resources;
     };
 
 }

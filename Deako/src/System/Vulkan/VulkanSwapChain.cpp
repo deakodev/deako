@@ -1,35 +1,30 @@
 #include "VulkanSwapChain.h"
 #include "dkpch.h"
 
-#include "VulkanBase.h"
-#include "VulkanDevice.h"
-#include "VulkanRenderPass.h"
-#include "VulkanFramebuffer.h"
 #include "Deako/Core/Application.h"
+
+#include "VulkanBase.h"
+#include "VulkanFramebuffer.h"
 
 #include <GLFW/glfw3.h>
 
 namespace Deako {
 
-    VkSwapchainKHR VulkanSwapChain::s_SwapChain{ VK_NULL_HANDLE };
-    VkSurfaceKHR VulkanSwapChain::s_Surface{ VK_NULL_HANDLE };
     SwapChainSupportDetails VulkanSwapChain::s_Details;
-    VkFormat VulkanSwapChain::s_Format;
-    VkExtent2D VulkanSwapChain::s_Extent;
+
     std::vector<VkImage> VulkanSwapChain::s_Images;
     std::vector<VkImageView> VulkanSwapChain::s_ImageViews;
 
     void VulkanSwapChain::Create()
     {
-        VkPhysicalDevice physicalDevice = VulkanDevice::GetPhysical();
-        VkDevice logicalDevice = VulkanDevice::GetLogical();
+        VulkanResources* vr = VulkanBase::GetResources();
 
-        s_Details = QuerySupport(physicalDevice);
+        s_Details = QuerySupport(vr->physicalDevice);
 
         VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(s_Details.formats);
-        s_Format = surfaceFormat.format;
+        vr->imageFormat = surfaceFormat.format;
         VkPresentModeKHR presentMode = ChoosePresentMode(s_Details.presentModes);
-        s_Extent = ChooseExtent(s_Details.capabilities);
+        vr->imageExtent = ChooseExtent(s_Details.capabilities);
 
         // Recommended to request at least 1 more image than the min
         uint32_t imageCount = s_Details.capabilities.minImageCount + 1;
@@ -39,11 +34,11 @@ namespace Deako {
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = s_Surface;
+        createInfo.surface = vr->surface;
         createInfo.minImageCount = imageCount;
-        createInfo.imageFormat = s_Format;
+        createInfo.imageFormat = vr->imageFormat;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        createInfo.imageExtent = s_Extent;
+        createInfo.imageExtent = vr->imageExtent;
         createInfo.imageArrayLayers = 1; // Always 1 except stereoscopic 3D apps
         // Specifies the kind of operations the images in the swap chain are for. Eg. color attachment for direct rendering and 'transfer' for post processing using the memory operation to transfer the rendered image
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -53,10 +48,9 @@ namespace Deako {
                        • VK_SHARING_MODE_EXCLUSIVE: An image is owned by one queue family at a time and ownership must be explicitly transferred before using it in another queue family (best performance)
                        • VK_SHARING_MODE_CONCURRENT: Images can be used across multiple queue families without explicit ownership transfers
                 */
-        const QueueFamilyIndices& indices = VulkanDevice::GetQueueFamilyIndices();
-        uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+        uint32_t queueFamilyIndices[] = { vr->graphicsFamily.value(), vr->presentFamily.value() };
 
-        if (indices.graphicsFamily != indices.presentFamily)
+        if (vr->graphicsFamily != vr->presentFamily)
         {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2;
@@ -78,20 +72,21 @@ namespace Deako {
         // Possible that the swap chain becomes invalid while app is running, eg. window resized. In that case the swap chain needs to be recreated from scratch and a reference to the old one must be specified in this field
         createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-        VkResult result = vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &s_SwapChain);
-        DK_CORE_ASSERT(!result, "Failed to create swap chain!");
+        VkResult result = vkCreateSwapchainKHR(vr->device, &createInfo, nullptr, &vr->swapChain);
+        DK_CORE_ASSERT(!result);
 
         // Images were automatically created during swap chain creation and they will be automatically cleaned up once swap chain is destroyed, we just need to set them to m_Images
-        vkGetSwapchainImagesKHR(logicalDevice, s_SwapChain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(vr->device, vr->swapChain, &imageCount, nullptr);
         s_Images.resize(imageCount);
-        vkGetSwapchainImagesKHR(logicalDevice, s_SwapChain, &imageCount, s_Images.data());
+        vkGetSwapchainImagesKHR(vr->device, vr->swapChain, &imageCount, s_Images.data());
 
-        CreateImageViews(logicalDevice);
+        CreateImageViews(vr->device);
     }
 
     void VulkanSwapChain::Recreate()
     {
-        VkDevice device = VulkanDevice::GetLogical();
+        VulkanResources* vr = VulkanBase::GetResources();
+
         auto& window = Application::Get().GetWindow();
 
         auto [width, height] = window.GetWindowFramebufferSize();
@@ -104,7 +99,7 @@ namespace Deako {
             glfwWaitEvents();
         }
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(vr->device);
 
         // TODO: pg. 140 may need to seperate swap chain framebuffer portion if adding different types of framebuffers so we dont accidently CleanUp the wrong framebuffers
         VulkanFramebufferPool::CleanUp();
@@ -117,15 +112,18 @@ namespace Deako {
 
     void VulkanSwapChain::CreateSurface()
     {
-        VkInstance instance = VulkanBase::GetInstance();
+        VulkanResources* vr = VulkanBase::GetResources();
+
         GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
 
-        VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &s_Surface);
-        DK_CORE_ASSERT(!result, "Failed to create window surface!");
+        VkResult result = glfwCreateWindowSurface(vr->instance, window, nullptr, &vr->surface);
+        DK_CORE_ASSERT(!result);
     }
 
     void VulkanSwapChain::CreateImageViews(VkDevice device)
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         s_ImageViews.resize(s_Images.size());
 
         for (size_t i = 0; i < s_Images.size(); i++)
@@ -134,7 +132,7 @@ namespace Deako {
             createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             createInfo.image = s_Images[i];
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D; // Options are 1D, 2D, 3D, or cube maps
-            createInfo.format = s_Format;
+            createInfo.format = vr->imageFormat;
             // Default mapping. But you can swizzle the color channels around. Eg. map all of the channels to the red channel for a monochrome texture. Eg. map constant values of 0 and 1 to a channel
             createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
             createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -148,44 +146,45 @@ namespace Deako {
             createInfo.subresourceRange.layerCount = 1;
 
             VkResult result = vkCreateImageView(device, &createInfo, nullptr, &s_ImageViews[i]);
-            DK_CORE_ASSERT(!result, "Failed to create image views!");
+            DK_CORE_ASSERT(!result);
         }
     }
 
     void VulkanSwapChain::CleanUp()
     {
-        VkInstance instance = VulkanBase::GetInstance();
-        VkDevice device = VulkanDevice::GetLogical();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         for (auto imageView : s_ImageViews)
-            vkDestroyImageView(device, imageView, nullptr);
-        vkDestroySwapchainKHR(device, s_SwapChain, nullptr);
-        vkDestroySurfaceKHR(instance, s_Surface, nullptr);
+            vkDestroyImageView(vr->device, imageView, nullptr);
+        vkDestroySwapchainKHR(vr->device, vr->swapChain, nullptr);
+        vkDestroySurfaceKHR(vr->instance, vr->surface, nullptr);
     }
 
     SwapChainSupportDetails VulkanSwapChain::QuerySupport(VkPhysicalDevice device)
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         // Swap chain capaabilities
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, s_Surface, &s_Details.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, vr->surface, &s_Details.capabilities);
 
         // Swap chain formats
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, s_Surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, vr->surface, &formatCount, nullptr);
 
         if (formatCount != 0)
         {
             s_Details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, s_Surface, &formatCount, s_Details.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, vr->surface, &formatCount, s_Details.formats.data());
         }
 
         // Swap chain present modes
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, s_Surface, &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, vr->surface, &presentModeCount, nullptr);
 
         if (presentModeCount != 0)
         {
             s_Details.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, s_Surface, &presentModeCount, s_Details.presentModes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, vr->surface, &presentModeCount, s_Details.presentModes.data());
         }
 
         return s_Details;

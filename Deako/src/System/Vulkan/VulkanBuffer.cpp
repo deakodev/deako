@@ -1,9 +1,8 @@
 #include "VulkanBuffer.h"
 #include "dkpch.h"
 
-#include "VulkanDevice.h"
+#include "VulkanBase.h"
 #include "VulkanCommand.h"
-#include "VulkanSwapChain.h"
 #include "VulkanTexture.h"
 
 #define GLM_FORCE_RADIANS
@@ -14,13 +13,10 @@
 
 namespace Deako {
 
-    VkDevice VulkanBufferPool::s_Device{ VK_NULL_HANDLE };
     Ref<VertexBuffer> VulkanBufferPool::s_VertexBuffer;
     Ref<IndexBuffer> VulkanBufferPool::s_IndexBuffer;
-    VkDescriptorSetLayout VulkanBufferPool::s_DescriptorSetLayout{ VK_NULL_HANDLE };
-    VkDescriptorPool VulkanBufferPool::s_DescriptorPool;
-    std::array<VkDescriptorSet, VulkanBase::MAX_FRAMES_IN_FLIGHT> VulkanBufferPool::s_DescriptorSets;
-    std::array<Ref<Buffer>, VulkanBase::MAX_FRAMES_IN_FLIGHT> VulkanBufferPool::s_UniformBuffers;
+    std::array<VkDescriptorSet, 2> VulkanBufferPool::s_DescriptorSets;
+    std::array<Ref<Buffer>, 2> VulkanBufferPool::s_UniformBuffers;
 
     VkVertexInputBindingDescription Vertex::GetBindingDescription()
     {
@@ -62,17 +58,14 @@ namespace Deako {
         return attributeDescriptions;
     }
 
-    Buffer::Buffer(VkDevice device)
-        : m_Device(device)
+    VertexBuffer::VertexBuffer(const std::vector<Vertex>& vertices)
+        : m_Vertices(vertices)
     {
-    }
+        VulkanResources* vr = VulkanBase::GetResources();
 
-    VertexBuffer::VertexBuffer(VkDevice device, const std::vector<Vertex>& vertices)
-        : Buffer(device), m_Vertices(vertices)
-    {
         VkDeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
 
-        Buffer stagingBuffer{ device };
+        Buffer stagingBuffer{};
         stagingBuffer.SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         stagingBuffer.Map();
@@ -84,16 +77,18 @@ namespace Deako {
 
         CopyStaging(stagingBuffer.GetBuffer(), this->GetBuffer(), bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer.GetBuffer(), nullptr);
-        vkFreeMemory(device, stagingBuffer.GetMemory(), nullptr);
+        vkDestroyBuffer(vr->device, stagingBuffer.GetBuffer(), nullptr);
+        vkFreeMemory(vr->device, stagingBuffer.GetMemory(), nullptr);
     }
 
-    IndexBuffer::IndexBuffer(VkDevice device, const std::vector<uint16_t>& indices)
-        : Buffer(device), m_Indices(indices)
+    IndexBuffer::IndexBuffer(const std::vector<uint16_t>& indices)
+        : m_Indices(indices)
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         VkDeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
 
-        Buffer stagingBuffer{ device };
+        Buffer stagingBuffer{};
         stagingBuffer.SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         stagingBuffer.Map();
@@ -105,12 +100,14 @@ namespace Deako {
 
         CopyStaging(stagingBuffer.GetBuffer(), this->GetBuffer(), bufferSize);
 
-        vkDestroyBuffer(device, stagingBuffer.GetBuffer(), nullptr);
-        vkFreeMemory(device, stagingBuffer.GetMemory(), nullptr);
+        vkDestroyBuffer(vr->device, stagingBuffer.GetBuffer(), nullptr);
+        vkFreeMemory(vr->device, stagingBuffer.GetMemory(), nullptr);
     }
 
     void Buffer::SetInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = size;
@@ -119,11 +116,11 @@ namespace Deako {
         // buffers can be owned by a specific queue family or be shared
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VkResult result = vkCreateBuffer(m_Device, &bufferInfo, nullptr, &m_Buffer);
-        DK_CORE_ASSERT(!result, "Failed to create vertex buffer!");
+        VkResult result = vkCreateBuffer(vr->device, &bufferInfo, nullptr, &m_Buffer);
+        DK_CORE_ASSERT(!result);
 
         VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(m_Device, m_Buffer, &memRequirements);
+        vkGetBufferMemoryRequirements(vr->device, m_Buffer, &memRequirements);
 
         // allocate the memory
         VkMemoryAllocateInfo allocInfo{};
@@ -131,8 +128,8 @@ namespace Deako {
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-        result = vkAllocateMemory(m_Device, &allocInfo, nullptr, &m_Memory);
-        DK_CORE_ASSERT(!result, "Failed to allocate vertex buffer memory!");
+        result = vkAllocateMemory(vr->device, &allocInfo, nullptr, &m_Memory);
+        DK_CORE_ASSERT(!result);
 
         this->Bind();
     }
@@ -152,38 +149,44 @@ namespace Deako {
 
     void Buffer::Bind(VkDeviceSize offset)
     {
-        VkResult result = vkBindBufferMemory(m_Device, m_Buffer, m_Memory, offset);
-        DK_CORE_ASSERT(!result, "Failed to bind vertex buffer memory!");
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        VkResult result = vkBindBufferMemory(vr->device, m_Buffer, m_Memory, offset);
+        DK_CORE_ASSERT(!result);
     }
 
     void Buffer::Map(VkDeviceSize size, VkDeviceSize offset)
     {
-        VkResult result = vkMapMemory(m_Device, m_Memory, offset, size, 0, &m_Mapped);
-        DK_CORE_ASSERT(!result, "Failed to bind vertex buffer memory!");
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        VkResult result = vkMapMemory(vr->device, m_Memory, offset, size, 0, &m_Mapped);
+        DK_CORE_ASSERT(!result);
     }
 
     void Buffer::Unmap()
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         if (m_Mapped)
         {
-            vkUnmapMemory(m_Device, m_Memory);
+            vkUnmapMemory(vr->device, m_Memory);
             m_Mapped = nullptr;
         }
     }
 
     void Buffer::CopyTo(const void* data, VkDeviceSize size)
     {
-        DK_CORE_ASSERT(m_Mapped, "Buffer is not mapped!");
+        DK_CORE_ASSERT(m_Mapped);
         memcpy(m_Mapped, data, size);
     }
 
     uint32_t Buffer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
     {
-        VkPhysicalDevice physicalDevice = VulkanDevice::GetPhysical();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         // query info about the available types of memory from physical device
         VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+        vkGetPhysicalDeviceMemoryProperties(vr->physicalDevice, &memProperties);
 
         // typeFilter - will be used to specify the bit field of memory types that are suitable. We can find the index of a suitable memory type by iterating over them and checking if corresponding bit is set to 1
         // properties - define special features of the memory, like being able to map it. May have more than one desirable property, so we check if the result of bitwise AND is not just non-zero, but equal to the desired properties bit field. If a memory type suitable for the buffer that also has all of the properties we need, then we return the index
@@ -195,20 +198,21 @@ namespace Deako {
                 return i;
             }
         }
-
-        DK_CORE_ASSERT(false, "Failed to find suitable memory type!");
+        DK_CORE_ASSERT(false);
         return 0;
     }
 
     void VulkanBufferPool::CreateUniformBuffers()
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-        for (size_t i = 0; i < VulkanBase::MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < vr->imageCount; i++)
         {
-            s_UniformBuffers[i] = CreateRef<Buffer>(s_Device);
+            s_UniformBuffers[i] = CreateRef<Buffer>();
             s_UniformBuffers[i]->SetInfo(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            vkMapMemory(s_Device, s_UniformBuffers[i]->GetMemory(), 0, bufferSize, 0, &s_UniformBuffers[i]->Mapped());
+            vkMapMemory(vr->device, s_UniformBuffers[i]->GetMemory(), 0, bufferSize, 0, &s_UniformBuffers[i]->Mapped());
         }
 
         CreateDescriptorPool();
@@ -223,18 +227,18 @@ namespace Deako {
             {{0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
             {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
         };
-        s_VertexBuffer = CreateRef<VertexBuffer>(s_Device, vertices);
+        s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
     }
 
     void VulkanBufferPool::CreateIndexBuffer()
     {
         const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
-        s_IndexBuffer = CreateRef<IndexBuffer>(s_Device, indices);
+        s_IndexBuffer = CreateRef<IndexBuffer>(indices);
     }
 
     void VulkanBufferPool::CreateDescriptorSetLayout()
     {
-        s_Device = VulkanDevice::GetLogical();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
@@ -257,43 +261,47 @@ namespace Deako {
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        VkResult result = vkCreateDescriptorSetLayout(s_Device, &layoutInfo, nullptr, &s_DescriptorSetLayout);
-        DK_CORE_ASSERT(!result, "Failed to create descriptor set layout!");
+        VkResult result = vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayout);
+        DK_CORE_ASSERT(!result);
     }
 
     void VulkanBufferPool::CreateDescriptorPool()
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         std::array<VkDescriptorPoolSize, 2> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(VulkanBase::MAX_FRAMES_IN_FLIGHT);
+        poolSizes[0].descriptorCount = static_cast<uint32_t>(vr->imageCount);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(VulkanBase::MAX_FRAMES_IN_FLIGHT) * 2; // imgui requires * 2 for extra texture
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(vr->imageCount) * 2; // imgui requires * 2 for extra texture
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(VulkanBase::MAX_FRAMES_IN_FLIGHT) * 2;  // imgui requires * 2 for extra texture
+        poolInfo.maxSets = static_cast<uint32_t>(vr->imageCount) * 2;  // imgui requires * 2 for extra texture
 
-        VkResult result = vkCreateDescriptorPool(s_Device, &poolInfo, nullptr, &s_DescriptorPool);
-        DK_CORE_ASSERT(!result, "Failed to create descriptor pool!");
+        VkResult result = vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->descriptorPool);
+        DK_CORE_ASSERT(!result);
     }
 
     void VulkanBufferPool::CreateDescriptorSets()
     {
-        std::vector<VkDescriptorSetLayout> layouts(VulkanBase::MAX_FRAMES_IN_FLIGHT, s_DescriptorSetLayout);
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        std::vector<VkDescriptorSetLayout> layouts(vr->imageCount, vr->descriptorSetLayout);
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = s_DescriptorPool;
-        allocInfo.descriptorSetCount = static_cast<uint32_t>(VulkanBase::MAX_FRAMES_IN_FLIGHT);
+        allocInfo.descriptorPool = vr->descriptorPool;
+        allocInfo.descriptorSetCount = static_cast<uint32_t>(vr->imageCount);
         allocInfo.pSetLayouts = layouts.data();
 
-        VkResult result = vkAllocateDescriptorSets(s_Device, &allocInfo, s_DescriptorSets.data());
-        DK_CORE_ASSERT(!result, "Failed to allocate descriptor sets!");
+        VkResult result = vkAllocateDescriptorSets(vr->device, &allocInfo, s_DescriptorSets.data());
+        DK_CORE_ASSERT(!result);
 
-        for (size_t i = 0; i < VulkanBase::MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < vr->imageCount; i++)
         {
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = s_UniformBuffers[i]->GetBuffer();
@@ -323,13 +331,14 @@ namespace Deako {
             descriptorWrites[1].descriptorCount = 1;
             descriptorWrites[1].pImageInfo = &imageInfo;
 
-            vkUpdateDescriptorSets(s_Device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     }
 
     void VulkanBufferPool::UpdateUniformBuffer(uint32_t currentImage)
     {
-        VkExtent2D swapChainExtent = VulkanSwapChain::GetExtent();
+        VulkanResources* vr = VulkanBase::GetResources();
+
         static auto startTime = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
@@ -337,7 +346,7 @@ namespace Deako {
         UniformBufferObject ubo{};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.projection = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+        ubo.projection = glm::perspective(glm::radians(45.0f), vr->imageExtent.width / (float)vr->imageExtent.height, 0.1f, 10.0f);
         ubo.projection[1][1] *= -1;
 
         s_UniformBuffers[currentImage]->CopyTo(&ubo, sizeof(ubo));
@@ -345,20 +354,22 @@ namespace Deako {
 
     void VulkanBufferPool::CleanUp()
     {
-        vkDestroyBuffer(s_Device, s_VertexBuffer->GetBuffer(), nullptr);
-        vkFreeMemory(s_Device, s_VertexBuffer->GetMemory(), nullptr);
+        VulkanResources* vr = VulkanBase::GetResources();
 
-        vkDestroyBuffer(s_Device, s_IndexBuffer->GetBuffer(), nullptr);
-        vkFreeMemory(s_Device, s_IndexBuffer->GetMemory(), nullptr);
+        vkDestroyBuffer(vr->device, s_VertexBuffer->GetBuffer(), nullptr);
+        vkFreeMemory(vr->device, s_VertexBuffer->GetMemory(), nullptr);
 
-        for (size_t i = 0; i < VulkanBase::MAX_FRAMES_IN_FLIGHT; i++)
+        vkDestroyBuffer(vr->device, s_IndexBuffer->GetBuffer(), nullptr);
+        vkFreeMemory(vr->device, s_IndexBuffer->GetMemory(), nullptr);
+
+        for (size_t i = 0; i < vr->imageCount; i++)
         {
-            vkDestroyBuffer(s_Device, s_UniformBuffers[i]->GetBuffer(), nullptr);
-            vkFreeMemory(s_Device, s_UniformBuffers[i]->GetMemory(), nullptr);
+            vkDestroyBuffer(vr->device, s_UniformBuffers[i]->GetBuffer(), nullptr);
+            vkFreeMemory(vr->device, s_UniformBuffers[i]->GetMemory(), nullptr);
         }
 
-        vkDestroyDescriptorPool(s_Device, s_DescriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(s_Device, s_DescriptorSetLayout, nullptr);
+        vkDestroyDescriptorPool(vr->device, vr->descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayout, nullptr);
     }
 
 }

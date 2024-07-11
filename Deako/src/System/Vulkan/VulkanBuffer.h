@@ -1,7 +1,5 @@
 #pragma once
 
-#include "VulkanBase.h"
-
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
@@ -27,8 +25,6 @@ namespace Deako {
     class Buffer
     {
     public:
-        Buffer(VkDevice device);
-
         VkBuffer& GetBuffer() { return m_Buffer; }
         VkDeviceMemory& GetMemory() { return m_Memory; }
 
@@ -45,7 +41,6 @@ namespace Deako {
         static uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     private:
-        VkDevice m_Device{ VK_NULL_HANDLE };
         VkBuffer m_Buffer{ VK_NULL_HANDLE };
         VkDeviceMemory m_Memory{ VK_NULL_HANDLE };
         void* m_Mapped = nullptr;
@@ -54,7 +49,7 @@ namespace Deako {
     class VertexBuffer : public Buffer
     {
     public:
-        VertexBuffer(VkDevice device, const std::vector<Vertex>& vertices);
+        VertexBuffer(const std::vector<Vertex>& vertices);
 
         const std::vector<Vertex>& GetVertices() { return m_Vertices; }
 
@@ -65,7 +60,7 @@ namespace Deako {
     class IndexBuffer : public Buffer
     {
     public:
-        IndexBuffer(VkDevice device, const std::vector<uint16_t>& indices);
+        IndexBuffer(const std::vector<uint16_t>& indices);
 
         const std::vector<uint16_t>& GetIndices() { return m_Indices; }
 
@@ -86,20 +81,13 @@ namespace Deako {
 
         static const Ref<VertexBuffer>& GetVertexBuffer() { return s_VertexBuffer; }
         static const Ref<IndexBuffer>& GetIndexBuffer() { return s_IndexBuffer; }
-        static VkDescriptorSetLayout& GetDescriptorSetLayout() { return s_DescriptorSetLayout; }
-        static VkDescriptorPool& GetDescriptorPool() { return s_DescriptorPool; }
         static VkDescriptorSet& GetDescriptorSet(uint32_t currentImage) { return s_DescriptorSets[currentImage]; }
 
         static void UpdateUniformBuffer(uint32_t currentImage);
 
     private:
-        static VkDevice s_Device;
-
-        static VkDescriptorSetLayout s_DescriptorSetLayout;
-        static VkDescriptorPool s_DescriptorPool;
-        static std::array<VkDescriptorSet, VulkanBase::MAX_FRAMES_IN_FLIGHT> s_DescriptorSets;
-
-        static std::array<Ref<Buffer>, VulkanBase::MAX_FRAMES_IN_FLIGHT> s_UniformBuffers;
+        static std::array<VkDescriptorSet, 2> s_DescriptorSets;
+        static std::array<Ref<Buffer>, 2> s_UniformBuffers;
         static Ref<VertexBuffer> s_VertexBuffer;
         static Ref<IndexBuffer> s_IndexBuffer;
     };

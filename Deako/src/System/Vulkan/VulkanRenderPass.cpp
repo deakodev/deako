@@ -1,23 +1,19 @@
 #include "VulkanRenderPass.h"
 #include "dkpch.h"
 
-#include "VulkanDevice.h"
-#include "VulkanSwapChain.h"
+#include "VulkanBase.h"
 
 namespace Deako {
-
-    VkRenderPass VulkanRenderPass::s_RenderPass;
 
     // Tells Vulkan about framebuffer attachments that will be used while rendering
     // Specify how many color and depth buffers there will be, how many samples to use for each of them and how their contents should be handled throughout the rendering operations
     void VulkanRenderPass::Create()
     {
-        VkDevice device = VulkanDevice::GetLogical();
-        VkFormat swapChainImageFormat = VulkanSwapChain::GetImageFormat();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         //--- Color attachment --- ///
         VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = swapChainImageFormat;
+        colorAttachment.format = vr->imageFormat;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // default 1, used for multisampling
         // loadOp:
         // • VK_ATTACHMENT_LOAD_OP_LOAD: preserve existing contents of attachment
@@ -72,14 +68,15 @@ namespace Deako {
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies = &dependency;
 
-        VkResult result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &s_RenderPass);
-        DK_CORE_ASSERT(!result, "Failed to create render pass!");
+        VkResult result = vkCreateRenderPass(vr->device, &renderPassInfo, nullptr, &vr->renderPass);
+        DK_CORE_ASSERT(!result);
     }
 
     void VulkanRenderPass::CleanUp()
     {
-        VkDevice device = VulkanDevice::GetLogical();
-        vkDestroyRenderPass(device, s_RenderPass, nullptr);
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        vkDestroyRenderPass(vr->device, vr->renderPass, nullptr);
     }
 
 }

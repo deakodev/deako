@@ -17,15 +17,6 @@
 
 namespace Deako {
 
-    static void check_vk_result(VkResult err)
-    {
-        if (err == 0)
-            return;
-        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-        if (err < 0)
-            abort();
-    }
-
     ImGuiLayer::ImGuiLayer()
         : Layer("ImGuiLayer")
     {
@@ -33,6 +24,8 @@ namespace Deako {
 
     void ImGuiLayer::OnAttach()
     {
+        VulkanResources* vr = VulkanBase::GetResources();
+
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -63,30 +56,32 @@ namespace Deako {
         ImGui_ImplGlfw_InitForVulkan(window, true);
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
-        initInfo.Instance = VulkanBase::GetInstance();
-        initInfo.DescriptorPool = VulkanBufferPool::GetDescriptorPool();
-        initInfo.RenderPass = VulkanRenderPass::GetRenderPass();
-        initInfo.Device = VulkanDevice::GetLogical();
-        initInfo.PhysicalDevice = VulkanDevice::GetPhysical();
-        initInfo.QueueFamily = VulkanDevice::GetQueueFamilyIndices().graphicsFamily.value();
-        initInfo.Queue = VulkanDevice::GetGraphicsQueue();
-        initInfo.ImageCount = 2;
-        initInfo.MinImageCount = 2;
-        initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        initInfo.Allocator = nullptr;
+        initInfo.Instance = vr->instance;
+        initInfo.DescriptorPool = vr->descriptorPool;
+        initInfo.RenderPass = vr->renderPass;
+        initInfo.Device = vr->device;
+        initInfo.PhysicalDevice = vr->physicalDevice;
+        initInfo.QueueFamily = vr->graphicsFamily.value();
+        initInfo.Queue = vr->graphicsQueue;
+        initInfo.ImageCount = vr->minImageCount;
+        initInfo.MinImageCount = vr->imageCount;
+        initInfo.MSAASamples = vr->MSAASamples;
+        initInfo.Allocator = VK_NULL_HANDLE;
 
         initInfo.UseDynamicRendering = false;
         // dynamic rendering parameters for imgui to use
         // initInfo.PipelineRenderingCreateInfo = {};
         // initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         // initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &VulkanSwapChain::GetImageFormat();
+        // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->imageFormat;
 
         ImGui_ImplVulkan_Init(&initInfo);
     }
 
     void ImGuiLayer::OnDetach()
     {
+        VulkanBase::Idle();
+
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -94,12 +89,12 @@ namespace Deako {
 
     void ImGuiLayer::OnEvent(Event& event)
     {
-        // if (m_BlockEvents)
-        // {
-        //     ImGuiIO& io = ImGui::GetIO();
-        //     event.Handled |= event.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;
-        //     event.Handled |= event.IsInCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
-        // }
+        if (m_BlockEvents)
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            event.Handled |= event.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;
+            event.Handled |= event.IsInCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
+        }
     }
 
     void ImGuiLayer::Begin()

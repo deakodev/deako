@@ -60,7 +60,7 @@ namespace Deako {
         PopulateDebugMessengerCreateInfo(createInfo);
 
         VkResult result = CreateDebugUtilsMessengerEXT(&createInfo);
-        DK_CORE_ASSERT(!result, "Failed to create debug messenger!");
+        DK_CORE_ASSERT(!result);
     }
 
     void VulkanDebugMessenger::CleanUp()
@@ -70,26 +70,26 @@ namespace Deako {
 
     VkResult VulkanDebugMessenger::CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo)
     {
-        VkInstance instance = VulkanBase::GetInstance();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
-            vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+            vkGetInstanceProcAddr(vr->instance, "vkCreateDebugUtilsMessengerEXT");
 
         if (func != nullptr)
-            return func(instance, pCreateInfo, nullptr, &s_DebugMessenger);
+            return func(vr->instance, pCreateInfo, nullptr, &s_DebugMessenger);
         else
             return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
     void VulkanDebugMessenger::DestroyDebugUtilsMessengerEXT()
     {
-        VkInstance instance = VulkanBase::GetInstance();
+        VulkanResources* vr = VulkanBase::GetResources();
 
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
-            vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+            vkGetInstanceProcAddr(vr->instance, "vkDestroyDebugUtilsMessengerEXT");
 
         if (func != nullptr)
-            func(instance, s_DebugMessenger, nullptr);
+            func(vr->instance, s_DebugMessenger, nullptr);
     }
 
     void VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
