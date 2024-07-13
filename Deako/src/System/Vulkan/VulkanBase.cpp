@@ -9,7 +9,6 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanCommand.h"
 #include "VulkanBuffer.h"
-#include "VulkanTexture.h"
 
 namespace Deako {
 
@@ -36,12 +35,16 @@ namespace Deako {
         VulkanRenderPass::Create();
         VulkanBufferPool::CreateDescriptorSetLayout();
         VulkanPipeline::Create();
-        VulkanFramebufferPool::Create();
         VulkanCommandPool::Create();
+        VulkanSwapChain::CreateViewportImages();
+        VulkanSwapChain::CreateViewportImageViews();
+        DepthAttachment::Create();
+        VulkanFramebufferPool::Create();
         VulkanTexturePool::CreateTextures();
         VulkanBufferPool::CreateVertexBuffers();
         VulkanBufferPool::CreateIndexBuffer();
         VulkanBufferPool::CreateUniformBuffers();
+
 
         s_ImageAvailableSemaphores.resize(s_Resources.imageCount);
         s_RenderFinishedSemaphores.resize(s_Resources.imageCount);
@@ -81,10 +84,16 @@ namespace Deako {
             vkDestroyFence(s_Resources.device, s_InFlightFences[i], nullptr);
         }
 
+        VulkanSwapChain::CleanUpViewport();
+
         VulkanBufferPool::CleanUp();
         VulkanTexturePool::CleanUp();
-        VulkanCommandPool::CleanUp();
+
+        if (s_Resources.depthAttachment)
+            s_Resources.depthAttachment.reset();
+
         VulkanFramebufferPool::CleanUp();
+        VulkanCommandPool::CleanUp();
         VulkanPipeline::CleanUp();
         VulkanRenderPass::CleanUp();
         VulkanSwapChain::CleanUp();
@@ -236,13 +245,71 @@ namespace Deako {
             DK_CORE_ASSERT(false);
         }
 
-        VulkanBufferPool::UpdateUniformBuffer(s_CurrentFrame);
-
         // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
         vkResetFences(s_Resources.device, 1, &inFlightFence);
 
         // (3) record a command buffer which draws the scene onto that image
         VkCommandBuffer commandBuffer = VulkanCommandPool::Record(s_CurrentFrame, imageIndex);
+
+        VkCommandBuffer viewportCommandBuffer = VulkanCommandPool::GetViewportCommandBuffer(s_CurrentFrame);
+
+        {
+            VkCommandBufferBeginInfo beginInfo{};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            // beginInfo.flags = 0;									// Optional
+            // beginInfo.pInheritanceInfo = nullptr; // Optional
+
+            result = vkBeginCommandBuffer(viewportCommandBuffer, &beginInfo);
+            DK_CORE_ASSERT(!result);
+
+            VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassInfo.renderPass = s_Resources.viewportRenderPass;
+            renderPassInfo.framebuffer = VulkanFramebufferPool::GetViewportFramebuffer(s_CurrentFrame);
+            renderPassInfo.renderArea.offset = { 0, 0 };
+            renderPassInfo.renderArea.extent = s_Resources.imageExtent;
+
+            std::array<VkClearValue, 2> clearValues{};
+            clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+            clearValues[1].depthStencil = { 1.0f, 0 };
+
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderPassInfo.pClearValues = clearValues.data();
+
+            vkCmdBeginRenderPass(viewportCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            vkCmdBindPipeline(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources.viewportPipeline);
+
+            VkViewport viewport{};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = static_cast<float>(s_Resources.imageExtent.width);
+            viewport.height = static_cast<float>(s_Resources.imageExtent.height);
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(viewportCommandBuffer, 0, 1, &viewport);
+
+            const Ref<VertexBuffer>& vertexBuffer = VulkanBufferPool::GetVertexBuffer();
+            const Ref<IndexBuffer>& indexBuffer = VulkanBufferPool::GetIndexBuffer();
+
+            VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(viewportCommandBuffer, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(viewportCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+            vkCmdBindDescriptorSets(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources.pipelineLayout, 0, 1, &VulkanBufferPool::GetDescriptorSet(s_CurrentFrame), 0, nullptr);
+
+            vkCmdDrawIndexed(viewportCommandBuffer, static_cast<uint32_t>(indexBuffer->GetIndices().size()), 1, 0, 0, 0);
+
+            vkCmdEndRenderPass(viewportCommandBuffer);
+
+            result = vkEndCommandBuffer(viewportCommandBuffer);
+            DK_CORE_ASSERT(!result);
+        }
+
+
+
+        VulkanBufferPool::UpdateUniformBuffer(s_CurrentFrame);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -252,8 +319,10 @@ namespace Deako {
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer; // the recorded command buffer
+        std::array<VkCommandBuffer, 2> submitCommandBuffers =
+        { commandBuffer, viewportCommandBuffer };
+        submitInfo.commandBufferCount = static_cast<uint32_t>(submitCommandBuffers.size());;
+        submitInfo.pCommandBuffers = submitCommandBuffers.data(); // the recorded command buffers
 
         VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
         submitInfo.signalSemaphoreCount = 1;

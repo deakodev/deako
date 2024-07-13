@@ -4,14 +4,8 @@
 #include "Deako/Core/Application.h"
 
 #include "System/Vulkan/VulkanBase.h"
-#include "System/Vulkan/VulkanCommand.h"
-#include "System/Vulkan/VulkanDevice.h"
-#include "System/Vulkan/VulkanBuffer.h"
-#include "System/Vulkan/VulkanSwapChain.h"
-#include "System/Vulkan/VulkanRenderPass.h"
-#include "System/Vulkan/VulkanTexture.h"
 
-// #include <imgui.h>
+#include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
@@ -59,7 +53,7 @@ namespace Deako {
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = vr->instance;
         initInfo.DescriptorPool = vr->descriptorPool;
-        initInfo.RenderPass = vr->renderPass;
+        initInfo.RenderPass = vr->viewportRenderPass;
         initInfo.Device = vr->device;
         initInfo.PhysicalDevice = vr->physicalDevice;
         initInfo.QueueFamily = vr->graphicsFamily.value();
@@ -78,22 +72,18 @@ namespace Deako {
 
         ImGui_ImplVulkan_Init(&initInfo);
 
-        // Get Viewport TextureID for rendering viewport within imgui window
-        Ref<TextureSampler> viewportSampler = VulkanTexturePool::GetTextureSampler();
-        Ref<Texture> viewportTexture = VulkanTexturePool::GetViewportTexture();
-        VkSampler sampler = viewportSampler->GetSampler();
-        VkImageView imageView = viewportTexture->GetImageView();
-        VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        m_ViewportTextureID = ImGui_ImplVulkan_AddTexture(sampler, imageView, imageLayout);
+        SetViewportTextureIDs();
     }
 
     void ImGuiLayer::OnDetach()
     {
         VulkanBase::Idle();
 
-        ImGui_ImplVulkan_RemoveTexture(reinterpret_cast<VkDescriptorSet>(m_ViewportTextureID));
-        m_ViewportTextureID = nullptr;
+        for (uint32_t i = 0; i < m_ViewportTextureIDs.size(); i++)
+        {
+            ImGui_ImplVulkan_RemoveTexture(reinterpret_cast<VkDescriptorSet>(m_ViewportTextureIDs[i]));
+            m_ViewportTextureIDs[i] = nullptr;
+        }
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -119,11 +109,13 @@ namespace Deako {
 
     void ImGuiLayer::End(VkCommandBuffer commandBuffer, VkPipeline pipeline)
     {
-        ImGui::Render();
+        ImGuiIO& io = ImGui::GetIO();
+        Application& app = Application::Get();
+        io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
 
+        ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
@@ -131,6 +123,17 @@ namespace Deako {
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backupCurrentContext);
         }
+    }
+
+    void ImGuiLayer::SetViewportTextureIDs()
+    {
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        VkSampler textureSampler = VulkanTexturePool::GetTextureSampler()->GetSampler();
+        m_ViewportTextureIDs.resize(vr->viewportImageViews.size());
+
+        for (uint32_t i = 0; i < m_ViewportTextureIDs.size(); i++)
+            m_ViewportTextureIDs[i] = ImGui_ImplVulkan_AddTexture(textureSampler, vr->viewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
     void ImGuiLayer::SetDarkThemeColors()

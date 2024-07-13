@@ -16,7 +16,7 @@ namespace Deako {
         void SetImageInfo(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
         void SetImageViewInfo(VkFormat format);
         void CopyStaging(VkBuffer stagingBuffer, VkImage receivingImage, uint32_t width, uint32_t height);
-        void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+        static void TransitionImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     private:
         VkImage m_Image{ VK_NULL_HANDLE };

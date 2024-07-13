@@ -36,9 +36,9 @@ namespace Deako {
         this->SetImageInfo(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        TransitionImageLayout(vr->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         CopyStaging(stagingBuffer.GetBuffer(), m_Image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        TransitionImageLayout(vr->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         vkDestroyBuffer(vr->device, stagingBuffer.GetBuffer(), nullptr);
         vkFreeMemory(vr->device, stagingBuffer.GetMemory(), nullptr);
@@ -97,6 +97,7 @@ namespace Deako {
         viewInfo.subresourceRange.levelCount = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount = 1;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
         VkResult result = vkCreateImageView(vr->device, &viewInfo, nullptr, &m_ImageView);
         DK_CORE_ASSERT(!result);
@@ -104,7 +105,9 @@ namespace Deako {
 
     void Texture::CopyStaging(VkBuffer stagingBuffer, VkImage receivingImage, uint32_t width, uint32_t height)
     {
-        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands();
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands(vr->commandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -119,12 +122,13 @@ namespace Deako {
 
         vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, receivingImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        VulkanCommandPool::EndSingleTimeCommands(commandBuffer);
+        VulkanCommandPool::EndSingleTimeCommands(vr->commandPool, commandBuffer);
     }
 
-    void Texture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    void Texture::TransitionImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
-        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands(commandPool);
+
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -132,7 +136,6 @@ namespace Deako {
         barrier.newLayout = newLayout;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
         barrier.image = image;
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         barrier.subresourceRange.baseMipLevel = 0;
@@ -142,10 +145,26 @@ namespace Deako {
 
         VkPipelineStageFlags sourceStage;
         VkPipelineStageFlags destinationStage;
+
+        if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+            if (DepthAttachment::HasStencilComponent(format))
+            {
+                barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+        }
+        else
+        {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
         if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         {
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         }
@@ -153,18 +172,29 @@ namespace Deako {
         {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         }
         else
         {
             DK_CORE_ASSERT(false);
         }
 
-        vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage,
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            sourceStage, destinationStage,
             0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-        VulkanCommandPool::EndSingleTimeCommands(commandBuffer);
+        VulkanCommandPool::EndSingleTimeCommands(commandPool, commandBuffer);
     }
 
     TextureSampler::TextureSampler()

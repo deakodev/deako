@@ -11,14 +11,26 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
+        m_ViewportTextureIDs = Application::Get().GetImGuiLayer()->GetViewportTextureIDs();
     }
 
     void EditorLayer::OnDetach()
     {
+
     }
 
     void EditorLayer::OnUpdate()
     {
+        // // Resize framebuffer
+        // FramebufferSpec spec = m_Framebuffer->GetSpecification();
+        // if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
+        //     (spec.width != m_ViewportSize.x || spec.height != m_ViewportSize.y))
+        // {
+        //     m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
+        //     m_CameraController.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+        //     m_ActiveScene->OnViewportResize(m_ViewportSize.x, m_ViewportSize.y);
+        // }
+
         VulkanBase::DrawFrame();
     }
 
@@ -94,14 +106,14 @@ namespace Deako {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
         ImGui::Begin("Viewport");
 
-        // m_ViewportFocused = ImGui::IsWindowFocused();
-        // m_ViewportHovered = ImGui::IsWindowHovered();
-        // Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+        m_ViewportFocused = ImGui::IsWindowFocused();
+        m_ViewportHovered = ImGui::IsWindowHovered();
+        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-        m_ViewportTextureID = Application::Get().GetImGuiLayer().GetViewportTextureID();
-        ImGui::Image((ImTextureID)m_ViewportTextureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
+        uint32_t currentFrame = VulkanBase::GetCurrentFrame();
+        ImGui::Image((ImTextureID)m_ViewportTextureIDs[currentFrame], ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
 
         ImGui::End();
         ImGui::PopStyleVar();

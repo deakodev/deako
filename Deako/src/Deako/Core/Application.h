@@ -24,7 +24,7 @@ namespace Deako {
 
         static Application& Get() { return *s_Instance; }
         Window& GetWindow() { return *m_Window; }
-        ImGuiLayer& GetImGuiLayer() { return *m_ImGuiLayer; }
+        ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
         LayerStack& GetLayerStack() { return m_LayerStack; }
 
     private:

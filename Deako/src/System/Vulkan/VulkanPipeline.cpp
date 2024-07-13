@@ -59,16 +59,30 @@ namespace Deako {
 
         //--- Dynamic states ---//
         // *some* pipeline states can be changed without recreating the pipeline at draw time. Eg. size of the viewport, line width and blend constants
-        std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+        VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH };
         VkPipelineDynamicStateCreateInfo dynamicState{};
         dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-        dynamicState.pDynamicStates = dynamicStates.data();
+        dynamicState.dynamicStateCount = 2;
+        dynamicState.pDynamicStates = dynamicStates;
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = (float)vr->imageExtent.width;
+        viewport.height = (float)vr->imageExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        VkRect2D scissor{};
+        scissor.offset = { 0, 0 };
+        scissor.extent = vr->imageExtent;
 
         VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = 1;
+        viewportState.pViewports = &viewport;
         viewportState.scissorCount = 1;
+        viewportState.pScissors = &scissor;
 
         //--- Rasterizer ---//
         // takes the geometry that is shaped by the vertices from vertex shader and turns it into fragments to be colored by the fragment shader
@@ -154,6 +168,18 @@ namespace Deako {
         VkResult result = vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &vr->pipelineLayout);
         DK_CORE_ASSERT(!result);
 
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.minDepthBounds = 0.0f; // Optional
+        depthStencil.maxDepthBounds = 1.0f; // Optional
+        depthStencil.stencilTestEnable = VK_FALSE;
+        depthStencil.front = {}; // Optional
+        depthStencil.back = {};	 // Optional
+
         //--- One struct to rule them all ---//
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -165,7 +191,7 @@ namespace Deako {
         pipelineInfo.pViewportState = &viewportState;
         pipelineInfo.pRasterizationState = &rasterizer;
         pipelineInfo.pMultisampleState = &multisampling;
-        pipelineInfo.pDepthStencilState = nullptr; // Optional
+        pipelineInfo.pDepthStencilState = &depthStencil; // Optional
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
 
@@ -179,6 +205,10 @@ namespace Deako {
         result = vkCreateGraphicsPipelines(vr->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vr->graphicsPipeline);
         DK_CORE_ASSERT(!result);
 
+        pipelineInfo.renderPass = vr->viewportRenderPass;
+        result = vkCreateGraphicsPipelines(vr->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vr->viewportPipeline);
+        DK_CORE_ASSERT(!result);
+
         // Clean up shaders
         ShaderModule::CleanUp(vertShaderModule);
         ShaderModule::CleanUp(fragShaderModule);
@@ -188,6 +218,7 @@ namespace Deako {
     {
         VulkanResources* vr = VulkanBase::GetResources();
 
+        vkDestroyPipeline(vr->device, vr->viewportPipeline, nullptr);
         vkDestroyPipeline(vr->device, vr->graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(vr->device, vr->pipelineLayout, nullptr);
     }

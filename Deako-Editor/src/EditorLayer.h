@@ -14,15 +14,15 @@ namespace Deako {
 
         virtual void OnAttach() override;
         virtual void OnDetach() override;
-
         virtual void OnUpdate() override;
         virtual void OnEvent(Event& event) override;
-
         virtual void OnImGuiRender() override;
 
     private:
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
-        void* m_ViewportTextureID;
+        std::vector<void*> m_ViewportTextureIDs;
+        bool m_ViewportFocused = false;
+        bool m_ViewportHovered = false;
     };
 
 }

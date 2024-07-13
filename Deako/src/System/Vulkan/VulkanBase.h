@@ -1,5 +1,8 @@
 #pragma once
 
+#include "VulkanTexture.h"
+#include "VulkanDepth.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -14,30 +17,34 @@ namespace Deako {
         VkInstance                         instance{ VK_NULL_HANDLE };
         VkPhysicalDevice                   physicalDevice{ VK_NULL_HANDLE };
         VkDevice                           device{ VK_NULL_HANDLE };
-
         std::optional<uint32_t>            graphicsFamily;
         std::optional<uint32_t>            presentFamily;
         VkQueue                            graphicsQueue{ VK_NULL_HANDLE };
         VkQueue                            presentQueue{ VK_NULL_HANDLE };
-
         VkCommandPool                      commandPool{ VK_NULL_HANDLE };
-
         VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
         VkDescriptorSetLayout              descriptorSetLayout{ VK_NULL_HANDLE };
-
         VkPipeline                         graphicsPipeline{ VK_NULL_HANDLE };
         VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
-
         VkRenderPass                       renderPass{ VK_NULL_HANDLE };
-
         VkSwapchainKHR                     swapChain{ VK_NULL_HANDLE };
         VkSurfaceKHR                       surface{ VK_NULL_HANDLE };
         VkFormat                           imageFormat;
         VkExtent2D                         imageExtent;
 
-        uint32_t                        minImageCount{ 2 };
-        uint32_t                        imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
-        VkSampleCountFlagBits           MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
+        // Viewport
+        VkRenderPass                       viewportRenderPass{ VK_NULL_HANDLE };
+        VkPipeline                         viewportPipeline{ VK_NULL_HANDLE };
+        VkCommandPool                      viewportCommandPool{ VK_NULL_HANDLE };
+        std::vector<VkImage>               viewportImages;
+        std::vector<VkDeviceMemory>        viewportImageMemory;
+        std::vector<VkImageView>           viewportImageViews;
+
+        Scope<DepthAttachment>             depthAttachment;
+
+        uint32_t                           minImageCount{ 2 };
+        uint32_t                           imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
+        VkSampleCountFlagBits              MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
     };
 
     class VulkanBase
@@ -48,6 +55,7 @@ namespace Deako {
         static void Shutdown();
 
         static VulkanResources* GetResources() { return &s_Resources; }
+        static uint32_t GetCurrentFrame() { return s_CurrentFrame; }
         static const std::vector<const char*>& GetValidations() { return s_ValidationLayers; };
 
         static bool ValidationsEnabled() { return s_Settings.validation; }

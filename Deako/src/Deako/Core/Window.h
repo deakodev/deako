@@ -15,8 +15,8 @@ namespace Deako {
         uint32_t height;
 
         WindowProps(const char* title = "Deako Engine",
-            uint32_t width = 800,
-            uint32_t height = 600)
+            uint32_t width = 1600,
+            uint32_t height = 900)
             : title(title), width(width), height(height)
         {
         }

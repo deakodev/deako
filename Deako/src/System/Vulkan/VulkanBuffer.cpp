@@ -6,7 +6,7 @@
 #include "VulkanTexture.h"
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
@@ -42,7 +42,7 @@ namespace Deako {
         // • vec2: VK_FORMAT_R32G32_SFLOAT
         // • vec3: VK_FORMAT_R32G32B32_SFLOAT
         // • vec4: VK_FORMAT_R32G32B32A32_SFLOAT
-        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(Vertex, position);
 
         attributeDescriptions[1].binding = 0;
@@ -136,7 +136,9 @@ namespace Deako {
 
     void Buffer::CopyStaging(VkBuffer stagingBuffer, VkBuffer receivingBuffer, VkDeviceSize size)
     {
-        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands();
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands(vr->commandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0; // Optional
@@ -144,7 +146,7 @@ namespace Deako {
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, stagingBuffer, receivingBuffer, 1, &copyRegion);
 
-        VulkanCommandPool::EndSingleTimeCommands(commandBuffer);
+        VulkanCommandPool::EndSingleTimeCommands(vr->commandPool, commandBuffer);
     }
 
     void Buffer::Bind(VkDeviceSize offset)
@@ -222,17 +224,25 @@ namespace Deako {
     void VulkanBufferPool::CreateVertexBuffers()
     {
         const std::vector<Vertex> vertices = {
-            {{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-            {{0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-            {{0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
         };
         s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
     }
 
     void VulkanBufferPool::CreateIndexBuffer()
     {
-        const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+        const std::vector<uint16_t> indices = {
+            0, 1, 2, 2, 3, 0,
+            4, 5, 6, 6, 7, 4
+        };
         s_IndexBuffer = CreateRef<IndexBuffer>(indices);
     }
 
@@ -269,21 +279,43 @@ namespace Deako {
     {
         VulkanResources* vr = VulkanBase::GetResources();
 
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
-        poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSizes[0].descriptorCount = static_cast<uint32_t>(vr->imageCount);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(vr->imageCount) * 2; // imgui requires * 2 for extra texture
+        // std::array<VkDescriptorPoolSize, 2> poolSizes{};
+        // poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        // poolSizes[0].descriptorCount = static_cast<uint32_t>(vr->imageCount);
+        // poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        // poolSizes[1].descriptorCount = static_cast<uint32_t>(vr->imageCount) * 2; // imgui requires * 2 for extra texture
 
-        VkDescriptorPoolCreateInfo poolInfo{};
+        // VkDescriptorPoolCreateInfo poolInfo{};
+        // poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        // poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        // poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        // poolInfo.pPoolSizes = poolSizes.data();
+        // poolInfo.maxSets = static_cast<uint32_t>(vr->imageCount) * 2;  // imgui requires * 2 for extra texture
+
+        VkDescriptorPoolSize poolSizes[] = {
+                {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
+        };
+
+        VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = static_cast<uint32_t>(vr->imageCount) * 2;  // imgui requires * 2 for extra texture
+        poolInfo.maxSets = 1000 * ((int)(sizeof(poolSizes) / sizeof(*(poolSizes))));
+        poolInfo.poolSizeCount = (uint32_t)((int)(sizeof(poolSizes) / sizeof(*(poolSizes))));
+        poolInfo.pPoolSizes = poolSizes;
 
         VkResult result = vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->descriptorPool);
         DK_CORE_ASSERT(!result);
+
     }
 
     void VulkanBufferPool::CreateDescriptorSets()

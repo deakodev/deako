@@ -5,6 +5,9 @@
 
 #include "VulkanBase.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanBuffer.h"
+#include "VulkanTexture.h"
+#include "VulkanCommand.h"
 
 #include <GLFW/glfw3.h>
 
@@ -48,6 +51,18 @@ namespace Deako {
                        • VK_SHARING_MODE_EXCLUSIVE: An image is owned by one queue family at a time and ownership must be explicitly transferred before using it in another queue family (best performance)
                        • VK_SHARING_MODE_CONCURRENT: Images can be used across multiple queue families without explicit ownership transfers
                 */
+
+        if (s_Details.capabilities.supportedTransforms & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+        {
+            createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        // Enable transfer destination on swap chain images if supported
+        if (s_Details.capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        {
+            createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        }
+
         uint32_t queueFamilyIndices[] = { vr->graphicsFamily.value(), vr->presentFamily.value() };
 
         if (vr->graphicsFamily != vr->presentFamily)
@@ -101,13 +116,20 @@ namespace Deako {
 
         vkDeviceWaitIdle(vr->device);
 
-        // TODO: pg. 140 may need to seperate swap chain framebuffer portion if adding different types of framebuffers so we dont accidently CleanUp the wrong framebuffers
+        vr->depthAttachment.reset();
         VulkanFramebufferPool::CleanUp();
+        // CleanUpViewport();
         CleanUp();
 
         CreateSurface();
         Create();
-        VulkanFramebufferPool::Create(); // and framebuffers depend directly on the image views
+        // VulkanSwapChain::CreateViewportImages();
+        // VulkanSwapChain::CreateViewportImageViews();
+        DepthAttachment::Create();
+        VulkanFramebufferPool::Create();
+
+        // TODO: not sure if this is needed
+        Application::Get().GetImGuiLayer()->SetViewportTextureIDs();
     }
 
     void VulkanSwapChain::CreateSurface()
@@ -150,14 +172,142 @@ namespace Deako {
         }
     }
 
+    void VulkanSwapChain::CreateViewportImages()
+    {
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        vr->viewportImages.resize(s_Images.size());
+        vr->viewportImageMemory.resize(s_Images.size());
+
+        for (uint32_t i = 0; i < vr->viewportImages.size(); i++)
+        {
+            VkImageCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            createInfo.imageType = VK_IMAGE_TYPE_2D;
+            createInfo.format = VK_FORMAT_B8G8R8A8_SRGB;
+            createInfo.extent.width = vr->imageExtent.width;
+            createInfo.extent.height = vr->imageExtent.height;
+            createInfo.extent.depth = 1;
+            createInfo.arrayLayers = 1;
+            createInfo.mipLevels = 1;
+            createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+            createInfo.tiling = VK_IMAGE_TILING_LINEAR;
+            createInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+            vkCreateImage(vr->device, &createInfo, nullptr, &vr->viewportImages[i]);
+
+            VkMemoryRequirements memRequirements;
+            vkGetImageMemoryRequirements(vr->device, vr->viewportImages[i], &memRequirements);
+
+            VkMemoryAllocateInfo memAllocInfo{};
+            memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+            memAllocInfo.allocationSize = memRequirements.size;
+            memAllocInfo.memoryTypeIndex = Buffer::FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+            vkAllocateMemory(vr->device, &memAllocInfo, nullptr, &vr->viewportImageMemory[i]);
+            vkBindImageMemory(vr->device, vr->viewportImages[i], vr->viewportImageMemory[i], 0);
+
+            InsertImageMemoryBarrier(
+                vr->viewportCommandPool,
+                vr->viewportImages[i],
+                VK_ACCESS_TRANSFER_READ_BIT,
+                VK_ACCESS_MEMORY_READ_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
+            );
+        }
+    }
+
+    void VulkanSwapChain::InsertImageMemoryBarrier(
+        VkCommandPool commandPool,
+        VkImage image,
+        VkAccessFlags srcAccessMask,
+        VkAccessFlags dstAccessMask,
+        VkImageLayout oldImageLayout,
+        VkImageLayout newImageLayout,
+        VkPipelineStageFlags srcStageMask,
+        VkPipelineStageFlags dstStageMask,
+        VkImageSubresourceRange subresourceRange)
+    {
+        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands(commandPool);
+
+        VkImageMemoryBarrier imageMemoryBarrier{};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        imageMemoryBarrier.srcAccessMask = srcAccessMask;
+        imageMemoryBarrier.dstAccessMask = dstAccessMask;
+        imageMemoryBarrier.oldLayout = oldImageLayout;
+        imageMemoryBarrier.newLayout = newImageLayout;
+        imageMemoryBarrier.image = image;
+        imageMemoryBarrier.subresourceRange = subresourceRange;
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            srcStageMask,
+            dstStageMask,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &imageMemoryBarrier);
+
+        VulkanCommandPool::EndSingleTimeCommands(commandPool, commandBuffer);
+    }
+
+
+    void VulkanSwapChain::CreateViewportImageViews()
+    {
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        vr->viewportImageViews.resize(s_Images.size());
+
+        for (uint32_t i = 0; i < vr->viewportImageViews.size(); i++)
+        {
+            VkImageViewCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            createInfo.image = vr->viewportImages[i];
+            createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            createInfo.format = VK_FORMAT_B8G8R8A8_SRGB;
+            createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            createInfo.subresourceRange.baseMipLevel = 0;
+            createInfo.subresourceRange.levelCount = 1;
+            createInfo.subresourceRange.baseArrayLayer = 0;
+            createInfo.subresourceRange.layerCount = 1;
+
+            VkResult result = vkCreateImageView(vr->device, &createInfo, nullptr, &vr->viewportImageViews[i]);
+            DK_CORE_ASSERT(result == VK_SUCCESS);
+        }
+    }
+
     void VulkanSwapChain::CleanUp()
     {
         VulkanResources* vr = VulkanBase::GetResources();
 
         for (auto imageView : s_ImageViews)
             vkDestroyImageView(vr->device, imageView, nullptr);
+
         vkDestroySwapchainKHR(vr->device, vr->swapChain, nullptr);
         vkDestroySurfaceKHR(vr->instance, vr->surface, nullptr);
+    }
+
+    void VulkanSwapChain::CleanUpViewport()
+    {
+        VulkanResources* vr = VulkanBase::GetResources();
+
+        for (auto image : vr->viewportImages)
+            vkDestroyImage(vr->device, image, nullptr);
+        for (auto imageView : vr->viewportImageViews)
+            vkDestroyImageView(vr->device, imageView, nullptr);
+        for (auto imageMemory : vr->viewportImageMemory)
+            vkFreeMemory(vr->device, imageMemory, nullptr);
     }
 
     SwapChainSupportDetails VulkanSwapChain::QuerySupport(VkPhysicalDevice device)
@@ -198,7 +348,7 @@ namespace Deako {
          */
         for (const auto& availableFormat : formats)
         {
-            if (availableFormat.format == VK_FORMAT_R8G8B8_SRGB
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB
                 && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
             {
                 return availableFormat;
