@@ -1,14 +1,16 @@
 #pragma once
 
+#include "VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
 
-    class VulkanCommandPool
+    class CommandPool
     {
     public:
         static void Create();
-        static void CreateBuffers(std::vector<VkCommandBuffer>& commandBuffers);
+        static void CreateBuffers(VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
         static void CleanUp();
 
         static VkCommandBuffer Record(uint32_t currentFrame, uint32_t imageIndex);
@@ -16,13 +18,9 @@ namespace Deako {
         static VkCommandBuffer BeginSingleTimeCommands(VkCommandPool commandPool);
         static void EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer);
 
-
-        // TODO: temp
-        static VkCommandBuffer GetViewportCommandBuffer(uint32_t currentFrame) { return s_ViewportCommandBuffers[currentFrame]; }
-
     private:
-        static std::vector<VkCommandBuffer> s_CommandBuffers;
-        static std::vector<VkCommandBuffer> s_ViewportCommandBuffers;
+        static Ref<VulkanResources> s_VR;
+        static Ref<VulkanSettings> s_VS;
     };
 
 }

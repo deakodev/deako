@@ -1,11 +1,13 @@
 #pragma once
 
+#include "VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
 
     // Can have multiple, but class structured for one for now
-    class VulkanDebugMessenger
+    class DebugMessenger
     {
     public:
         static void Create();
@@ -19,6 +21,7 @@ namespace Deako {
 
     private:
         static VkDebugUtilsMessengerEXT s_DebugMessenger;
+        static Ref<VulkanResources> s_VR;
     };
 
 }

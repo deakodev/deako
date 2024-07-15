@@ -1,20 +1,20 @@
 #include "VulkanPipeline.h"
 #include "dkpch.h"
 
-#include "VulkanBase.h"
 #include "VulkanShaderModule.h"
 #include "VulkanBuffer.h"
 
 namespace Deako {
 
-    void VulkanPipeline::Create()
-    {
-        VulkanResources* vr = VulkanBase::GetResources();
+    Ref<VulkanResources> Pipeline::s_VR = VulkanBase::GetResources();
 
+    void Pipeline::Create()
+    {
+        //--- Shader stages ---//
         VkShaderModule vertShaderModule = ShaderModule::Create(
-            "/Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.vert.spv");
+            "Deako-Editor/assets/shaders/bin/shader.vert.spv");
         VkShaderModule fragShaderModule = ShaderModule::Create(
-            "/Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.frag.spv");
+            "Deako-Editor/assets/shaders/bin/shader.frag.spv");
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -35,15 +35,11 @@ namespace Deako {
         // describes the format of the vertex data that will be passed to the vertex shader:
         //  • Bindings: spacing between data and whether the data is per-vertex or per-instance (see instancing)
         //  • Attribute descriptions: type of attributes passed to the vertex shader, which binding to load them from and at which offset
-        auto bindingDescription = Vertex::GetBindingDescription();
+        auto bindingDescriptions = Vertex::GetBindingDescription();
         auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount = 1;
-        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo =
+            VulkanInitializers::PipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
 
         //--- Input assembly ---//
         // describes what kind of geometry will be drawn from vertices and if primitive restart should be enabled
@@ -52,58 +48,35 @@ namespace Deako {
         //  • VK_PRIMITIVE_TOPOLOGY_LINE_STRIP: end vertex of every line is used as start vertex for next line
         //  • VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: triangle from every 3 vertices without reuse
         //  • VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP: the second and third vertex of every triangle are used as first two vertices of the next triangle
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly =
+            VulkanInitializers::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
         //--- Dynamic states ---//
         // *some* pipeline states can be changed without recreating the pipeline at draw time. Eg. size of the viewport, line width and blend constants
-        VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH };
-        VkPipelineDynamicStateCreateInfo dynamicState{};
-        dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicState.dynamicStateCount = 2;
-        dynamicState.pDynamicStates = dynamicStates;
+        std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
 
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)vr->imageExtent.width;
-        viewport.height = (float)vr->imageExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
+        VkPipelineDynamicStateCreateInfo dynamicState =
+            VulkanInitializers::PipelineDynamicStateCreateInfo(dynamicStates);
+
+        VkViewport viewport =
+            VulkanInitializers::Viewport((float)s_VR->imageExtent.width, (float)s_VR->imageExtent.height, 0.0f, 1.0f);
 
         VkRect2D scissor{};
         scissor.offset = { 0, 0 };
-        scissor.extent = vr->imageExtent;
+        scissor.extent = s_VR->imageExtent;
 
-        VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;
+        VkPipelineViewportStateCreateInfo viewportState =
+            VulkanInitializers::PipelineViewportStateCreateInfo();
         viewportState.pViewports = &viewport;
-        viewportState.scissorCount = 1;
         viewportState.pScissors = &scissor;
 
         //--- Rasterizer ---//
         // takes the geometry that is shaped by the vertices from vertex shader and turns it into fragments to be colored by the fragment shader
         //  • also performs depth testing, face culling, and scissor test, and it can be configured for wireframe rendering
-        VkPipelineRasterizationStateCreateInfo rasterizer{};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        // if VK_TRUE, fragments beyond near/far planes are clamped to them as opposed to discarding them, useful for shadow maps, requires enabling a GPU feature
-        rasterizer.depthClampEnable = VK_FALSE;
+        VkPipelineRasterizationStateCreateInfo rasterizer =
+            VulkanInitializers::PipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
         // if VK_TRUE, then geometry never passes through the rasterizer stage, basically disables any output to the framebuffer
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        // determines how fragments are generated for geometry:
-        // • VK_POLYGON_MODE_FILL: fill the area of the polygon with fragments
-        // • VK_POLYGON_MODE_LINE: polygon edges are drawn as lines
-        // • VK_POLYGON_MODE_POINT: polygon vertices are drawn as points
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // any mode requires enabling a GPU feature
-        // thickness of lines in terms of number of fragments, max line width depends on the hardware
-        rasterizer.lineWidth = 1.0f; // line thicker than 1.0f requires enabling wideLines GPU feature
-
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-
         // these are sometimes used for shadow mapping
         rasterizer.depthBiasEnable = VK_FALSE;
         rasterizer.depthBiasConstantFactor = 0.0f; // Optional 
@@ -112,17 +85,23 @@ namespace Deako {
 
         //--- Multisampling ---//
         // one of the ways to perform anti-aliasing, works by combining fragment shader results of multiple polygons that rasterize to the same pixel (eg. along edges)
-        VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        VkPipelineMultisampleStateCreateInfo multisampling =
+            VulkanInitializers::PipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
         multisampling.sampleShadingEnable = VK_FALSE; // enabling requires enabling a GPU feature
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         multisampling.minSampleShading = 1.0f; // Optional
         multisampling.pSampleMask = nullptr; // Optional
         multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
         multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
         //--- Depth and stencil testing ---//
-        // TODO: Will come back to this and multisampling in later chapters
+        VkPipelineDepthStencilStateCreateInfo depthStencil =
+            VulkanInitializers::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.minDepthBounds = 0.0f; // Optional
+        depthStencil.maxDepthBounds = 1.0f; // Optional
+        depthStencil.stencilTestEnable = VK_FALSE;
+        depthStencil.front = {}; // Optional
+        depthStencil.back = {};	 // Optional
 
         //--- Color blending ---//
         // after fragment shader returns color, needs to be combined with the color in the framebuffer
@@ -130,12 +109,10 @@ namespace Deako {
         // • Mix the old and new value to produce a final color
         // • Combine the old and new value using a bitwise operation
         // first struct contains the configuration per attached framebuffer
-        VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
-            | VK_COLOR_COMPONENT_G_BIT
-            | VK_COLOR_COMPONENT_B_BIT
-            | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_FALSE;
+        VkPipelineColorBlendAttachmentState colorBlendAttachment =
+            VulkanInitializers::PipelineColorBlendAttachmentState(
+                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
         colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
         colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
         colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
@@ -144,45 +121,29 @@ namespace Deako {
         colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
         // second struct contains the *global* color blending settings
-        VkPipelineColorBlendStateCreateInfo colorBlending{};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        VkPipelineColorBlendStateCreateInfo colorBlending =
+            VulkanInitializers::PipelineColorBlendStateCreateInfo(1, &colorBlendAttachment);
         // to use the second method of blending (bitwise combination), set logicOpEnable VK_TRUE. The bitwise operation can then be specified in the logicOp field, will automatically disable the first method
         colorBlending.logicOpEnable = VK_FALSE;
         colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional 
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
         colorBlending.blendConstants[0] = 0.0f; // Optional
         colorBlending.blendConstants[1] = 0.0f; // Optional
         colorBlending.blendConstants[2] = 0.0f; // Optional
         colorBlending.blendConstants[3] = 0.0f; // Optional
 
         //--- Pipeline layout ---//
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        VkDescriptorSetLayout setLayouts[1] = { vr->descriptorSetLayout };
-        pipelineLayoutInfo.pSetLayouts = setLayouts;
+        VkDescriptorSetLayout setLayouts[1] = { s_VR->descriptorSetLayout };
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo =
+            VulkanInitializers::PipelineLayoutCreateInfo(setLayouts, 1);
         pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-        VkResult result = vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &vr->pipelineLayout);
+        VkResult result = vkCreatePipelineLayout(s_VR->device, &pipelineLayoutInfo, nullptr, &s_VR->pipelineLayout);
         DK_CORE_ASSERT(!result);
 
-        VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.minDepthBounds = 0.0f; // Optional
-        depthStencil.maxDepthBounds = 1.0f; // Optional
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.front = {}; // Optional
-        depthStencil.back = {};	 // Optional
-
         //--- One struct to rule them all ---//
-        VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        VkGraphicsPipelineCreateInfo pipelineInfo =
+            VulkanInitializers::PipelineCreateInfo(s_VR->pipelineLayout, s_VR->renderPass);
         pipelineInfo.stageCount = 2;
         pipelineInfo.pStages = shaderStages;
         // Fixed functionality structs
@@ -194,19 +155,14 @@ namespace Deako {
         pipelineInfo.pDepthStencilState = &depthStencil; // Optional
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
-
-        pipelineInfo.layout = vr->pipelineLayout;
-
-        pipelineInfo.renderPass = vr->renderPass;
         pipelineInfo.subpass = 0;
-        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
-        pipelineInfo.basePipelineIndex = -1; // Optional
 
-        result = vkCreateGraphicsPipelines(vr->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vr->graphicsPipeline);
+        result = vkCreateGraphicsPipelines(s_VR->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_VR->graphicsPipeline);
         DK_CORE_ASSERT(!result);
 
-        pipelineInfo.renderPass = vr->viewportRenderPass;
-        result = vkCreateGraphicsPipelines(vr->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vr->viewportPipeline);
+        // Viewport pipeline
+        pipelineInfo.renderPass = s_VR->viewportRenderPass;
+        result = vkCreateGraphicsPipelines(s_VR->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_VR->viewportPipeline);
         DK_CORE_ASSERT(!result);
 
         // Clean up shaders
@@ -214,13 +170,11 @@ namespace Deako {
         ShaderModule::CleanUp(fragShaderModule);
     }
 
-    void VulkanPipeline::CleanUp()
+    void Pipeline::CleanUp()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        vkDestroyPipeline(vr->device, vr->viewportPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(vr->device, vr->pipelineLayout, nullptr);
+        vkDestroyPipeline(s_VR->device, s_VR->viewportPipeline, nullptr);
+        vkDestroyPipeline(s_VR->device, s_VR->graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(s_VR->device, s_VR->pipelineLayout, nullptr);
     }
 
 }

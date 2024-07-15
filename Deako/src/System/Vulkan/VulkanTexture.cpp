@@ -1,7 +1,6 @@
 #include "VulkanTexture.h"
 #include "dkpch.h"
 
-#include "VulkanBase.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommand.h"
 
@@ -10,13 +9,13 @@
 
 namespace Deako {
 
-    Ref<Texture> VulkanTexturePool::s_ViewportTexture;
-    Ref<TextureSampler> VulkanTexturePool::s_TextureSampler;
+    VkSampler TexturePool::s_TextureSampler;
+    Ref<Texture> TexturePool::s_ViewportTexture;
+    Ref<VulkanResources> TexturePool::s_VR = VulkanBase::GetResources();
+    Ref<VulkanResources> Texture::s_VR = VulkanBase::GetResources();
 
     Texture::Texture()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
         int texWidth, texHeight, texChannels;
 
         stbi_uc* pixels = stbi_load("Deako-Editor/assets/textures/texture.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -36,22 +35,19 @@ namespace Deako {
         this->SetImageInfo(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        TransitionImageLayout(vr->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        TransitionImageLayout(s_VR->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         CopyStaging(stagingBuffer.GetBuffer(), m_Image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        TransitionImageLayout(vr->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        TransitionImageLayout(s_VR->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        vkDestroyBuffer(vr->device, stagingBuffer.GetBuffer(), nullptr);
-        vkFreeMemory(vr->device, stagingBuffer.GetMemory(), nullptr);
+        vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
+        vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
 
         this->SetImageViewInfo(VK_FORMAT_R8G8B8A8_SRGB);
     }
 
     void Texture::SetImageInfo(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo imageInfo = VulkanInitializers::ImageCreateInfo();
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
         imageInfo.extent.width = width;
         imageInfo.extent.height = height;
@@ -66,48 +62,42 @@ namespace Deako {
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.flags = 0; // Optional
 
-        VkResult result = vkCreateImage(vr->device, &imageInfo, nullptr, &m_Image);
+        VkResult result = vkCreateImage(s_VR->device, &imageInfo, nullptr, &m_Image);
         DK_CORE_ASSERT(!result);
 
         VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(vr->device, m_Image, &memRequirements);
+        vkGetImageMemoryRequirements(s_VR->device, m_Image, &memRequirements);
 
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        VkMemoryAllocateInfo allocInfo = VulkanInitializers::MemoryAllocateInfo();
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = Buffer::FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-        result = vkAllocateMemory(vr->device, &allocInfo, nullptr, &m_ImageMemory);
+        result = vkAllocateMemory(s_VR->device, &allocInfo, nullptr, &m_ImageMemory);
         DK_CORE_ASSERT(!result);
 
-        vkBindImageMemory(vr->device, m_Image, m_ImageMemory, 0);
+        vkBindImageMemory(s_VR->device, m_Image, m_ImageMemory, 0);
     }
 
     void Texture::SetImageViewInfo(VkFormat format)
     {
-        VulkanResources* vr = VulkanBase::GetResources();
+        VkImageViewCreateInfo createInfo = VulkanInitializers::ImageViewCreateInfo();
+        createInfo.image = m_Image;
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.format = format;
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = m_Image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        VkResult result = vkCreateImageView(vr->device, &viewInfo, nullptr, &m_ImageView);
+        VkResult result = vkCreateImageView(s_VR->device, &createInfo, nullptr, &m_ImageView);
         DK_CORE_ASSERT(!result);
     }
 
     void Texture::CopyStaging(VkBuffer stagingBuffer, VkImage receivingImage, uint32_t width, uint32_t height)
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands(vr->commandPool);
+        VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(s_VR->commandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -122,20 +112,16 @@ namespace Deako {
 
         vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, receivingImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        VulkanCommandPool::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+        CommandPool::EndSingleTimeCommands(s_VR->commandPool, commandBuffer);
     }
 
     void Texture::TransitionImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
-        VkCommandBuffer commandBuffer = VulkanCommandPool::BeginSingleTimeCommands(commandPool);
+        VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(commandPool);
 
-
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        VkImageMemoryBarrier barrier = VulkanInitializers::ImageMemoryBarrier();
         barrier.oldLayout = oldLayout;
         barrier.newLayout = newLayout;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = image;
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         barrier.subresourceRange.baseMipLevel = 0;
@@ -150,10 +136,8 @@ namespace Deako {
         {
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-            if (DepthAttachment::HasStencilComponent(format))
-            {
+            if (Depth::HasStencilComponent(format))
                 barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-            }
         }
         else
         {
@@ -189,20 +173,14 @@ namespace Deako {
             DK_CORE_ASSERT(false);
         }
 
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            sourceStage, destinationStage,
-            0, 0, nullptr, 0, nullptr, 1, &barrier);
+        vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-        VulkanCommandPool::EndSingleTimeCommands(commandPool, commandBuffer);
+        CommandPool::EndSingleTimeCommands(commandPool, commandBuffer);
     }
 
-    TextureSampler::TextureSampler()
+    void TexturePool::CreateSamplers()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        VkSamplerCreateInfo samplerInfo = VulkanInitializers::SamplerCreateInfo();
         samplerInfo.magFilter = VK_FILTER_LINEAR;
         samplerInfo.minFilter = VK_FILTER_LINEAR;
         samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -211,7 +189,7 @@ namespace Deako {
 
         samplerInfo.anisotropyEnable = VK_TRUE;
         VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(vr->physicalDevice, &properties);
+        vkGetPhysicalDeviceProperties(s_VR->physicalDevice, &properties);
         samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
@@ -223,27 +201,22 @@ namespace Deako {
         samplerInfo.minLod = 0.0f;
         samplerInfo.maxLod = 0.0f;
 
-        VkResult result = vkCreateSampler(vr->device, &samplerInfo, nullptr, &m_Sampler);
+        VkResult result = vkCreateSampler(s_VR->device, &samplerInfo, nullptr, &s_TextureSampler);
         DK_CORE_ASSERT(!result);
     }
 
-    void VulkanTexturePool::CreateTextures()
+    void TexturePool::CreateTextures()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
         s_ViewportTexture = CreateRef<Texture>();
-        s_TextureSampler = CreateRef<TextureSampler>();
     }
 
-    void VulkanTexturePool::CleanUp()
+    void TexturePool::CleanUp()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
+        vkDestroySampler(s_VR->device, s_TextureSampler, nullptr);
 
-        vkDestroySampler(vr->device, s_TextureSampler->GetSampler(), nullptr);
-
-        vkDestroyImageView(vr->device, s_ViewportTexture->GetImageView(), nullptr);
-        vkDestroyImage(vr->device, s_ViewportTexture->GetImage(), nullptr);
-        vkFreeMemory(vr->device, s_ViewportTexture->GetMemory(), nullptr);
+        vkDestroyImageView(s_VR->device, s_ViewportTexture->GetImageView(), nullptr);
+        vkDestroyImage(s_VR->device, s_ViewportTexture->GetImage(), nullptr);
+        vkFreeMemory(s_VR->device, s_ViewportTexture->GetMemory(), nullptr);
     }
 
 }

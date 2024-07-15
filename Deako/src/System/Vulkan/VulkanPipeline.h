@@ -1,14 +1,19 @@
 #pragma once
 
+#include "VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
 
-    class VulkanPipeline
+    class Pipeline
     {
     public:
         static void Create();
         static void CleanUp();
+
+    private:
+        static Ref<VulkanResources> s_VR;
     };
 
 }

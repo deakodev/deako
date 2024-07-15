@@ -21,17 +21,8 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        // // Resize framebuffer
-        // FramebufferSpec spec = m_Framebuffer->GetSpecification();
-        // if (m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
-        //     (spec.width != m_ViewportSize.x || spec.height != m_ViewportSize.y))
-        // {
-        //     m_Framebuffer->Resize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
-        //     m_CameraController.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-        //     m_ActiveScene->OnViewportResize(m_ViewportSize.x, m_ViewportSize.y);
-        // }
-
         VulkanBase::DrawFrame();
+        m_ViewportTextureIDs = Application::Get().GetImGuiLayer()->GetViewportTextureIDs();
     }
 
     void EditorLayer::OnImGuiRender()

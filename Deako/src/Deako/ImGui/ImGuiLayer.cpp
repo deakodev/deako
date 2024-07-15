@@ -3,7 +3,7 @@
 
 #include "Deako/Core/Application.h"
 
-#include "System/Vulkan/VulkanBase.h"
+#include "System/Vulkan/VulkanTexture.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -12,6 +12,9 @@
 
 namespace Deako {
 
+    Ref<VulkanResources> ImGuiLayer::s_VR;
+    Ref<VulkanSettings> ImGuiLayer::s_VS;
+
     ImGuiLayer::ImGuiLayer()
         : Layer("ImGuiLayer")
     {
@@ -19,7 +22,8 @@ namespace Deako {
 
     void ImGuiLayer::OnAttach()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
+        s_VR = VulkanBase::GetResources();
+        s_VS = VulkanBase::GetSettings();
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -51,16 +55,16 @@ namespace Deako {
         ImGui_ImplGlfw_InitForVulkan(window, true);
 
         ImGui_ImplVulkan_InitInfo initInfo = {};
-        initInfo.Instance = vr->instance;
-        initInfo.DescriptorPool = vr->descriptorPool;
-        initInfo.RenderPass = vr->viewportRenderPass;
-        initInfo.Device = vr->device;
-        initInfo.PhysicalDevice = vr->physicalDevice;
-        initInfo.QueueFamily = vr->graphicsFamily.value();
-        initInfo.Queue = vr->graphicsQueue;
-        initInfo.ImageCount = vr->minImageCount;
-        initInfo.MinImageCount = vr->imageCount;
-        initInfo.MSAASamples = vr->MSAASamples;
+        initInfo.Instance = s_VR->instance;
+        initInfo.DescriptorPool = s_VR->descriptorPool;
+        initInfo.RenderPass = s_VR->viewportRenderPass;
+        initInfo.Device = s_VR->device;
+        initInfo.PhysicalDevice = s_VR->physicalDevice;
+        initInfo.QueueFamily = s_VR->graphicsFamily.value();
+        initInfo.Queue = s_VR->graphicsQueue;
+        initInfo.ImageCount = s_VS->minImageCount;
+        initInfo.MinImageCount = s_VS->imageCount;
+        initInfo.MSAASamples = s_VS->MSAASamples;
         initInfo.Allocator = VK_NULL_HANDLE;
 
         initInfo.UseDynamicRendering = false;
@@ -68,7 +72,7 @@ namespace Deako {
         // initInfo.PipelineRenderingCreateInfo = {};
         // initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         // initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->imageFormat;
+        // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &s_VR->imageFormat;
 
         ImGui_ImplVulkan_Init(&initInfo);
 
@@ -111,7 +115,9 @@ namespace Deako {
     {
         ImGuiIO& io = ImGui::GetIO();
         Application& app = Application::Get();
-        io.DisplaySize = ImVec2((float)app.GetWindow().GetWidth(), (float)app.GetWindow().GetHeight());
+        auto [width, height] = app.GetWindow().GetWindowFramebufferSize();
+        io.DisplaySize = ImVec2((float)width, (float)height);
+        io.DisplayFramebufferScale = ImVec2(2.0f, 2.0f);
 
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -127,13 +133,22 @@ namespace Deako {
 
     void ImGuiLayer::SetViewportTextureIDs()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        VkSampler textureSampler = VulkanTexturePool::GetTextureSampler()->GetSampler();
-        m_ViewportTextureIDs.resize(vr->viewportImageViews.size());
+        VkSampler textureSampler = TexturePool::GetTextureSampler();
+        m_ViewportTextureIDs.resize(s_VR->viewportImageViews.size());
 
         for (uint32_t i = 0; i < m_ViewportTextureIDs.size(); i++)
-            m_ViewportTextureIDs[i] = ImGui_ImplVulkan_AddTexture(textureSampler, vr->viewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            m_ViewportTextureIDs[i] = ImGui_ImplVulkan_AddTexture(textureSampler, s_VR->viewportImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
+
+    void ImGuiLayer::ResetViewportTextureIDs()
+    {
+        for (uint32_t i = 0; i < m_ViewportTextureIDs.size(); i++)
+        {
+            ImGui_ImplVulkan_RemoveTexture(reinterpret_cast<VkDescriptorSet>(m_ViewportTextureIDs[i]));
+            m_ViewportTextureIDs[i] = nullptr;
+        }
+
+        SetViewportTextureIDs();
     }
 
     void ImGuiLayer::SetDarkThemeColors()

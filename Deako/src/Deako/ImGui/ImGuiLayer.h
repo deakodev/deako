@@ -4,6 +4,8 @@
 #include "Deako/Events/KeyEvent.h"
 #include "Deako/Events/MouseEvent.h"
 
+#include "System/Vulkan/VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -24,6 +26,7 @@ namespace Deako {
         void BlockEvents(bool block) { m_BlockEvents = block; }
 
         void SetViewportTextureIDs();
+        void ResetViewportTextureIDs();
         const std::vector<void*>& GetViewportTextureIDs() { return m_ViewportTextureIDs; }
 
     private:
@@ -35,6 +38,9 @@ namespace Deako {
 
         VkDescriptorPool m_ImguiPool;
         std::vector<void*> m_ViewportTextureIDs;
+
+        static Ref<VulkanResources> s_VR;
+        static Ref<VulkanSettings> s_VS;
     };
 
 }

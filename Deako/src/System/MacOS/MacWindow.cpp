@@ -5,6 +5,8 @@
 #include "Deako/Events/MouseEvent.h"
 #include "Deako/Events/KeyEvent.h"
 
+#include "System/Vulkan/VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -161,6 +163,15 @@ namespace Deako {
                     MouseMovedEvent event((float)xPos, (float)yPos);
                     data.EventCallback(event);
                 }
+            });
+
+        glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+            {
+                VulkanBase::GetState()->framebufferResized = true;
+
+                WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+                data.width = width;
+                data.height = height;
             });
     }
 

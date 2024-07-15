@@ -9,111 +9,80 @@
 #include "VulkanFramebuffer.h"
 #include "VulkanCommand.h"
 #include "VulkanBuffer.h"
+#include "VulkanDepth.h"
+#include "VulkanTexture.h"
+#include "VulkanViewport.h"
+#include "VulkanSync.h"
 
 namespace Deako {
 
-    std::vector<const char*> VulkanBase::s_Extensions;
-    std::vector<const char*> VulkanBase::s_ValidationLayers{ "VK_LAYER_KHRONOS_validation" };
-    uint32_t VulkanBase::s_CurrentFrame = 0;
-    bool VulkanBase::s_FramebufferResized = false;
-    std::vector<VkSemaphore> VulkanBase::s_ImageAvailableSemaphores;
-    std::vector<VkSemaphore> VulkanBase::s_RenderFinishedSemaphores;
-    std::vector<VkFence> VulkanBase::s_InFlightFences;
-    VulkanSettings VulkanBase::s_Settings;
-    VulkanResources VulkanBase::s_Resources;
+    Ref<VulkanSettings> VulkanBase::s_Settings = CreateRef<VulkanSettings>();
+    Ref<VulkanResources> VulkanBase::s_Resources = CreateRef<VulkanResources>();
+    VulkanState VulkanBase::s_State;
 
-    void VulkanBase::Init()
+    void VulkanBase::Init(const char* appName)
     {
-        CreateInstance();
+        CreateInstance(appName);
 
-        if (s_Settings.validation)
-            VulkanDebugMessenger::Create();
+        if (s_Settings->validation)
+            DebugMessenger::Create();
 
-        VulkanSwapChain::CreateSurface();
-        VulkanDevice::Create();
-        VulkanSwapChain::Create();
-        VulkanRenderPass::Create();
-        VulkanBufferPool::CreateDescriptorSetLayout();
-        VulkanPipeline::Create();
-        VulkanCommandPool::Create();
-        VulkanSwapChain::CreateViewportImages();
-        VulkanSwapChain::CreateViewportImageViews();
-        DepthAttachment::Create();
-        VulkanFramebufferPool::Create();
-        VulkanTexturePool::CreateTextures();
-        VulkanBufferPool::CreateVertexBuffers();
-        VulkanBufferPool::CreateIndexBuffer();
-        VulkanBufferPool::CreateUniformBuffers();
-
-
-        s_ImageAvailableSemaphores.resize(s_Resources.imageCount);
-        s_RenderFinishedSemaphores.resize(s_Resources.imageCount);
-        s_InFlightFences.resize(s_Resources.imageCount);
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // so first call to vkWaitForFences() returns immediately since the fence is already signaled
-
-        for (size_t i = 0; i < s_Resources.imageCount; i++)
-        {
-            VkResult result = vkCreateSemaphore(s_Resources.device, &semaphoreInfo, nullptr, &s_ImageAvailableSemaphores[i]);
-            DK_CORE_ASSERT(!result);
-
-            result = vkCreateSemaphore(s_Resources.device, &semaphoreInfo, nullptr, &s_RenderFinishedSemaphores[i]);
-            DK_CORE_ASSERT(!result);
-
-            result = vkCreateFence(s_Resources.device, &fenceInfo, nullptr, &s_InFlightFences[i]);
-            DK_CORE_ASSERT(!result);
-        }
+        SwapChain::CreateSurface(); // Surface needed to find supported queue families in next step
+        Device::Create(); // Selects phyical, then creates logical
+        SwapChain::Create(); // Creates the swap chain images too
+        SwapChain::CreateImageViews(); // Just the swap chain image views
+        RenderPass::Create();
+        BufferPool::CreateDescriptorSetLayout(); // Required before creating pipline
+        Pipeline::Create();
+        CommandPool::Create(); // Also creates assc buffers
+        Viewport::Create(); // Creates images and views
+        Depth::CreateAttachment();
+        FramebufferPool::CreateFramebuffers();
+        TexturePool::CreateSamplers();
+        TexturePool::CreateTextures();
+        BufferPool::CreateVertexBuffers();
+        BufferPool::CreateIndexBuffer();
+        BufferPool::CreateUniformBuffers();
+        BufferPool::CreateDescriptorPool();
+        BufferPool::CreateDescriptorSets();
+        Sync::CreateObjects();
     }
 
     void VulkanBase::Idle()
     {
-        vkDeviceWaitIdle(s_Resources.device);
+        vkDeviceWaitIdle(s_Resources->device);
     }
 
     void VulkanBase::Shutdown()
     {
-        for (size_t i = 0; i < s_Resources.imageCount; i++)
-        {
-            vkDestroySemaphore(s_Resources.device, s_RenderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(s_Resources.device, s_ImageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(s_Resources.device, s_InFlightFences[i], nullptr);
-        }
+        Sync::CleanUp();
+        BufferPool::CleanUp();
+        TexturePool::CleanUp();
+        FramebufferPool::CleanUp();
+        Depth::CleanUp();
+        Viewport::CleanUp();
+        CommandPool::CleanUp();
+        Pipeline::CleanUp();
+        RenderPass::CleanUp();
+        SwapChain::CleanUp();
+        Device::CleanUp();
+        SwapChain::CleanUpSurface();
 
-        VulkanSwapChain::CleanUpViewport();
+        if (s_Settings->validation)
+            DebugMessenger::CleanUp();
 
-        VulkanBufferPool::CleanUp();
-        VulkanTexturePool::CleanUp();
-
-        if (s_Resources.depthAttachment)
-            s_Resources.depthAttachment.reset();
-
-        VulkanFramebufferPool::CleanUp();
-        VulkanCommandPool::CleanUp();
-        VulkanPipeline::CleanUp();
-        VulkanRenderPass::CleanUp();
-        VulkanSwapChain::CleanUp();
-        VulkanDevice::CleanUp();
-
-        if (s_Settings.validation)
-            VulkanDebugMessenger::CleanUp();
-
-        vkDestroyInstance(s_Resources.instance, nullptr);
+        vkDestroyInstance(s_Resources->instance, nullptr);
     }
 
-    void VulkanBase::CreateInstance()
+    void VulkanBase::CreateInstance(const char* appName)
     {
         #if defined(VK_VALIDATION)
-        s_Settings.validation = true;
+        s_Settings->validation = true;
         #endif
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = "Deako Editor";
+        appInfo.pApplicationName = appName;
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "Deako Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -128,17 +97,16 @@ namespace Deako {
         #endif
 
         DetermineExtensions();
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(s_Extensions.size());
-        createInfo.ppEnabledExtensionNames = s_Extensions.data();
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(s_Settings->instanceExtensions.size());
+        createInfo.ppEnabledExtensionNames = s_Settings->instanceExtensions.data();
 
-        if (s_Settings.validation && AreValidationsAvailable())
+        if (s_Settings->validation && AreValidationsAvailable())
         {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(s_ValidationLayers.size());
-            createInfo.ppEnabledLayerNames = s_ValidationLayers.data();
-
-            // To debug the creation/destruction of the instance without needing a instance to refer to
+            createInfo.enabledLayerCount = static_cast<uint32_t>(s_Settings->validationLayers.size());
+            createInfo.ppEnabledLayerNames = s_Settings->validationLayers.data();
+            // Used to debug creation/destruction of the instance without needing a instance to refer to
             VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-            VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+            DebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext = &debugCreateInfo;
         }
         else
@@ -147,37 +115,37 @@ namespace Deako {
             createInfo.pNext = nullptr;
         }
 
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &s_Resources.instance);
+        VkResult result = vkCreateInstance(&createInfo, nullptr, &s_Resources->instance);
         DK_CORE_ASSERT(!result, "Failed to create vulkan instance!");
     }
 
     void VulkanBase::DetermineExtensions()
     {
-        // Required extensions - GLFW handy built-in func to get extensions required for our driver
+        // Required instanceExtensions - GLFW handy built-in func to get instanceExtensions required for our driver
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions; // pointer to a char pointer
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
         for (uint32_t i = 0; i < glfwExtensionCount; i++)
-            s_Extensions.emplace_back(glfwExtensions[i]);
+            s_Settings->instanceExtensions.emplace_back(glfwExtensions[i]);
 
         #ifdef VK_USE_PLATFORM_MACOS_MVK
-        s_Extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-        s_Extensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        s_Settings->instanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        s_Settings->instanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         #endif
 
         // Required for debug messenger
-        if (s_Settings.validation)
-            s_Extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        if (s_Settings->validation)
+            s_Settings->instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-        // Check if extensions are supported
+        // Check if required instanceExtensions are supported
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
         std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.data());
 
-        for (const char* requiredExtension : s_Extensions)
+        for (const char* requiredExtension : s_Settings->instanceExtensions)
         {
             bool supported = false;
             for (const auto& supportedExtension : supportedExtensions)
@@ -202,7 +170,7 @@ namespace Deako {
         vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
         // Check if each requested validation layer is available
-        for (const char* validationLayers : s_ValidationLayers)
+        for (const char* validationLayers : s_Settings->validationLayers)
         {
             bool available = false;
             for (const auto& availableLayer : availableLayers)
@@ -217,27 +185,26 @@ namespace Deako {
             if (!available)
                 return false;
         }
-
         return true;
     }
 
     void VulkanBase::DrawFrame()
     {
-        VkSemaphore imageAvailableSemaphore = s_ImageAvailableSemaphores[s_CurrentFrame];
-        VkSemaphore renderFinishedSemaphore = s_RenderFinishedSemaphores[s_CurrentFrame];
-        VkFence inFlightFence = s_InFlightFences[s_CurrentFrame];
+        VkSemaphore imageAvailableSemaphore = s_Resources->imageAvailableSemaphores[s_State.currentFrame];
+        VkSemaphore renderFinishedSemaphore = s_Resources->renderFinishedSemaphores[s_State.currentFrame];
+        VkFence inFlightFence = s_Resources->inFlightFences[s_State.currentFrame];
 
         // (1) wait until previous frame is finished, so command buffer/semaphores are available to use. Waits on host for either any or all of the fences to be signaled before returning. VK_TRUE indicates to wait for all fences, last param is timeout that we set to the max value of UINT64_MAX, which effectively disables timeout
-        vkWaitForFences(s_Resources.device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+        vkWaitForFences(s_Resources->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
 
         // (2) acquire an image from the swap chain
         // third param specifies timeout in nanosecs for an image to become available. Max value of UINT64_MAX, which disables timeout, next two params specify synchronization
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(s_Resources.device, s_Resources.swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(s_Resources->device, s_Resources->swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            VulkanSwapChain::Recreate();
+            SwapChain::Recreate();
             return;
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -246,12 +213,12 @@ namespace Deako {
         }
 
         // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
-        vkResetFences(s_Resources.device, 1, &inFlightFence);
+        vkResetFences(s_Resources->device, 1, &inFlightFence);
 
         // (3) record a command buffer which draws the scene onto that image
-        VkCommandBuffer commandBuffer = VulkanCommandPool::Record(s_CurrentFrame, imageIndex);
+        VkCommandBuffer commandBuffer = CommandPool::Record(s_State.currentFrame, imageIndex);
 
-        VkCommandBuffer viewportCommandBuffer = VulkanCommandPool::GetViewportCommandBuffer(s_CurrentFrame);
+        VkCommandBuffer viewportCommandBuffer = s_Resources->viewportCommandBuffers[s_State.currentFrame];
 
         {
             VkCommandBufferBeginInfo beginInfo{};
@@ -262,12 +229,11 @@ namespace Deako {
             result = vkBeginCommandBuffer(viewportCommandBuffer, &beginInfo);
             DK_CORE_ASSERT(!result);
 
-            VkRenderPassBeginInfo renderPassInfo{};
-            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            renderPassInfo.renderPass = s_Resources.viewportRenderPass;
-            renderPassInfo.framebuffer = VulkanFramebufferPool::GetViewportFramebuffer(s_CurrentFrame);
+            VkRenderPassBeginInfo renderPassInfo = VulkanInitializers::RenderPassBeginInfo();
+            renderPassInfo.renderPass = s_Resources->viewportRenderPass;
+            renderPassInfo.framebuffer = s_Resources->viewportFramebuffers[s_State.currentFrame];
             renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = s_Resources.imageExtent;
+            renderPassInfo.renderArea.extent = s_Resources->imageExtent;
 
             std::array<VkClearValue, 2> clearValues{};
             clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
@@ -278,26 +244,27 @@ namespace Deako {
 
             vkCmdBeginRenderPass(viewportCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            vkCmdBindPipeline(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources.viewportPipeline);
+            vkCmdBindPipeline(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources->viewportPipeline);
 
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = static_cast<float>(s_Resources.imageExtent.width);
-            viewport.height = static_cast<float>(s_Resources.imageExtent.height);
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
+            VkViewport viewport =
+                VulkanInitializers::Viewport(static_cast<float>(s_Resources->imageExtent.width), static_cast<float>(s_Resources->imageExtent.height), 0.0f, 1.0f);
+
             vkCmdSetViewport(viewportCommandBuffer, 0, 1, &viewport);
 
-            const Ref<VertexBuffer>& vertexBuffer = VulkanBufferPool::GetVertexBuffer();
-            const Ref<IndexBuffer>& indexBuffer = VulkanBufferPool::GetIndexBuffer();
+            VkRect2D scissor{};
+            scissor.offset = { 0, 0 };
+            scissor.extent = s_Resources->imageExtent;
+            vkCmdSetScissor(viewportCommandBuffer, 0, 1, &scissor);
+
+            const Ref<VertexBuffer>& vertexBuffer = BufferPool::GetVertexBuffer();
+            const Ref<IndexBuffer>& indexBuffer = BufferPool::GetIndexBuffer();
 
             VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(viewportCommandBuffer, 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(viewportCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
 
-            vkCmdBindDescriptorSets(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources.pipelineLayout, 0, 1, &VulkanBufferPool::GetDescriptorSet(s_CurrentFrame), 0, nullptr);
+            vkCmdBindDescriptorSets(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources->pipelineLayout, 0, 1, &BufferPool::GetDescriptorSet(s_State.currentFrame), 0, nullptr);
 
             vkCmdDrawIndexed(viewportCommandBuffer, static_cast<uint32_t>(indexBuffer->GetIndices().size()), 1, 0, 0, 0);
 
@@ -307,9 +274,7 @@ namespace Deako {
             DK_CORE_ASSERT(!result);
         }
 
-
-
-        VulkanBufferPool::UpdateUniformBuffer(s_CurrentFrame);
+        BufferPool::UpdateUniformBuffer(s_State.currentFrame);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -329,7 +294,7 @@ namespace Deako {
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         // (4) submit info with recorded command buffer
-        result = vkQueueSubmit(s_Resources.graphicsQueue, 1, &submitInfo, inFlightFence);
+        result = vkQueueSubmit(s_Resources->graphicsQueue, 1, &submitInfo, inFlightFence);
         DK_CORE_ASSERT(!result);
 
         VkPresentInfoKHR presentInfo{};
@@ -337,19 +302,19 @@ namespace Deako {
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = { s_Resources.swapChain };
+        VkSwapchainKHR swapChains[] = { s_Resources->swapChain };
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr; // Optional
 
         // (5) present the swap chain image
-        result = vkQueuePresentKHR(s_Resources.presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(s_Resources->presentQueue, &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || s_FramebufferResized)
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || s_State.framebufferResized)
         {
-            s_FramebufferResized = false;
-            VulkanSwapChain::Recreate();
+            s_State.framebufferResized = false;
+            SwapChain::Recreate();
         }
         else if (result != VK_SUCCESS)
         {
@@ -357,7 +322,7 @@ namespace Deako {
         }
 
         // Set current frame for the next frame
-        s_CurrentFrame = (s_CurrentFrame + 1) % s_Resources.imageCount;
+        s_State.currentFrame = (s_State.currentFrame + 1) % s_Settings->imageCount;
     }
 
 }

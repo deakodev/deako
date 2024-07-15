@@ -9,7 +9,7 @@ namespace Deako {
     {
     public:
         DeakoEditor()
-            : Application("Deako")
+            : Application("Deako Editor")
         {
             PushLayer(new EditorLayer());
         }

@@ -5,9 +5,9 @@
 
 namespace Deako {
 
-    void Renderer::Init()
+    void Renderer::Init(const char* appName)
     {
-        VulkanBase::Init();
+        VulkanBase::Init(appName);
     }
 
     void Renderer::Shutdown()

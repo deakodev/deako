@@ -6,14 +6,15 @@
 
 namespace Deako {
 
-    class FramebufferPool
+    class Sync
     {
     public:
-        static void CreateFramebuffers();
+        static void CreateObjects();
         static void CleanUp();
 
     private:
         static Ref<VulkanResources> s_VR;
+        static Ref<VulkanSettings> s_VS;
     };
 
 }

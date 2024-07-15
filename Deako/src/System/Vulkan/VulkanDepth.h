@@ -4,31 +4,25 @@
 
 namespace Deako {
 
-    class DepthAttachment
+    struct VulkanResources;
+
+    class Depth
     {
     public:
-        DepthAttachment();
-        ~DepthAttachment();
+        static void CreateAttachment();
+        static void CleanUp();
 
-        VkImage& GetImage() { return m_DepthImage; }
-        VkImageView& GetImageView() { return m_DepthImageView; }
-        VkDeviceMemory& GetMemory() { return m_DepthImageMemory; }
+        static void SetImageInfo(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+        static void SetImageViewInfo(VkFormat format);
 
-        void SetImageInfo(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
-        void SetImageViewInfo(VkFormat format);
-
-        static VkFormat FindDepthFormat();
+        static VkFormat FindFormat();
         static bool HasStencilComponent(VkFormat format);
-
-        static void Create();
 
     private:
         static VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
     private:
-        VkImage m_DepthImage{ VK_NULL_HANDLE };
-        VkImageView m_DepthImageView{ VK_NULL_HANDLE };
-        VkDeviceMemory m_DepthImageMemory{ VK_NULL_HANDLE };
+        static Ref<VulkanResources> s_VR;
     };
 
 }

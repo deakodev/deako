@@ -1,5 +1,7 @@
 #pragma once
 
+#include "VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
@@ -11,8 +13,8 @@ namespace Deako {
         glm::vec3 color;
         glm::vec2 texCoord;
 
-        static VkVertexInputBindingDescription GetBindingDescription();
-        static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions();
+        static std::vector<VkVertexInputBindingDescription> GetBindingDescription();
+        static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
     };
 
     struct UniformBufferObject
@@ -39,6 +41,10 @@ namespace Deako {
         void*& Mapped() { return m_Mapped; }
 
         static uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+    protected:
+        static Ref<VulkanResources> s_VR;
+        static Ref<VulkanSettings> s_VS;
 
     private:
         VkBuffer m_Buffer{ VK_NULL_HANDLE };
@@ -68,7 +74,7 @@ namespace Deako {
         std::vector<uint16_t> m_Indices;
     };
 
-    class VulkanBufferPool
+    class BufferPool
     {
     public:
         static void CreateUniformBuffers();
@@ -90,6 +96,9 @@ namespace Deako {
         static std::array<Ref<Buffer>, 2> s_UniformBuffers;
         static Ref<VertexBuffer> s_VertexBuffer;
         static Ref<IndexBuffer> s_IndexBuffer;
+
+        static Ref<VulkanResources> s_VR;
+        static Ref<VulkanSettings> s_VS;
     };
 
 }

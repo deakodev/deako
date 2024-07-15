@@ -1,26 +1,21 @@
 #include "VulkanDevice.h"
 #include "dkpch.h"
 
-#include "VulkanBase.h"
 #include "VulkanSwapChain.h"
 
 namespace Deako {
 
-    const std::vector<const char*> VulkanDevice::s_DeviceExtensions = {
-       VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-       "VK_KHR_portability_subset"
-    };
+    Ref<VulkanResources> Device::s_VR = VulkanBase::GetResources();
+    Ref<VulkanSettings> Device::s_VS = VulkanBase::GetSettings();
 
-    void VulkanDevice::Create()
+    void Device::Create()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
         DeterminePhysical();
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {
-            vr->graphicsFamily.value(),
-            vr->presentFamily.value()
+            s_VR->graphicsFamily.value(),
+            s_VR->presentFamily.value()
         };
 
         // Between 0.0 - 1.0; influences the scheduling of command buffer execution
@@ -47,47 +42,43 @@ namespace Deako {
         deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
         // Enable required device extensions
-        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(s_DeviceExtensions.size());
-        deviceCreateInfo.ppEnabledExtensionNames = s_DeviceExtensions.data();
+        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(s_VS->deviceExtensions.size());
+        deviceCreateInfo.ppEnabledExtensionNames = s_VS->deviceExtensions.data();
 
-        if (VulkanBase::ValidationsEnabled())
+        if (s_VS->validation)
         {
-            const auto& validationLayers = VulkanBase::GetValidations();
-            deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-            deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+            deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(s_VS->validationLayers.size());
+            deviceCreateInfo.ppEnabledLayerNames = s_VS->validationLayers.data();
         }
         else
         {
             deviceCreateInfo.enabledLayerCount = 0;
         }
 
-        // Finally we can create the logical device, note - queues are automatically created here
-        VkResult result = vkCreateDevice(vr->physicalDevice, &deviceCreateInfo, nullptr, &vr->device);
+        // note - queues are automatically created here
+        VkResult result = vkCreateDevice(s_VR->physicalDevice, &deviceCreateInfo, nullptr, &s_VR->device);
         DK_CORE_ASSERT(!result);
 
-        vkGetDeviceQueue(vr->device, vr->graphicsFamily.value(), 0, &vr->graphicsQueue);
-        vkGetDeviceQueue(vr->device, vr->presentFamily.value(), 0, &vr->presentQueue);
+        vkGetDeviceQueue(s_VR->device, s_VR->graphicsFamily.value(), 0, &s_VR->graphicsQueue);
+        vkGetDeviceQueue(s_VR->device, s_VR->presentFamily.value(), 0, &s_VR->presentQueue);
     }
 
-    void VulkanDevice::CleanUp()
+    void Device::CleanUp()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-        vkDestroyDevice(vr->device, nullptr);
+        vkDestroyDevice(s_VR->device, nullptr);
     }
 
-    void VulkanDevice::DeterminePhysical()
+    void Device::DeterminePhysical()
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
         // First check if any devices are supported
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(s_VR->instance, &deviceCount, nullptr);
 
         DK_CORE_ASSERT(deviceCount);
 
         // Allocate an array to hold all of the VkPhysicalDevice handles
         std::vector<VkPhysicalDevice> devices(deviceCount);
-        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, devices.data());
+        vkEnumeratePhysicalDevices(s_VR->instance, &deviceCount, devices.data());
 
         std::multimap<int, VkPhysicalDevice> candidates;
 
@@ -100,18 +91,16 @@ namespace Deako {
 
         // Determine best candidate and set as physical device
         if (candidates.rbegin()->first > 0)
-            vr->physicalDevice = candidates.rbegin()->second;
+            s_VR->physicalDevice = candidates.rbegin()->second;
         else
             DK_CORE_ASSERT(false);
 
         // Set family indices of our selected physical device
-        FindQueueFamilies(vr->physicalDevice);
+        FindQueueFamilies(s_VR->physicalDevice);
     }
 
-    int VulkanDevice::RatePhysical(VkPhysicalDevice device)
+    int Device::RatePhysical(VkPhysicalDevice device)
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
         VkPhysicalDeviceFeatures deviceFeatures;
@@ -130,7 +119,7 @@ namespace Deako {
 
         // Look for families, must have required families
         FindQueueFamilies(device);
-        bool queueFamiliesFound = vr->graphicsFamily.has_value() && vr->presentFamily.has_value();
+        bool queueFamiliesFound = s_VR->graphicsFamily.has_value() && s_VR->presentFamily.has_value();
 
         // Must support required extensions and features
         bool extensionsSupported = CheckDeviceExtensionSupport(device);
@@ -140,7 +129,7 @@ namespace Deako {
         bool swapChainAdequate = false;
         if (extensionsSupported)
         {
-            SwapChainSupportDetails swapChainSupport = VulkanSwapChain::QuerySupport(device);
+            SwapChainSupportDetails swapChainSupport = SwapChain::QuerySupport(device);
             swapChainAdequate = !swapChainSupport.formats.empty()
                 && !swapChainSupport.presentModes.empty();
         }
@@ -150,10 +139,8 @@ namespace Deako {
         return suitable ? score : 0;
     }
 
-    void VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
+    void Device::FindQueueFamilies(VkPhysicalDevice device)
     {
-        VulkanResources* vr = VulkanBase::GetResources();
-
         uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -166,22 +153,22 @@ namespace Deako {
         for (const auto& queueFamily : queueFamilies)
         {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-                vr->graphicsFamily = i;
+                s_VR->graphicsFamily = i;
 
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vr->surface, &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, s_VR->surface, &presentSupport);
 
             if (presentSupport)
-                vr->presentFamily = i;
+                s_VR->presentFamily = i;
 
-            if (vr->graphicsFamily.has_value() && vr->presentFamily.has_value())
+            if (s_VR->graphicsFamily.has_value() && s_VR->presentFamily.has_value())
                 break;
 
             i++;
         }
     }
 
-    bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+    bool Device::CheckDeviceExtensionSupport(VkPhysicalDevice device)
     {
         uint32_t extensionCount;
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -189,7 +176,7 @@ namespace Deako {
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-        std::set<std::string> requiredExtensions(s_DeviceExtensions.begin(), s_DeviceExtensions.end());
+        std::set<std::string> requiredExtensions(s_VS->deviceExtensions.begin(), s_VS->deviceExtensions.end());
 
         // checks if available extension array satisfies the required extensions array
         for (const auto& extension : availableExtensions)

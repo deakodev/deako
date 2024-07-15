@@ -1,10 +1,12 @@
 #pragma once
 
+#include "VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
 
-    class VulkanDevice
+    class Device
     {
     public:
         static void Create();
@@ -17,7 +19,8 @@ namespace Deako {
         static bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
     private:
-        static const std::vector<const char*> s_DeviceExtensions;
+        static Ref<VulkanResources> s_VR;
+        static Ref<VulkanSettings> s_VS;
     };
 
 }

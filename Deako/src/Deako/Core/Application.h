@@ -37,7 +37,9 @@ namespace Deako {
         bool OnWindowRestored(WindowRestoredEvent& event);
 
     private:
+        const char* m_AppName;
         static Application* s_Instance;
+
         Scope<Window> m_Window;
         ImGuiLayer* m_ImGuiLayer;
         LayerStack m_LayerStack;

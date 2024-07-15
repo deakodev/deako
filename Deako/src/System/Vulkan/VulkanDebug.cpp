@@ -1,11 +1,10 @@
 #include "VulkanDebug.h"
 #include "dkpch.h"
 
-#include "VulkanBase.h"
-
 namespace Deako {
 
-    VkDebugUtilsMessengerEXT VulkanDebugMessenger::s_DebugMessenger;
+    VkDebugUtilsMessengerEXT DebugMessenger::s_DebugMessenger;
+    Ref<VulkanResources> DebugMessenger::s_VR = VulkanBase::GetResources();
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -54,7 +53,7 @@ namespace Deako {
         return VK_FALSE;
     }
 
-    void VulkanDebugMessenger::Create()
+    void DebugMessenger::Create()
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         PopulateDebugMessengerCreateInfo(createInfo);
@@ -63,36 +62,12 @@ namespace Deako {
         DK_CORE_ASSERT(!result);
     }
 
-    void VulkanDebugMessenger::CleanUp()
+    void DebugMessenger::CleanUp()
     {
         DestroyDebugUtilsMessengerEXT();
     }
 
-    VkResult VulkanDebugMessenger::CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo)
-    {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
-            vkGetInstanceProcAddr(vr->instance, "vkCreateDebugUtilsMessengerEXT");
-
-        if (func != nullptr)
-            return func(vr->instance, pCreateInfo, nullptr, &s_DebugMessenger);
-        else
-            return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-
-    void VulkanDebugMessenger::DestroyDebugUtilsMessengerEXT()
-    {
-        VulkanResources* vr = VulkanBase::GetResources();
-
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
-            vkGetInstanceProcAddr(vr->instance, "vkDestroyDebugUtilsMessengerEXT");
-
-        if (func != nullptr)
-            func(vr->instance, s_DebugMessenger, nullptr);
-    }
-
-    void VulkanDebugMessenger::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+    void DebugMessenger::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
     {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -106,6 +81,26 @@ namespace Deako {
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = DebugCallback;
         createInfo.pUserData = nullptr;
+    }
+
+    VkResult DebugMessenger::CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo)
+    {
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
+            vkGetInstanceProcAddr(s_VR->instance, "vkCreateDebugUtilsMessengerEXT");
+
+        if (func != nullptr)
+            return func(s_VR->instance, pCreateInfo, nullptr, &s_DebugMessenger);
+        else
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
+    void DebugMessenger::DestroyDebugUtilsMessengerEXT()
+    {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
+            vkGetInstanceProcAddr(s_VR->instance, "vkDestroyDebugUtilsMessengerEXT");
+
+        if (func != nullptr)
+            func(s_VR->instance, s_DebugMessenger, nullptr);
     }
 
 }

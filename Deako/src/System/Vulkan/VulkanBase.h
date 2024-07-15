@@ -1,7 +1,7 @@
 #pragma once
 
-#include "VulkanTexture.h"
 #include "VulkanDepth.h"
+#include "VulkanInitializers.h"
 
 #include <vulkan/vulkan.h>
 
@@ -9,7 +9,13 @@ namespace Deako {
 
     struct VulkanSettings
     {
-        bool validation = false;
+        bool                               validation{ false };
+        std::vector<const char*>           instanceExtensions;
+        std::vector<const char*>           deviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset" };
+        std::vector<const char*>           validationLayers{ "VK_LAYER_KHRONOS_validation" };
+        uint32_t                           minImageCount{ 2 };
+        uint32_t                           imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
+        VkSampleCountFlagBits              MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
     };
 
     struct VulkanResources
@@ -21,65 +27,75 @@ namespace Deako {
         std::optional<uint32_t>            presentFamily;
         VkQueue                            graphicsQueue{ VK_NULL_HANDLE };
         VkQueue                            presentQueue{ VK_NULL_HANDLE };
+
+        std::vector<VkFramebuffer>         framebuffers;
+        std::vector<VkCommandBuffer>       commandBuffers;
         VkCommandPool                      commandPool{ VK_NULL_HANDLE };
         VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
         VkDescriptorSetLayout              descriptorSetLayout{ VK_NULL_HANDLE };
         VkPipeline                         graphicsPipeline{ VK_NULL_HANDLE };
         VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
         VkRenderPass                       renderPass{ VK_NULL_HANDLE };
-        VkSwapchainKHR                     swapChain{ VK_NULL_HANDLE };
-        VkSurfaceKHR                       surface{ VK_NULL_HANDLE };
+
         VkFormat                           imageFormat;
         VkExtent2D                         imageExtent;
+
+        // Swapchain
+        VkSurfaceKHR                       surface{ VK_NULL_HANDLE };
+        VkSwapchainKHR                     swapChain{ VK_NULL_HANDLE };
+        std::vector<VkImage>               swapChainImages;
+        std::vector<VkImageView>           swapChainImageViews;
 
         // Viewport
         VkRenderPass                       viewportRenderPass{ VK_NULL_HANDLE };
         VkPipeline                         viewportPipeline{ VK_NULL_HANDLE };
         VkCommandPool                      viewportCommandPool{ VK_NULL_HANDLE };
+        std::vector<VkFramebuffer>         viewportFramebuffers;
+        std::vector<VkCommandBuffer>       viewportCommandBuffers;
         std::vector<VkImage>               viewportImages;
         std::vector<VkDeviceMemory>        viewportImageMemory;
         std::vector<VkImageView>           viewportImageViews;
 
-        Scope<DepthAttachment>             depthAttachment;
+        // Depth Attachment
+        VkImage                            depthImage{ VK_NULL_HANDLE };
+        VkImageView                        depthImageView{ VK_NULL_HANDLE };
+        VkDeviceMemory                     depthImageMemory{ VK_NULL_HANDLE };
 
-        uint32_t                           minImageCount{ 2 };
-        uint32_t                           imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
-        VkSampleCountFlagBits              MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
+        // Sync
+        std::vector<VkSemaphore>           imageAvailableSemaphores;
+        std::vector<VkSemaphore>           renderFinishedSemaphores;
+        std::vector<VkFence>               inFlightFences;
+    };
+
+    struct VulkanState
+    {
+        uint32_t                           currentFrame{ 0 };
+        bool                               framebufferResized{ false };
     };
 
     class VulkanBase
     {
     public:
-        static void Init();
+        static void Init(const char* appName);
         static void Idle();
         static void Shutdown();
 
-        static VulkanResources* GetResources() { return &s_Resources; }
-        static uint32_t GetCurrentFrame() { return s_CurrentFrame; }
-        static const std::vector<const char*>& GetValidations() { return s_ValidationLayers; };
-
-        static bool ValidationsEnabled() { return s_Settings.validation; }
+        static Ref<VulkanSettings>& GetSettings() { return s_Settings; }
+        static Ref<VulkanResources>& GetResources() { return s_Resources; }
+        static VulkanState* GetState() { return &s_State; }
+        static uint32_t GetCurrentFrame() { return s_State.currentFrame; }
 
         static void DrawFrame();
 
     private:
-        static void CreateInstance();
+        static void CreateInstance(const char* appName);
         static void DetermineExtensions();
         static bool AreValidationsAvailable();
 
     private:
-        static std::vector<const char*> s_Extensions;
-        static std::vector<const char*> s_ValidationLayers;
-
-        static uint32_t s_CurrentFrame;
-        static bool s_FramebufferResized;
-
-        static std::vector<VkSemaphore> s_ImageAvailableSemaphores;
-        static std::vector<VkSemaphore> s_RenderFinishedSemaphores;
-        static std::vector<VkFence> s_InFlightFences;
-
-        static VulkanSettings s_Settings;
-        static VulkanResources s_Resources;
+        static Ref<VulkanSettings>         s_Settings;
+        static Ref<VulkanResources>        s_Resources;
+        static VulkanState                 s_State;
     };
 
 }

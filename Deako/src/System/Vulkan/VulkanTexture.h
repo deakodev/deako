@@ -1,5 +1,7 @@
 #pragma once
 
+#include "VulkanBase.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -22,31 +24,24 @@ namespace Deako {
         VkImage m_Image{ VK_NULL_HANDLE };
         VkImageView m_ImageView{ VK_NULL_HANDLE };
         VkDeviceMemory m_ImageMemory{ VK_NULL_HANDLE };
+
+        static  Ref<VulkanResources> s_VR;
     };
 
-    class TextureSampler
+    class TexturePool
     {
     public:
-        TextureSampler();
-
-        VkSampler& GetSampler() { return m_Sampler; }
-
-    private:
-        VkSampler m_Sampler{ VK_NULL_HANDLE };
-    };
-
-    class VulkanTexturePool
-    {
-    public:
+        static void CreateSamplers();
         static void CreateTextures();
         static void CleanUp();
 
+        static VkSampler& GetTextureSampler() { return s_TextureSampler; }
         static Ref<Texture> GetViewportTexture() { return s_ViewportTexture; }
-        static Ref<TextureSampler> GetTextureSampler() { return s_TextureSampler; }
 
     private:
-        static Ref<Texture> s_ViewportTexture; // viewport
-        static Ref<TextureSampler> s_TextureSampler;
+        static VkSampler s_TextureSampler;
+        static Ref<Texture> s_ViewportTexture;
+        static  Ref<VulkanResources> s_VR;
     };
 
 }
