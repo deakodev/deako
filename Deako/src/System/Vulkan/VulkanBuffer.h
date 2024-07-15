@@ -3,7 +3,10 @@
 #include "VulkanBase.h"
 
 #include <vulkan/vulkan.h>
+
 #include <glm/glm.hpp>
+
+#include <functional>
 
 namespace Deako {
 
@@ -15,6 +18,11 @@ namespace Deako {
 
         static std::vector<VkVertexInputBindingDescription> GetBindingDescription();
         static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
+
+        bool operator==(const Vertex& other) const
+        {
+            return position == other.position && color == other.color && texCoord == other.texCoord;
+        }
     };
 
     struct UniformBufferObject
@@ -55,6 +63,7 @@ namespace Deako {
     class VertexBuffer : public Buffer
     {
     public:
+        VertexBuffer() {}
         VertexBuffer(const std::vector<Vertex>& vertices);
 
         const std::vector<Vertex>& GetVertices() { return m_Vertices; }
@@ -66,12 +75,13 @@ namespace Deako {
     class IndexBuffer : public Buffer
     {
     public:
-        IndexBuffer(const std::vector<uint16_t>& indices);
+        IndexBuffer() {}
+        IndexBuffer(const std::vector<uint32_t>& indices);
 
-        const std::vector<uint16_t>& GetIndices() { return m_Indices; }
+        const std::vector<uint32_t>& GetIndices() { return m_Indices; }
 
     private:
-        std::vector<uint16_t> m_Indices;
+        std::vector<uint32_t> m_Indices;
     };
 
     class BufferPool
@@ -90,6 +100,9 @@ namespace Deako {
         static VkDescriptorSet& GetDescriptorSet(uint32_t currentImage) { return s_DescriptorSets[currentImage]; }
 
         static void UpdateUniformBuffer(uint32_t currentImage);
+
+        // TODO: temp placement
+        static void LoadModel(const char* path);
 
     private:
         static std::array<VkDescriptorSet, 2> s_DescriptorSets;

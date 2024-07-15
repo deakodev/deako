@@ -16,6 +16,7 @@ workspace "Deako"
     IncludeDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/include"
     IncludeDir["imgui"] = "Deako/vendor/imgui"
     IncludeDir["stb_image"] = "Deako/vendor/stb_image"
+    IncludeDir["tiny_obj_loader"] = "Deako/vendor/tiny_obj_loader"
 
     LibDir = {}
     LibDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/lib"
@@ -43,6 +44,7 @@ project "Deako"
         "%{prj.name}/src/**.mm",
         "%{prj.name}/glm/glm/**.hpp",
         "%{prj.name}/glm/glm/**.inl",
+        "%{prj.name}/vendor/tiny_obj_loader/**.h",
         "%{prj.name}/vendor/stb_image/**.h",
 		"%{prj.name}/vendor/stb_image/**.cpp"
     }
@@ -60,6 +62,7 @@ project "Deako"
         "%{IncludeDir.glfw}",
         "%{IncludeDir.vulkan}",
         "%{IncludeDir.imgui}",
+        "%{IncludeDir.tiny_obj_loader}",
         "%{IncludeDir.stb_image}"
     }
 
@@ -109,8 +112,10 @@ project "Deako"
 
     filter "configurations:Release"
         defines "DK_RELEASE"
+        
         runtime "Release"
         optimize "on"
+
 
     filter "configurations:Dist"
         defines "DK_DIST"
@@ -189,7 +194,11 @@ project "Deako-Editor"
         symbols "on"
 
     filter "configurations:Release"
-        defines "DK_RELEASE"
+        defines 
+        {
+            "DK_RELEASE",
+            "VK_VALIDATION"
+        }
         runtime "Release"
         optimize "on"
 

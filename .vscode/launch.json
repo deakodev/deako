@@ -23,7 +23,7 @@
             "name": "Release Editor",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Deako-Editor/Deako-Editor",
+            "program": "${workspaceFolder}/bin/Release-macosx-ARM64/Deako-Editor/Deako-Editor",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

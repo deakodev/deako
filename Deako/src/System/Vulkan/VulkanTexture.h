@@ -9,7 +9,7 @@ namespace Deako {
     class Texture
     {
     public:
-        Texture();
+        Texture(const char* path);
 
         VkImage& GetImage() { return m_Image; }
         VkImageView& GetImageView() { return m_ImageView; }
@@ -36,11 +36,11 @@ namespace Deako {
         static void CleanUp();
 
         static VkSampler& GetTextureSampler() { return s_TextureSampler; }
-        static Ref<Texture> GetViewportTexture() { return s_ViewportTexture; }
+        static Ref<Texture> GetTexture() { return s_VikingRoomTexture; }
 
     private:
         static VkSampler s_TextureSampler;
-        static Ref<Texture> s_ViewportTexture;
+        static Ref<Texture> s_VikingRoomTexture;
         static  Ref<VulkanResources> s_VR;
     };
 

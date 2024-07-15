@@ -10,15 +10,15 @@
 namespace Deako {
 
     VkSampler TexturePool::s_TextureSampler;
-    Ref<Texture> TexturePool::s_ViewportTexture;
+    Ref<Texture> TexturePool::s_VikingRoomTexture;
     Ref<VulkanResources> TexturePool::s_VR = VulkanBase::GetResources();
     Ref<VulkanResources> Texture::s_VR = VulkanBase::GetResources();
 
-    Texture::Texture()
+    Texture::Texture(const char* path)
     {
         int texWidth, texHeight, texChannels;
 
-        stbi_uc* pixels = stbi_load("Deako-Editor/assets/textures/texture.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         DK_CORE_ASSERT(pixels);
 
         VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -207,16 +207,16 @@ namespace Deako {
 
     void TexturePool::CreateTextures()
     {
-        s_ViewportTexture = CreateRef<Texture>();
+        s_VikingRoomTexture = CreateRef<Texture>("Deako-Editor/assets/textures/viking_room.png");
     }
 
     void TexturePool::CleanUp()
     {
         vkDestroySampler(s_VR->device, s_TextureSampler, nullptr);
 
-        vkDestroyImageView(s_VR->device, s_ViewportTexture->GetImageView(), nullptr);
-        vkDestroyImage(s_VR->device, s_ViewportTexture->GetImage(), nullptr);
-        vkFreeMemory(s_VR->device, s_ViewportTexture->GetMemory(), nullptr);
+        vkDestroyImageView(s_VR->device, s_VikingRoomTexture->GetImageView(), nullptr);
+        vkDestroyImage(s_VR->device, s_VikingRoomTexture->GetImage(), nullptr);
+        vkFreeMemory(s_VR->device, s_VikingRoomTexture->GetMemory(), nullptr);
     }
 
 }

@@ -6,9 +6,29 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
+
 #include <chrono>
+
+#define TINYOBJLOADER_IMPLEMENTATION 
+#include <tiny_obj_loader.h>
+
+namespace std {
+
+    template<>
+    struct hash<Deako::Vertex>
+    {
+        size_t operator()(Deako::Vertex const& vertex) const
+        {
+            return ((hash<glm::vec3>()(vertex.position) ^
+                (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+                (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+} // end std namespace
 
 namespace Deako {
 
@@ -71,7 +91,7 @@ namespace Deako {
         vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
     }
 
-    IndexBuffer::IndexBuffer(const std::vector<uint16_t>& indices)
+    IndexBuffer::IndexBuffer(const std::vector<uint32_t>& indices)
         : m_Indices(indices)
     {
         VkDeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
@@ -194,27 +214,31 @@ namespace Deako {
 
     void BufferPool::CreateVertexBuffers()
     {
-        const std::vector<Vertex> vertices = {
-            {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+        // const std::vector<Vertex> vertices = {
+        //     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        //     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        //     {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-        };
-        s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
+        //     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        //     {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        //     {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        //     {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+        // };
+        // s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
+
+        // s_VertexBuffer = CreateRef<VertexBuffer>();
     }
 
     void BufferPool::CreateIndexBuffer()
     {
-        const std::vector<uint16_t> indices = {
-            0, 1, 2, 2, 3, 0,
-            4, 5, 6, 6, 7, 4
-        };
-        s_IndexBuffer = CreateRef<IndexBuffer>(indices);
+        // const std::vector<uint32_t> indices = {
+        //     0, 1, 2, 2, 3, 0,
+        //     4, 5, 6, 6, 7, 4
+        // };
+        // s_IndexBuffer = CreateRef<IndexBuffer>(indices);
+
+        // s_IndexBuffer = CreateRef<IndexBuffer>();
     }
 
     void BufferPool::CreateDescriptorSetLayout()
@@ -283,7 +307,7 @@ namespace Deako {
             // Viewport Image
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = TexturePool::GetViewportTexture()->GetImageView();
+            imageInfo.imageView = TexturePool::GetTexture()->GetImageView();
             imageInfo.sampler = TexturePool::GetTextureSampler();
 
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -296,21 +320,6 @@ namespace Deako {
 
             vkUpdateDescriptorSets(s_VR->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
-    }
-
-    void BufferPool::UpdateUniformBuffer(uint32_t currentImage)
-    {
-        static auto startTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-        UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.projection = glm::perspective(glm::radians(45.0f), s_VR->imageExtent.width / (float)s_VR->imageExtent.height, 0.1f, 10.0f);
-        ubo.projection[1][1] *= -1;
-
-        s_UniformBuffers[currentImage]->CopyTo(&ubo, sizeof(ubo));
     }
 
     void BufferPool::CleanUp()
@@ -329,6 +338,67 @@ namespace Deako {
 
         vkDestroyDescriptorPool(s_VR->device, s_VR->descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(s_VR->device, s_VR->descriptorSetLayout, nullptr);
+    }
+
+
+    void BufferPool::UpdateUniformBuffer(uint32_t currentImage)
+    {
+        static auto startTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        UniformBufferObject ubo{};
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.projection = glm::perspective(glm::radians(45.0f), s_VR->imageExtent.width / (float)s_VR->imageExtent.height, 0.1f, 10.0f);
+        ubo.projection[1][1] *= -1;
+
+        s_UniformBuffers[currentImage]->CopyTo(&ubo, sizeof(ubo));
+    }
+
+    void BufferPool::LoadModel(const char* path)
+    {
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+
+        std::string warn, err;
+        bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path);
+        if (!success)
+            throw std::runtime_error(warn + err);
+
+        std::vector<Vertex> vertices{};
+        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+        std::vector<uint32_t> indices{};
+
+        for (const auto& shape : shapes)
+        {
+            for (const auto& index : shape.mesh.indices)
+            {
+                Vertex vertex{};
+                vertex.position = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2]
+                };
+                vertex.texCoord = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                };
+                vertex.color = { 1.0f, 1.0f, 1.0f };
+
+                if (uniqueVertices.count(vertex) == 0)
+                {
+                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                    vertices.push_back(vertex);
+                }
+
+                indices.push_back(uniqueVertices[vertex]);
+            }
+        }
+
+        s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
+        s_IndexBuffer = CreateRef<IndexBuffer>(indices);
     }
 
 }

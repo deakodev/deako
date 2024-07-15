@@ -40,8 +40,11 @@ namespace Deako {
         FramebufferPool::CreateFramebuffers();
         TexturePool::CreateSamplers();
         TexturePool::CreateTextures();
+
         BufferPool::CreateVertexBuffers();
         BufferPool::CreateIndexBuffer();
+        BufferPool::LoadModel("Deako-Editor/assets/models/viking_room.obj");
+
         BufferPool::CreateUniformBuffers();
         BufferPool::CreateDescriptorPool();
         BufferPool::CreateDescriptorSets();
@@ -262,7 +265,7 @@ namespace Deako {
             VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(viewportCommandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(viewportCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(viewportCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
             vkCmdBindDescriptorSets(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources->pipelineLayout, 0, 1, &BufferPool::GetDescriptorSet(s_State.currentFrame), 0, nullptr);
 
