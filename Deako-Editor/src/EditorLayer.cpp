@@ -12,6 +12,17 @@ namespace Deako {
     void EditorLayer::OnAttach()
     {
         m_ViewportTextureIDs = Application::Get().GetImGuiLayer()->GetViewportTextureIDs();
+
+        m_ActiveScene = CreateRef<Scene>();
+
+        // m_PrimaryCameraEntity = m_ActiveScene->CreateEntity("Camera A");
+        // auto& primaryCameraComp = m_PrimaryCameraEntity.AddComponent<CameraComponent>(Perspective);
+        // primaryCameraComp.primary = true;
+        // auto& primaryTransformComp = m_PrimaryCameraEntity.GetComponent<TransformComponent>();
+        // primaryTransformComp.translation = { 0.0f, 0.0f, 10.0f };
+
+        m_VikingRoomEntity = m_ActiveScene->CreateEntity("Viking Room");
+        // m_VikingRoomEntity.AddComponent<TextureComponent>(m_VikingRoomTexture);
     }
 
     void EditorLayer::OnDetach()
@@ -22,7 +33,6 @@ namespace Deako {
     void EditorLayer::OnUpdate()
     {
         VulkanBase::DrawFrame();
-        m_ViewportTextureIDs = Application::Get().GetImGuiLayer()->GetViewportTextureIDs();
     }
 
     void EditorLayer::OnImGuiRender()

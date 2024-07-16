@@ -1,6 +1,8 @@
 #include "VulkanTexture.h"
 #include "dkpch.h"
 
+#include "Deako/Renderer/AssetManager.h"
+
 #include "VulkanBuffer.h"
 #include "VulkanCommand.h"
 
@@ -10,15 +12,15 @@
 namespace Deako {
 
     VkSampler TexturePool::s_TextureSampler;
-    Ref<Texture> TexturePool::s_VikingRoomTexture;
+    std::vector<Ref<Texture>> TexturePool::s_Textures;
     Ref<VulkanResources> TexturePool::s_VR = VulkanBase::GetResources();
     Ref<VulkanResources> Texture::s_VR = VulkanBase::GetResources();
 
-    Texture::Texture(const char* path)
+    Texture::Texture(const std::string& path)
     {
         int texWidth, texHeight, texChannels;
 
-        stbi_uc* pixels = stbi_load(path, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         DK_CORE_ASSERT(pixels);
 
         VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -82,7 +84,7 @@ namespace Deako {
     {
         VkImageViewCreateInfo createInfo = VulkanInitializers::ImageViewCreateInfo();
         createInfo.image = m_Image;
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
         createInfo.format = format;
         createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         createInfo.subresourceRange.baseMipLevel = 0;
@@ -207,16 +209,25 @@ namespace Deako {
 
     void TexturePool::CreateTextures()
     {
-        s_VikingRoomTexture = CreateRef<Texture>("Deako-Editor/assets/textures/viking_room.png");
+        const std::vector<std::string>& texturePaths = AssetManager::GetTexturePaths();
+
+        for (auto& texturePath : texturePaths)
+        {
+            Ref<Texture> texture = CreateRef<Texture>(texturePath);
+            s_Textures.push_back(texture);
+        }
     }
 
     void TexturePool::CleanUp()
     {
         vkDestroySampler(s_VR->device, s_TextureSampler, nullptr);
 
-        vkDestroyImageView(s_VR->device, s_VikingRoomTexture->GetImageView(), nullptr);
-        vkDestroyImage(s_VR->device, s_VikingRoomTexture->GetImage(), nullptr);
-        vkFreeMemory(s_VR->device, s_VikingRoomTexture->GetMemory(), nullptr);
+        for (auto& texture : s_Textures)
+        {
+            vkDestroyImageView(s_VR->device, texture->GetImageView(), nullptr);
+            vkDestroyImage(s_VR->device, texture->GetImage(), nullptr);
+            vkFreeMemory(s_VR->device, texture->GetMemory(), nullptr);
+        }
     }
 
 }

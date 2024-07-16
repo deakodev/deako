@@ -17,6 +17,7 @@ workspace "Deako"
     IncludeDir["imgui"] = "Deako/vendor/imgui"
     IncludeDir["stb_image"] = "Deako/vendor/stb_image"
     IncludeDir["tiny_obj_loader"] = "Deako/vendor/tiny_obj_loader"
+    IncludeDir["entt"] = "Deako/vendor/entt/include"
 
     LibDir = {}
     LibDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/lib"
@@ -63,7 +64,8 @@ project "Deako"
         "%{IncludeDir.vulkan}",
         "%{IncludeDir.imgui}",
         "%{IncludeDir.tiny_obj_loader}",
-        "%{IncludeDir.stb_image}"
+        "%{IncludeDir.stb_image}",
+        "%{IncludeDir.entt}"
     }
 
     libdirs
@@ -151,7 +153,8 @@ project "Deako-Editor"
         "Deako/vendor",
         "Deako/vendor/spdlog/include",
         "%{IncludeDir.glm}",
-        "%{IncludeDir.vulkan}" 
+        "%{IncludeDir.vulkan}" ,
+        "%{IncludeDir.entt}"
     }
 
     libdirs

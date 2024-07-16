@@ -11,7 +11,10 @@
 #include "Deako/Events/KeyCodes.h"
 #include "Deako/Events/MouseCodes.h"
 
-// #include "Deak/Renderer/Renderer.h"
+#include "Deako/Renderer/Renderer.h"
+#include "Deako/Renderer/AssetManager.h"
+#include "Deako/Scene/Scene.h"
+#include "Deako/Scene/Entity.h"
 
 #include "System/Vulkan/VulkanBase.h"
 

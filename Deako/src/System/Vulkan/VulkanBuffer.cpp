@@ -66,6 +66,9 @@ namespace Deako {
         attributeDescriptions.emplace_back(
             VulkanInitializers::VertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord))
         );
+        attributeDescriptions.emplace_back(
+            VulkanInitializers::VertexInputAttributeDescription(0, 3, VK_FORMAT_R32_SINT, offsetof(Vertex, texIndex))
+        );
 
         return attributeDescriptions;
     }
@@ -304,19 +307,23 @@ namespace Deako {
             descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pBufferInfo = &bufferInfo;
-            // Viewport Image
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = TexturePool::GetTexture()->GetImageView();
-            imageInfo.sampler = TexturePool::GetTextureSampler();
+
+            const std::vector<Ref<Texture>>& textures = TexturePool::GetTextures();
+            std::vector<VkDescriptorImageInfo> imageInfos{ textures.size() };
+            for (size_t j = 0; j < textures.size(); j++)
+            {
+                imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfos[j].imageView = textures[j]->GetImageView();
+                imageInfos[j].sampler = TexturePool::GetTextureSampler();
+            }
 
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = s_DescriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
+            descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfos.size());
+            descriptorWrites[1].pImageInfo = imageInfos.data();
 
             vkUpdateDescriptorSets(s_VR->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }

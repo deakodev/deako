@@ -16,6 +16,8 @@ namespace Deako {
         uint32_t                           minImageCount{ 2 };
         uint32_t                           imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
         VkSampleCountFlagBits              MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
+
+        uint16_t                           maxTextures{ 16 };
     };
 
     struct VulkanResources

@@ -15,13 +15,17 @@ namespace Deako {
         glm::vec3 position;
         glm::vec3 color;
         glm::vec2 texCoord;
+        int texIndex;
 
         static std::vector<VkVertexInputBindingDescription> GetBindingDescription();
         static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions();
 
         bool operator==(const Vertex& other) const
         {
-            return position == other.position && color == other.color && texCoord == other.texCoord;
+            return position == other.position &&
+                color == other.color &&
+                texCoord == other.texCoord &&
+                texIndex == other.texIndex;
         }
     };
 

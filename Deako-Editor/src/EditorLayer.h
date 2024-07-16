@@ -23,6 +23,9 @@ namespace Deako {
         std::vector<void*> m_ViewportTextureIDs;
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;
+
+        Ref<Scene> m_ActiveScene;
+        Entity m_VikingRoomEntity;
     };
 
 }
