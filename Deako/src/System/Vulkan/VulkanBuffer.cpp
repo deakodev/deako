@@ -11,8 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include <chrono>
-
 #define TINYOBJLOADER_IMPLEMENTATION 
 #include <tiny_obj_loader.h>
 
@@ -32,46 +30,17 @@ namespace std {
 
 namespace Deako {
 
+    const uint16_t INSTANCE_COUNT = 2;
+
     Ref<VertexBuffer> BufferPool::s_VertexBuffer;
     Ref<IndexBuffer> BufferPool::s_IndexBuffer;
+    Ref<InstanceBuffer> BufferPool::s_InstanceBuffer;
     std::array<VkDescriptorSet, 2> BufferPool::s_DescriptorSets;
     std::array<Ref<Buffer>, 2> BufferPool::s_UniformBuffers;
     Ref<VulkanResources> BufferPool::s_VR = VulkanBase::GetResources();
     Ref<VulkanResources> Buffer::s_VR = VulkanBase::GetResources();
     Ref<VulkanSettings> BufferPool::s_VS = VulkanBase::GetSettings();
     Ref<VulkanSettings> Buffer::s_VS = VulkanBase::GetSettings();
-
-
-    std::vector<VkVertexInputBindingDescription> Vertex::GetBindingDescription()
-    {
-        std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-
-        bindingDescriptions.emplace_back(
-            VulkanInitializers::VertexInputBindingDescription(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX)
-        );
-
-        return bindingDescriptions;
-    }
-
-    std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions()
-    {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-        attributeDescriptions.emplace_back(
-            VulkanInitializers::VertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position))
-        );
-        attributeDescriptions.emplace_back(
-            VulkanInitializers::VertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color))
-        );
-        attributeDescriptions.emplace_back(
-            VulkanInitializers::VertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord))
-        );
-        attributeDescriptions.emplace_back(
-            VulkanInitializers::VertexInputAttributeDescription(0, 3, VK_FORMAT_R32_SINT, offsetof(Vertex, texIndex))
-        );
-
-        return attributeDescriptions;
-    }
 
     VertexBuffer::VertexBuffer(const std::vector<Vertex>& vertices)
         : m_Vertices(vertices)
@@ -115,6 +84,42 @@ namespace Deako {
         vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
     }
 
+    InstanceBuffer::InstanceBuffer()
+        : Buffer()
+    {
+        std::vector<InstanceData> instanceData;
+        instanceData.resize(INSTANCE_COUNT);
+
+        // Object 1
+        instanceData[0].position = { 0.0f, 0.0f, 0.0f };
+        instanceData[0].rotation = { 0.0f, 0.0f, 0.0f }; // Initial rotation
+        instanceData[0].scale = 0.5f; // Uniform scale
+        instanceData[0].texureIndex = 0; // Texture index
+
+        // Object 2
+        instanceData[1].position = { 1.0f, 1.0f, 1.0f };
+        instanceData[1].rotation = { 0.0f, 0.0f, 0.0f }; // Initial rotation
+        instanceData[1].scale = 0.5f; // Uniform scale
+        instanceData[1].texureIndex = 0; // Texture index
+
+        VkDeviceSize bufferSize = instanceData.size() * sizeof(InstanceData);
+
+        Buffer stagingBuffer{};
+        stagingBuffer.SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        stagingBuffer.Map();
+        stagingBuffer.CopyTo(instanceData.data(), (size_t)bufferSize);
+        stagingBuffer.Unmap();
+
+        this->SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        CopyStaging(stagingBuffer.GetBuffer(), this->GetBuffer(), bufferSize);
+
+        vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
+        vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
+    }
+
     void Buffer::SetInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     {
         VkBufferCreateInfo bufferInfo{};
@@ -125,8 +130,7 @@ namespace Deako {
         // buffers can be owned by a specific queue family or be shared
         bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VkResult result = vkCreateBuffer(s_VR->device, &bufferInfo, nullptr, &m_Buffer);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreateBuffer(s_VR->device, &bufferInfo, nullptr, &m_Buffer));
 
         VkMemoryRequirements memRequirements;
         vkGetBufferMemoryRequirements(s_VR->device, m_Buffer, &memRequirements);
@@ -137,15 +141,14 @@ namespace Deako {
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-        result = vkAllocateMemory(s_VR->device, &allocInfo, nullptr, &m_Memory);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkAllocateMemory(s_VR->device, &allocInfo, nullptr, &m_Memory));
 
-        this->Bind();
+        VK_CHECK_RESULT(vkBindBufferMemory(s_VR->device, m_Buffer, m_Memory, 0));
     }
 
-    void Buffer::CopyStaging(VkBuffer stagingBuffer, VkBuffer receivingBuffer, VkDeviceSize size)
+    void Buffer::CopyStaging(VkBuffer& stagingBuffer, VkBuffer& receivingBuffer, VkDeviceSize size)
     {
-        VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(s_VR->commandPool);
+        VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(s_VR->viewportCommandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0; // Optional
@@ -153,13 +156,7 @@ namespace Deako {
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, stagingBuffer, receivingBuffer, 1, &copyRegion);
 
-        CommandPool::EndSingleTimeCommands(s_VR->commandPool, commandBuffer);
-    }
-
-    void Buffer::Bind(VkDeviceSize offset)
-    {
-        VkResult result = vkBindBufferMemory(s_VR->device, m_Buffer, m_Memory, offset);
-        DK_CORE_ASSERT(!result);
+        CommandPool::EndSingleTimeCommands(s_VR->viewportCommandPool, commandBuffer);
     }
 
     void Buffer::Map(VkDeviceSize size, VkDeviceSize offset)
@@ -215,47 +212,34 @@ namespace Deako {
         }
     }
 
-    void BufferPool::CreateVertexBuffers()
+    void BufferPool::CreateVertexBuffers(const std::vector<Vertex>& vertices)
     {
-        // const std::vector<Vertex> vertices = {
-        //     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        //     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        //     {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-        //     {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        //     {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        //     {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        //     {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-        // };
-        // s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
-
-        // s_VertexBuffer = CreateRef<VertexBuffer>();
+        s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
     }
 
-    void BufferPool::CreateIndexBuffer()
+    void BufferPool::CreateIndexBuffer(const std::vector<uint32_t>& indices)
     {
-        // const std::vector<uint32_t> indices = {
-        //     0, 1, 2, 2, 3, 0,
-        //     4, 5, 6, 6, 7, 4
-        // };
-        // s_IndexBuffer = CreateRef<IndexBuffer>(indices);
-
-        // s_IndexBuffer = CreateRef<IndexBuffer>();
+        s_IndexBuffer = CreateRef<IndexBuffer>(indices);
     }
+
+    void BufferPool::CreateInstanceBuffer()
+    {
+        s_InstanceBuffer = CreateRef<InstanceBuffer>();
+    }
+
 
     void BufferPool::CreateDescriptorSetLayout()
     {
-        VkDescriptorSetLayoutBinding uboLayoutBinding =
-            VulkanInitializers::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
-        VkDescriptorSetLayoutBinding samplerLayoutBinding =
-            VulkanInitializers::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+        std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+            // Binding 0 : Vertex shader uniform buffer
+            VulkanInitializers::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1),
+            // Binding 1 : Fragment shader combined sampler
+            VulkanInitializers::DescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1),
+        };
 
-        std::vector<VkDescriptorSetLayoutBinding> bindings = { uboLayoutBinding, samplerLayoutBinding };
-        VkDescriptorSetLayoutCreateInfo layoutInfo = VulkanInitializers::DescriptorSetLayoutCreateInfo(bindings);
+        VkDescriptorSetLayoutCreateInfo layoutInfo = VulkanInitializers::DescriptorSetLayoutCreateInfo(setLayoutBindings);
 
-        VkResult result = vkCreateDescriptorSetLayout(s_VR->device, &layoutInfo, nullptr, &s_VR->descriptorSetLayout);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(s_VR->device, &layoutInfo, nullptr, &s_VR->descriptorSetLayout));
     }
 
     void BufferPool::CreateDescriptorPool()
@@ -277,8 +261,7 @@ namespace Deako {
         VkDescriptorPoolCreateInfo poolInfo = VulkanInitializers::DescriptorPoolCreateInfo(poolSizes, 1000 * poolSizes.size());
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-        VkResult result = vkCreateDescriptorPool(s_VR->device, &poolInfo, nullptr, &s_VR->descriptorPool);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreateDescriptorPool(s_VR->device, &poolInfo, nullptr, &s_VR->descriptorPool));
     }
 
     void BufferPool::CreateDescriptorSets()
@@ -288,13 +271,13 @@ namespace Deako {
         VkDescriptorSetAllocateInfo allocInfo =
             VulkanInitializers::DescriptorSetAllocateInfo(s_VR->descriptorPool, layouts.data(), static_cast<uint32_t>(s_VS->imageCount));
 
-        VkResult result = vkAllocateDescriptorSets(s_VR->device, &allocInfo, s_DescriptorSets.data());
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(s_VR->device, &allocInfo, s_DescriptorSets.data()));
 
         for (size_t i = 0; i < s_VS->imageCount; i++)
         {
             std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-            // Uniform Buffer
+
+            // Binding 0 : Vertex shader uniform buffer
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = s_UniformBuffers[i]->GetBuffer();
             bufferInfo.offset = 0;
@@ -308,22 +291,20 @@ namespace Deako {
             descriptorWrites[0].descriptorCount = 1;
             descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-            const std::vector<Ref<Texture>>& textures = TexturePool::GetTextures();
-            std::vector<VkDescriptorImageInfo> imageInfos{ textures.size() };
-            for (size_t j = 0; j < textures.size(); j++)
-            {
-                imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfos[j].imageView = textures[j]->GetImageView();
-                imageInfos[j].sampler = TexturePool::GetTextureSampler();
-            }
+            // Binding 1 : Fragment shader combined sampler
+            const std::vector<Ref<Texture2D>>& textures = TexturePool::GetTexture2Ds();
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = textures[0]->GetImageView();
+            imageInfo.sampler = TexturePool::GetTextureSampler();
 
             descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[1].dstSet = s_DescriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
             descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfos.size());
-            descriptorWrites[1].pImageInfo = imageInfos.data();
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pImageInfo = &imageInfo;
 
             vkUpdateDescriptorSets(s_VR->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
@@ -337,6 +318,9 @@ namespace Deako {
         vkDestroyBuffer(s_VR->device, s_IndexBuffer->GetBuffer(), nullptr);
         vkFreeMemory(s_VR->device, s_IndexBuffer->GetMemory(), nullptr);
 
+        vkDestroyBuffer(s_VR->device, s_InstanceBuffer->GetBuffer(), nullptr);
+        vkFreeMemory(s_VR->device, s_InstanceBuffer->GetMemory(), nullptr);
+
         for (size_t i = 0; i < s_VS->imageCount; i++)
         {
             vkDestroyBuffer(s_VR->device, s_UniformBuffers[i]->GetBuffer(), nullptr);
@@ -348,29 +332,32 @@ namespace Deako {
     }
 
 
-    void BufferPool::UpdateUniformBuffer(uint32_t currentImage)
+    void BufferPool::UpdateUniformBuffer(const glm::mat4& viewProjection)
     {
+        uint32_t currentFrame = VulkanBase::GetCurrentFrame();
+
         static auto startTime = std::chrono::high_resolution_clock::now();
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.projection = glm::perspective(glm::radians(45.0f), s_VR->imageExtent.width / (float)s_VR->imageExtent.height, 0.1f, 10.0f);
-        ubo.projection[1][1] *= -1;
+        static UniformBufferObject ubo{};
+        // TODO: glm::rotate temp 
+        ubo.viewProjection = viewProjection * glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        // ubo.viewProjection = viewProjection;
 
-        s_UniformBuffers[currentImage]->CopyTo(&ubo, sizeof(ubo));
+        s_UniformBuffers[currentFrame]->CopyTo(&ubo, sizeof(UniformBufferObject));
+
+
     }
 
-    void BufferPool::LoadModel(const char* path)
+    void Model::LoadFromFile(const std::string& path)
     {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
 
         std::string warn, err;
-        bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path);
+        bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str());
         if (!success)
             throw std::runtime_error(warn + err);
 
@@ -404,8 +391,8 @@ namespace Deako {
             }
         }
 
-        s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
-        s_IndexBuffer = CreateRef<IndexBuffer>(indices);
+        BufferPool::CreateVertexBuffers(vertices);
+        BufferPool::CreateIndexBuffer(indices);
     }
 
 }

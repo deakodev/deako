@@ -5,7 +5,6 @@
 #include "Components.h"
 #include "Deako/Renderer/Renderer.h"
 
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Deako {
@@ -18,9 +17,21 @@ namespace Deako {
     {
     }
 
-    void Scene::OnUpdateEditor()
+    void Scene::OnUpdateEditor(const glm::mat4& viewProjection)
     {
+        Renderer::BeginScene(viewProjection);
 
+        // {
+        //     auto group = m_Registry.group<ColorComponent>(entt::get<TransformComponent>);
+        //     for (auto entity : group)
+        //     {
+        //         auto [colorComp, transformComp] = group.get<ColorComponent, TransformComponent>(entity);
+
+        //         Renderer3D::DrawCube(transformComp.GetTransform(), colorComp);
+        //     }
+        // }
+
+        Renderer::EndScene();
     }
 
     Entity Scene::CreateEntity(const std::string& name)

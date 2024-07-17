@@ -13,7 +13,8 @@ namespace Deako {
         static void CreateBuffers(VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers);
         static void CleanUp();
 
-        static VkCommandBuffer Record(uint32_t currentFrame, uint32_t imageIndex);
+        static void RecordViewportCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentFrame, uint32_t imageIndex);
+        static void RecordImGuiCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
         static VkCommandBuffer BeginSingleTimeCommands(VkCommandPool commandPool);
         static void EndSingleTimeCommands(VkCommandPool commandPool, VkCommandBuffer commandBuffer);

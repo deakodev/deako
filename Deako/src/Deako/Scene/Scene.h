@@ -3,6 +3,7 @@
 // #include "Deako/Renderer/Camera/EditorCameraController.h"
 // #include "Deako/Core/Timestep.h"
 #include <entt.hpp>
+#include <glm/glm.hpp>
 
 namespace Deako {
 
@@ -14,7 +15,7 @@ namespace Deako {
         Scene();
         ~Scene();
 
-        void OnUpdateEditor();
+        void OnUpdateEditor(const glm::mat4& viewProjection);
         // void OnUpdateRuntime(Timestep timestep);
         // void OnViewportResize(float width, float height);
 

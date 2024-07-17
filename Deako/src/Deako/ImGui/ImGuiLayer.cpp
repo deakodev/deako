@@ -57,7 +57,7 @@ namespace Deako {
         ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.Instance = s_VR->instance;
         initInfo.DescriptorPool = s_VR->descriptorPool;
-        initInfo.RenderPass = s_VR->viewportRenderPass;
+        initInfo.RenderPass = s_VR->imguiRenderPass;
         initInfo.Device = s_VR->device;
         initInfo.PhysicalDevice = s_VR->physicalDevice;
         initInfo.QueueFamily = s_VR->graphicsFamily.value();
@@ -111,7 +111,7 @@ namespace Deako {
         ImGui::NewFrame();
     }
 
-    void ImGuiLayer::End(VkCommandBuffer commandBuffer, VkPipeline pipeline)
+    void ImGuiLayer::End(VkCommandBuffer commandBuffer)
     {
         ImGuiIO& io = ImGui::GetIO();
         Application& app = Application::Get();

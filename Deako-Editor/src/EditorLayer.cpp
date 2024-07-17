@@ -5,7 +5,7 @@
 namespace Deako {
 
     EditorLayer::EditorLayer()
-        : Layer("EditorLayer")
+        : Layer("EditorLayer"), m_EditorCamera(45.0f, 1.0f, 0.1f, 10.0f)
     {
     }
 
@@ -32,7 +32,9 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        VulkanBase::DrawFrame();
+        float aspectRatio = VulkanBase::GetAspectRatio();
+        m_EditorCamera.UpdateProjection(45.0f, aspectRatio, 0.1f, 10.0f);
+        m_ActiveScene->OnUpdateEditor(m_EditorCamera.GetViewProjection());
     }
 
     void EditorLayer::OnImGuiRender()

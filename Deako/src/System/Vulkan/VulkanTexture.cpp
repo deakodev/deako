@@ -12,11 +12,11 @@
 namespace Deako {
 
     VkSampler TexturePool::s_TextureSampler;
-    std::vector<Ref<Texture>> TexturePool::s_Textures;
+    std::vector<Ref<Texture2D>> TexturePool::s_Textures;
     Ref<VulkanResources> TexturePool::s_VR = VulkanBase::GetResources();
     Ref<VulkanResources> Texture::s_VR = VulkanBase::GetResources();
 
-    Texture::Texture(const std::string& path)
+    Texture::Texture(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout)
     {
         int texWidth, texHeight, texChannels;
 
@@ -32,19 +32,18 @@ namespace Deako {
         stagingBuffer.CopyTo(pixels, (size_t)imageSize);
         stagingBuffer.Unmap();
 
-        stbi_image_free(pixels);
+        this->SetImageInfo(texWidth, texHeight, format, VK_IMAGE_TILING_OPTIMAL,
+            usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        this->SetImageInfo(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        TransitionImageLayout(s_VR->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        TransitionImageLayout(s_VR->viewportCommandPool, m_Image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         CopyStaging(stagingBuffer.GetBuffer(), m_Image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-        TransitionImageLayout(s_VR->viewportCommandPool, m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        TransitionImageLayout(s_VR->viewportCommandPool, m_Image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imageLayout);
+
+        this->SetImageViewInfo(format);
 
         vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
         vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
-
-        this->SetImageViewInfo(VK_FORMAT_R8G8B8A8_SRGB);
+        stbi_image_free(pixels);
     }
 
     void Texture::SetImageInfo(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties)
@@ -64,8 +63,7 @@ namespace Deako {
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.flags = 0; // Optional
 
-        VkResult result = vkCreateImage(s_VR->device, &imageInfo, nullptr, &m_Image);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreateImage(s_VR->device, &imageInfo, nullptr, &m_Image));
 
         VkMemoryRequirements memRequirements;
         vkGetImageMemoryRequirements(s_VR->device, m_Image, &memRequirements);
@@ -74,8 +72,7 @@ namespace Deako {
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = Buffer::FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-        result = vkAllocateMemory(s_VR->device, &allocInfo, nullptr, &m_ImageMemory);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkAllocateMemory(s_VR->device, &allocInfo, nullptr, &m_ImageMemory));
 
         vkBindImageMemory(s_VR->device, m_Image, m_ImageMemory, 0);
     }
@@ -99,7 +96,7 @@ namespace Deako {
 
     void Texture::CopyStaging(VkBuffer stagingBuffer, VkImage receivingImage, uint32_t width, uint32_t height)
     {
-        VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(s_VR->commandPool);
+        VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(s_VR->viewportCommandPool);
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -114,7 +111,7 @@ namespace Deako {
 
         vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, receivingImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-        CommandPool::EndSingleTimeCommands(s_VR->commandPool, commandBuffer);
+        CommandPool::EndSingleTimeCommands(s_VR->viewportCommandPool, commandBuffer);
     }
 
     void Texture::TransitionImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -203,20 +200,19 @@ namespace Deako {
         samplerInfo.minLod = 0.0f;
         samplerInfo.maxLod = 0.0f;
 
-        VkResult result = vkCreateSampler(s_VR->device, &samplerInfo, nullptr, &s_TextureSampler);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreateSampler(s_VR->device, &samplerInfo, nullptr, &s_TextureSampler));
     }
 
-    void TexturePool::CreateTextures()
-    {
-        const std::vector<std::string>& texturePaths = AssetManager::GetTexturePaths();
+    // void TexturePool::CreateTextures()
+    // {
+    //     const std::vector<std::string>& texturePaths = AssetManager::GetTexture2DPaths();
 
-        for (auto& texturePath : texturePaths)
-        {
-            Ref<Texture> texture = CreateRef<Texture>(texturePath);
-            s_Textures.push_back(texture);
-        }
-    }
+    //     for (auto& texturePath : texturePaths)
+    //     {
+    //         Ref<Texture2D> texture = CreateRef<Texture2D>(texturePath);
+    //         s_Textures.push_back(texture);
+    //     }
+    // }
 
     void TexturePool::CleanUp()
     {
@@ -228,6 +224,12 @@ namespace Deako {
             vkDestroyImage(s_VR->device, texture->GetImage(), nullptr);
             vkFreeMemory(s_VR->device, texture->GetMemory(), nullptr);
         }
+    }
+
+    void Texture2D::LoadFromFile(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout)
+    {
+        Ref<Texture2D> texture = CreateRef<Texture2D>(path, format, usage, imageLayout);
+        TexturePool::GetTexture2Ds().push_back(texture);
     }
 
 }

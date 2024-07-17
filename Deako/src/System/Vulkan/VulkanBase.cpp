@@ -1,6 +1,8 @@
 #include "VulkanBase.h"
 #include "dkpch.h"
 
+#include "Deako/Renderer/AssetManager.h"
+
 #include "VulkanDebug.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
@@ -19,6 +21,17 @@ namespace Deako {
     Ref<VulkanSettings> VulkanBase::s_Settings = CreateRef<VulkanSettings>();
     Ref<VulkanResources> VulkanBase::s_Resources = CreateRef<VulkanResources>();
     VulkanState VulkanBase::s_State;
+
+    static void LoadAssets()
+    {
+        const std::vector<std::string>& modelPaths = AssetManager::GetModelPaths();
+        for (auto& modelPath : modelPaths)
+            Model::LoadFromFile(modelPath);
+
+        const std::vector<std::string>& texturePaths = AssetManager::GetTexture2DPaths();
+        for (auto& texturePath : texturePaths)
+            Texture2D::LoadFromFile(texturePath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    }
 
     void VulkanBase::Init(const char* appName)
     {
@@ -39,15 +52,13 @@ namespace Deako {
         Depth::CreateAttachment();
         FramebufferPool::CreateFramebuffers();
         TexturePool::CreateSamplers();
-        TexturePool::CreateTextures();
 
-        BufferPool::CreateVertexBuffers();
-        BufferPool::CreateIndexBuffer();
-        BufferPool::LoadModel("Deako-Editor/assets/models/viking_room.obj");
-
+        LoadAssets();
+        BufferPool::CreateInstanceBuffer();
         BufferPool::CreateUniformBuffers();
         BufferPool::CreateDescriptorPool();
         BufferPool::CreateDescriptorSets();
+
         Sync::CreateObjects();
     }
 
@@ -191,7 +202,7 @@ namespace Deako {
         return true;
     }
 
-    void VulkanBase::DrawFrame()
+    void VulkanBase::DrawFrame(const glm::mat4& viewProjection)
     {
         VkSemaphore imageAvailableSemaphore = s_Resources->imageAvailableSemaphores[s_State.currentFrame];
         VkSemaphore renderFinishedSemaphore = s_Resources->renderFinishedSemaphores[s_State.currentFrame];
@@ -219,65 +230,10 @@ namespace Deako {
         vkResetFences(s_Resources->device, 1, &inFlightFence);
 
         // (3) record a command buffer which draws the scene onto that image
-        VkCommandBuffer commandBuffer = CommandPool::Record(s_State.currentFrame, imageIndex);
+        CommandPool::RecordImGuiCommandBuffer(s_Resources->imguiCommandBuffers[s_State.currentFrame], imageIndex);
+        CommandPool::RecordViewportCommandBuffer(s_Resources->viewportCommandBuffers[s_State.currentFrame], s_State.currentFrame, imageIndex);
 
-        VkCommandBuffer viewportCommandBuffer = s_Resources->viewportCommandBuffers[s_State.currentFrame];
-
-        {
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            // beginInfo.flags = 0;									// Optional
-            // beginInfo.pInheritanceInfo = nullptr; // Optional
-
-            result = vkBeginCommandBuffer(viewportCommandBuffer, &beginInfo);
-            DK_CORE_ASSERT(!result);
-
-            VkRenderPassBeginInfo renderPassInfo = VulkanInitializers::RenderPassBeginInfo();
-            renderPassInfo.renderPass = s_Resources->viewportRenderPass;
-            renderPassInfo.framebuffer = s_Resources->viewportFramebuffers[s_State.currentFrame];
-            renderPassInfo.renderArea.offset = { 0, 0 };
-            renderPassInfo.renderArea.extent = s_Resources->imageExtent;
-
-            std::array<VkClearValue, 2> clearValues{};
-            clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-            clearValues[1].depthStencil = { 1.0f, 0 };
-
-            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-            renderPassInfo.pClearValues = clearValues.data();
-
-            vkCmdBeginRenderPass(viewportCommandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-            vkCmdBindPipeline(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources->viewportPipeline);
-
-            VkViewport viewport =
-                VulkanInitializers::Viewport(static_cast<float>(s_Resources->imageExtent.width), static_cast<float>(s_Resources->imageExtent.height), 0.0f, 1.0f);
-
-            vkCmdSetViewport(viewportCommandBuffer, 0, 1, &viewport);
-
-            VkRect2D scissor{};
-            scissor.offset = { 0, 0 };
-            scissor.extent = s_Resources->imageExtent;
-            vkCmdSetScissor(viewportCommandBuffer, 0, 1, &scissor);
-
-            const Ref<VertexBuffer>& vertexBuffer = BufferPool::GetVertexBuffer();
-            const Ref<IndexBuffer>& indexBuffer = BufferPool::GetIndexBuffer();
-
-            VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(viewportCommandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(viewportCommandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-            vkCmdBindDescriptorSets(viewportCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Resources->pipelineLayout, 0, 1, &BufferPool::GetDescriptorSet(s_State.currentFrame), 0, nullptr);
-
-            vkCmdDrawIndexed(viewportCommandBuffer, static_cast<uint32_t>(indexBuffer->GetIndices().size()), 1, 0, 0, 0);
-
-            vkCmdEndRenderPass(viewportCommandBuffer);
-
-            result = vkEndCommandBuffer(viewportCommandBuffer);
-            DK_CORE_ASSERT(!result);
-        }
-
-        BufferPool::UpdateUniformBuffer(s_State.currentFrame);
+        BufferPool::UpdateUniformBuffer(viewProjection);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -287,8 +243,10 @@ namespace Deako {
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
-        std::array<VkCommandBuffer, 2> submitCommandBuffers =
-        { commandBuffer, viewportCommandBuffer };
+        std::array<VkCommandBuffer, 2> submitCommandBuffers = {
+            s_Resources->imguiCommandBuffers[s_State.currentFrame],
+            s_Resources->viewportCommandBuffers[s_State.currentFrame],
+        };
         submitInfo.commandBufferCount = static_cast<uint32_t>(submitCommandBuffers.size());;
         submitInfo.pCommandBuffers = submitCommandBuffers.data(); // the recorded command buffers
 

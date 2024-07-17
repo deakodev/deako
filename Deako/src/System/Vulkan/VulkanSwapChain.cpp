@@ -25,11 +25,8 @@ namespace Deako {
         VkPresentModeKHR presentMode = ChoosePresentMode(s_Details.presentModes);
         s_VR->imageExtent = ChooseExtent(s_Details.capabilities);
 
-        DK_CORE_INFO("imageExtent - Width: {0}, Height: {1}", s_VR->imageExtent.width, s_VR->imageExtent.height);
-
-
         // Recommended to request at least 1 more image than the min
-        uint32_t imageCount = s_Details.capabilities.minImageCount + 1;
+        uint32_t imageCount = s_Details.capabilities.minImageCount;
         // Check to make sure we dont exceed the max number of possible images
         if (s_Details.capabilities.maxImageCount > 0 && imageCount > s_Details.capabilities.maxImageCount)
             imageCount = s_Details.capabilities.maxImageCount;

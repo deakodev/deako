@@ -8,7 +8,7 @@ namespace Deako {
     // Tells Vulkan about framebuffer attachments that will be used while rendering
     void RenderPass::Create()
     {
-        {   // Default RenderPass
+        {   // ImGui RenderPass
             std::array<VkAttachmentDescription, 2> attachments{};
             // Color attachment
             attachments[0].format = s_VR->imageFormat;
@@ -75,7 +75,7 @@ namespace Deako {
             renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
             renderPassInfo.pDependencies = dependencies.data();
 
-            VkResult result = vkCreateRenderPass(s_VR->device, &renderPassInfo, nullptr, &s_VR->renderPass);
+            VkResult result = vkCreateRenderPass(s_VR->device, &renderPassInfo, nullptr, &s_VR->imguiRenderPass);
             DK_CORE_ASSERT(!result);
         }
 
@@ -154,7 +154,7 @@ namespace Deako {
     void RenderPass::CleanUp()
     {
         vkDestroyRenderPass(s_VR->device, s_VR->viewportRenderPass, nullptr);
-        vkDestroyRenderPass(s_VR->device, s_VR->renderPass, nullptr);
+        vkDestroyRenderPass(s_VR->device, s_VR->imguiRenderPass, nullptr);
     }
 
 }

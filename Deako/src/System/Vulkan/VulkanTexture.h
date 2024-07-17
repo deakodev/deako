@@ -9,7 +9,7 @@ namespace Deako {
     class Texture
     {
     public:
-        Texture(const std::string& path);
+        Texture(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout);
 
         VkImage& GetImage() { return m_Image; }
         VkImageView& GetImageView() { return m_ImageView; }
@@ -28,19 +28,30 @@ namespace Deako {
         static  Ref<VulkanResources> s_VR;
     };
 
+    class Texture2D : public Texture
+    {
+    public:
+        Texture2D(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout)
+            :Texture(path, format, usage, imageLayout)
+        {}
+
+        static void LoadFromFile(const std::string& path, VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    };
+
     class TexturePool
     {
     public:
         static void CreateSamplers();
-        static void CreateTextures();
+        // static void CreateTextures();
         static void CleanUp();
 
         static VkSampler& GetTextureSampler() { return s_TextureSampler; }
-        static const std::vector<Ref<Texture>>& GetTextures() { return s_Textures; }
+        static std::vector<Ref<Texture2D>>& GetTexture2Ds() { return s_Textures; }
 
     private:
         static VkSampler s_TextureSampler;
-        static std::vector<Ref<Texture>> s_Textures;
+        static std::vector<Ref<Texture2D>> s_Textures;
 
         static  Ref<VulkanResources> s_VR;
     };

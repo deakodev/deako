@@ -12,6 +12,7 @@
 #include "Deako/Events/MouseCodes.h"
 
 #include "Deako/Renderer/Renderer.h"
+#include "Deako/Renderer/EditorCamera.h"
 #include "Deako/Renderer/AssetManager.h"
 #include "Deako/Scene/Scene.h"
 #include "Deako/Scene/Entity.h"

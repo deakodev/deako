@@ -10,7 +10,8 @@ namespace Deako {
 
     void Pipeline::Create()
     {
-        //--- Shader stages ---//
+        // Viewport pipeline
+       //--- Shader stages ---//
         VkShaderModule vertShaderModule = ShaderModule::Create(
             "Deako-Editor/assets/shaders/bin/shader.vert.spv");
         VkShaderModule fragShaderModule = ShaderModule::Create(
@@ -35,19 +36,37 @@ namespace Deako {
         // describes the format of the vertex data that will be passed to the vertex shader:
         //  • Bindings: spacing between data and whether the data is per-vertex or per-instance (see instancing)
         //  • Attribute descriptions: type of attributes passed to the vertex shader, which binding to load them from and at which offset
-        auto bindingDescriptions = Vertex::GetBindingDescription();
-        auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+        std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+
+        // Vertex input bindings
+        bindingDescriptions = {
+            // Binding point 0: Mesh vertex layout description at per-vertex rate
+            VulkanInitializers::VertexInputBindingDescription(0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX),
+            // Binding point 1: Instanced data at per-instance rate
+            VulkanInitializers::VertexInputBindingDescription(1, sizeof(InstanceData), VK_VERTEX_INPUT_RATE_INSTANCE)
+        };
+
+        // Vertex attribute bindings
+        attributeDescriptions = {
+            // Per-vertex attributes
+            // These are advanced for each vertex fetched by the vertex shader
+            VulkanInitializers::VertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)),	// Location 0: Position
+            VulkanInitializers::VertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)),	    // Location 1: Color
+            VulkanInitializers::VertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)),		// Location 2: Texture coordinates
+            // Per-Instance attributes
+            // These are advanced for each instance rendered
+            VulkanInitializers::VertexInputAttributeDescription(1, 3, VK_FORMAT_R32G32B32_SFLOAT, 0),					// Location 3: Position
+            VulkanInitializers::VertexInputAttributeDescription(1, 4, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3),	// Location 4: Rotation
+            VulkanInitializers::VertexInputAttributeDescription(1, 5, VK_FORMAT_R32_SFLOAT,sizeof(float) * 6),			// Location 5: Scale
+            VulkanInitializers::VertexInputAttributeDescription(1, 6, VK_FORMAT_R32_SINT, sizeof(float) * 7),			// Location 6: Texture array layer index
+        };
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo =
             VulkanInitializers::PipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
 
         //--- Input assembly ---//
         // describes what kind of geometry will be drawn from vertices and if primitive restart should be enabled
-        //  • VK_PRIMITIVE_TOPOLOGY_POINT_LIST: points from vertices
-        //  • VK_PRIMITIVE_TOPOLOGY_LINE_LIST: line from every 2 vertices without reuse
-        //  • VK_PRIMITIVE_TOPOLOGY_LINE_STRIP: end vertex of every line is used as start vertex for next line
-        //  • VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST: triangle from every 3 vertices without reuse
-        //  • VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP: the second and third vertex of every triangle are used as first two vertices of the next triangle
         VkPipelineInputAssemblyStateCreateInfo inputAssembly =
             VulkanInitializers::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
@@ -105,9 +124,6 @@ namespace Deako {
 
         //--- Color blending ---//
         // after fragment shader returns color, needs to be combined with the color in the framebuffer
-        // Two ways to do it:
-        // • Mix the old and new value to produce a final color
-        // • Combine the old and new value using a bitwise operation
         // first struct contains the configuration per attached framebuffer
         VkPipelineColorBlendAttachmentState colorBlendAttachment =
             VulkanInitializers::PipelineColorBlendAttachmentState(
@@ -138,12 +154,11 @@ namespace Deako {
         pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
         pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-        VkResult result = vkCreatePipelineLayout(s_VR->device, &pipelineLayoutInfo, nullptr, &s_VR->pipelineLayout);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreatePipelineLayout(s_VR->device, &pipelineLayoutInfo, nullptr, &s_VR->pipelineLayout));
 
         //--- One struct to rule them all ---//
         VkGraphicsPipelineCreateInfo pipelineInfo =
-            VulkanInitializers::PipelineCreateInfo(s_VR->pipelineLayout, s_VR->renderPass);
+            VulkanInitializers::PipelineCreateInfo(s_VR->pipelineLayout, s_VR->viewportRenderPass);
         pipelineInfo.stageCount = 2;
         pipelineInfo.pStages = shaderStages;
         // Fixed functionality structs
@@ -157,13 +172,7 @@ namespace Deako {
         pipelineInfo.pDynamicState = &dynamicState;
         pipelineInfo.subpass = 0;
 
-        result = vkCreateGraphicsPipelines(s_VR->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_VR->graphicsPipeline);
-        DK_CORE_ASSERT(!result);
-
-        // Viewport pipeline
-        pipelineInfo.renderPass = s_VR->viewportRenderPass;
-        result = vkCreateGraphicsPipelines(s_VR->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_VR->viewportPipeline);
-        DK_CORE_ASSERT(!result);
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(s_VR->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_VR->viewportPipeline));
 
         // Clean up shaders
         ShaderModule::CleanUp(vertShaderModule);
@@ -173,7 +182,6 @@ namespace Deako {
     void Pipeline::CleanUp()
     {
         vkDestroyPipeline(s_VR->device, s_VR->viewportPipeline, nullptr);
-        vkDestroyPipeline(s_VR->device, s_VR->graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(s_VR->device, s_VR->pipelineLayout, nullptr);
     }
 

@@ -19,6 +19,8 @@ namespace Deako {
         virtual void OnImGuiRender() override;
 
     private:
+        EditorCamera m_EditorCamera;
+
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
         std::vector<void*> m_ViewportTextureIDs;
         bool m_ViewportFocused = false;

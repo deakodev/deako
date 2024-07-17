@@ -21,7 +21,7 @@ namespace Deako {
         virtual void OnEvent(Event& event) override;
 
         void Begin();
-        void End(VkCommandBuffer commandBuffer, VkPipeline pipeline);
+        void End(VkCommandBuffer commandBuffer);
 
         void BlockEvents(bool block) { m_BlockEvents = block; }
 

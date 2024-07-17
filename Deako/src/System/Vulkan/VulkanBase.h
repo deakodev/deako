@@ -1,9 +1,12 @@
 #pragma once
 
+#include "VulkanUtils.h"
 #include "VulkanDepth.h"
 #include "VulkanInitializers.h"
 
 #include <vulkan/vulkan.h>
+
+#include <glm/glm.hpp>
 
 namespace Deako {
 
@@ -30,17 +33,12 @@ namespace Deako {
         VkQueue                            graphicsQueue{ VK_NULL_HANDLE };
         VkQueue                            presentQueue{ VK_NULL_HANDLE };
 
-        std::vector<VkFramebuffer>         framebuffers;
-        std::vector<VkCommandBuffer>       commandBuffers;
-        VkCommandPool                      commandPool{ VK_NULL_HANDLE };
-        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
-        VkDescriptorSetLayout              descriptorSetLayout{ VK_NULL_HANDLE };
-        VkPipeline                         graphicsPipeline{ VK_NULL_HANDLE };
-        VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
-        VkRenderPass                       renderPass{ VK_NULL_HANDLE };
-
         VkFormat                           imageFormat;
         VkExtent2D                         imageExtent;
+
+        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
+        VkDescriptorSetLayout              descriptorSetLayout{ VK_NULL_HANDLE };
+        VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
 
         // Swapchain
         VkSurfaceKHR                       surface{ VK_NULL_HANDLE };
@@ -52,11 +50,18 @@ namespace Deako {
         VkRenderPass                       viewportRenderPass{ VK_NULL_HANDLE };
         VkPipeline                         viewportPipeline{ VK_NULL_HANDLE };
         VkCommandPool                      viewportCommandPool{ VK_NULL_HANDLE };
-        std::vector<VkFramebuffer>         viewportFramebuffers;
         std::vector<VkCommandBuffer>       viewportCommandBuffers;
+        std::vector<VkFramebuffer>         viewportFramebuffers;
         std::vector<VkImage>               viewportImages;
         std::vector<VkDeviceMemory>        viewportImageMemory;
         std::vector<VkImageView>           viewportImageViews;
+
+        // ImGui
+        VkRenderPass                       imguiRenderPass{ VK_NULL_HANDLE };
+        VkPipeline                         imguiPipeline{ VK_NULL_HANDLE };
+        VkCommandPool                      imguiCommandPool{ VK_NULL_HANDLE };
+        std::vector<VkCommandBuffer>       imguiCommandBuffers;
+        std::vector<VkFramebuffer>         imguiFramebuffers;
 
         // Depth Attachment
         VkImage                            depthImage{ VK_NULL_HANDLE };
@@ -86,8 +91,9 @@ namespace Deako {
         static Ref<VulkanResources>& GetResources() { return s_Resources; }
         static VulkanState* GetState() { return &s_State; }
         static uint32_t GetCurrentFrame() { return s_State.currentFrame; }
+        static float GetAspectRatio() { return s_Resources->imageExtent.width / s_Resources->imageExtent.height; }
 
-        static void DrawFrame();
+        static void DrawFrame(const glm::mat4& viewProjection);
 
     private:
         static void CreateInstance(const char* appName);
