@@ -56,10 +56,10 @@ namespace Deako {
             VulkanInitializers::VertexInputAttributeDescription(0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)),		// Location 2: Texture coordinates
             // Per-Instance attributes
             // These are advanced for each instance rendered
-            VulkanInitializers::VertexInputAttributeDescription(1, 3, VK_FORMAT_R32G32B32_SFLOAT, 0),					// Location 3: Position
-            VulkanInitializers::VertexInputAttributeDescription(1, 4, VK_FORMAT_R32G32B32_SFLOAT, sizeof(float) * 3),	// Location 4: Rotation
-            VulkanInitializers::VertexInputAttributeDescription(1, 5, VK_FORMAT_R32_SFLOAT,sizeof(float) * 6),			// Location 5: Scale
-            VulkanInitializers::VertexInputAttributeDescription(1, 6, VK_FORMAT_R32_SINT, sizeof(float) * 7),			// Location 6: Texture array layer index
+            VulkanInitializers::VertexInputAttributeDescription(1, 3, VK_FORMAT_R32G32B32_SFLOAT, offsetof(InstanceData, position)),	// Location 3: Position
+            VulkanInitializers::VertexInputAttributeDescription(1, 4, VK_FORMAT_R32G32B32_SFLOAT, offsetof(InstanceData, rotation)),	// Location 4: Rotation
+            VulkanInitializers::VertexInputAttributeDescription(1, 5, VK_FORMAT_R32_SFLOAT, offsetof(InstanceData, scale)),			// Location 5: Scale
+            VulkanInitializers::VertexInputAttributeDescription(1, 6, VK_FORMAT_R32_SINT, offsetof(InstanceData, textureIndex)),		// Location 6: Texture index
         };
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo =

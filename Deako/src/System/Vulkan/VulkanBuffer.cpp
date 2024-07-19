@@ -1,6 +1,9 @@
 #include "VulkanBuffer.h"
 #include "dkpch.h"
 
+// TODO: temp
+#include "Deako/Renderer/Renderer.h"
+
 #include "VulkanCommand.h"
 #include "VulkanTexture.h"
 
@@ -30,11 +33,7 @@ namespace std {
 
 namespace Deako {
 
-    const uint16_t INSTANCE_COUNT = 2;
-
-    Ref<VertexBuffer> BufferPool::s_VertexBuffer;
-    Ref<IndexBuffer> BufferPool::s_IndexBuffer;
-    Ref<InstanceBuffer> BufferPool::s_InstanceBuffer;
+    std::vector<Ref<Model>> BufferPool::s_Models;
     std::array<VkDescriptorSet, 2> BufferPool::s_DescriptorSets;
     std::array<Ref<Buffer>, 2> BufferPool::s_UniformBuffers;
     Ref<VulkanResources> BufferPool::s_VR = VulkanBase::GetResources();
@@ -42,89 +41,70 @@ namespace Deako {
     Ref<VulkanSettings> BufferPool::s_VS = VulkanBase::GetSettings();
     Ref<VulkanSettings> Buffer::s_VS = VulkanBase::GetSettings();
 
-    VertexBuffer::VertexBuffer(const std::vector<Vertex>& vertices)
-        : m_Vertices(vertices)
+    Buffer::Buffer(VkDeviceSize bufferSize, size_t dataSize)
+        :m_BufferSize(bufferSize), m_DataSize(dataSize)
     {
-        VkDeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
+    }
 
-        Buffer stagingBuffer{};
-        stagingBuffer.SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    VertexBuffer::VertexBuffer(const std::vector<Vertex>& vertices)
+        : Buffer(vertices.size() * sizeof(Vertex), vertices.size())
+    {
+        Buffer stagingBuffer{ m_BufferSize };
+        stagingBuffer.SetBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         stagingBuffer.Map();
-        stagingBuffer.CopyTo(m_Vertices.data(), (size_t)bufferSize);
+        stagingBuffer.CopyToStaging(vertices.data());
         stagingBuffer.Unmap();
 
-        this->SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        this->SetBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        CopyStaging(stagingBuffer.GetBuffer(), this->GetBuffer(), bufferSize);
+        this->CopyToThis(stagingBuffer.GetBuffer());
 
         vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
         vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
     }
 
     IndexBuffer::IndexBuffer(const std::vector<uint32_t>& indices)
-        : m_Indices(indices)
+        : Buffer(indices.size() * sizeof(uint32_t), indices.size())
     {
-        VkDeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
-
-        Buffer stagingBuffer{};
-        stagingBuffer.SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        Buffer stagingBuffer{ m_BufferSize };
+        stagingBuffer.SetBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         stagingBuffer.Map();
-        stagingBuffer.CopyTo(m_Indices.data(), (size_t)bufferSize);
+        stagingBuffer.CopyToStaging(indices.data());
         stagingBuffer.Unmap();
 
-        this->SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        this->SetBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        CopyStaging(stagingBuffer.GetBuffer(), this->GetBuffer(), bufferSize);
+        this->CopyToThis(stagingBuffer.GetBuffer());
 
         vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
         vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
     }
 
-    InstanceBuffer::InstanceBuffer()
-        : Buffer()
+    InstanceBuffer::InstanceBuffer(const std::vector<InstanceData>& instanceData)
+        : Buffer(instanceData.size() * sizeof(InstanceData), instanceData.size())
     {
-        std::vector<InstanceData> instanceData;
-        instanceData.resize(INSTANCE_COUNT);
-
-        // Object 1
-        instanceData[0].position = { 0.0f, 0.0f, 0.0f };
-        instanceData[0].rotation = { 0.0f, 0.0f, 0.0f }; // Initial rotation
-        instanceData[0].scale = 0.5f; // Uniform scale
-        instanceData[0].texureIndex = 0; // Texture index
-
-        // Object 2
-        instanceData[1].position = { 1.0f, 1.0f, 1.0f };
-        instanceData[1].rotation = { 0.0f, 0.0f, 0.0f }; // Initial rotation
-        instanceData[1].scale = 0.5f; // Uniform scale
-        instanceData[1].texureIndex = 0; // Texture index
-
-        VkDeviceSize bufferSize = instanceData.size() * sizeof(InstanceData);
-
-        Buffer stagingBuffer{};
-        stagingBuffer.SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        Buffer stagingBuffer{ m_BufferSize };
+        stagingBuffer.SetBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         stagingBuffer.Map();
-        stagingBuffer.CopyTo(instanceData.data(), (size_t)bufferSize);
+        stagingBuffer.CopyToStaging(instanceData.data());
         stagingBuffer.Unmap();
 
-        this->SetInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        this->SetBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        CopyStaging(stagingBuffer.GetBuffer(), this->GetBuffer(), bufferSize);
+        this->CopyToThis(stagingBuffer.GetBuffer());
 
         vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
         vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
     }
 
-    void Buffer::SetInfo(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+    void Buffer::SetBuffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     {
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = size;
+        bufferInfo.size = m_BufferSize;
         // indicates for which purposes the data in the buffer is going to be used
         bufferInfo.usage = usage;
         // buffers can be owned by a specific queue family or be shared
@@ -146,23 +126,28 @@ namespace Deako {
         VK_CHECK_RESULT(vkBindBufferMemory(s_VR->device, m_Buffer, m_Memory, 0));
     }
 
-    void Buffer::CopyStaging(VkBuffer& stagingBuffer, VkBuffer& receivingBuffer, VkDeviceSize size)
+    void Buffer::CopyToThis(VkBuffer stagingBuffer)
     {
         VkCommandBuffer commandBuffer = CommandPool::BeginSingleTimeCommands(s_VR->viewportCommandPool);
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0; // Optional
         copyRegion.dstOffset = 0; // Optional
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, stagingBuffer, receivingBuffer, 1, &copyRegion);
+        copyRegion.size = m_BufferSize;
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer, m_Buffer, 1, &copyRegion);
 
         CommandPool::EndSingleTimeCommands(s_VR->viewportCommandPool, commandBuffer);
     }
 
-    void Buffer::Map(VkDeviceSize size, VkDeviceSize offset)
+    void Buffer::CopyToStaging(const void* data)
     {
-        VkResult result = vkMapMemory(s_VR->device, m_Memory, offset, size, 0, &m_Mapped);
-        DK_CORE_ASSERT(!result);
+        DK_CORE_ASSERT(m_Mapped);
+        memcpy(m_Mapped, data, m_BufferSize);
+    }
+
+    void Buffer::Map()
+    {
+        VK_CHECK_RESULT(vkMapMemory(s_VR->device, m_Memory, 0, m_BufferSize, 0, &m_Mapped));
     }
 
     void Buffer::Unmap()
@@ -174,10 +159,12 @@ namespace Deako {
         }
     }
 
-    void Buffer::CopyTo(const void* data, VkDeviceSize size)
+    void Buffer::Destroy()
     {
-        DK_CORE_ASSERT(m_Mapped);
-        memcpy(m_Mapped, data, size);
+        if (m_Buffer)
+            vkDestroyBuffer(s_VR->device, m_Buffer, nullptr);
+        if (m_Memory)
+            vkFreeMemory(s_VR->device, m_Memory, nullptr);
     }
 
     uint32_t Buffer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -205,28 +192,14 @@ namespace Deako {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
         for (size_t i = 0; i < s_VS->imageCount; i++)
         {
-            s_UniformBuffers[i] = CreateRef<Buffer>();
-            s_UniformBuffers[i]->SetInfo(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            s_UniformBuffers[i] = CreateRef<Buffer>(bufferSize);
+
+            s_UniformBuffers[i]->SetBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
             vkMapMemory(s_VR->device, s_UniformBuffers[i]->GetMemory(), 0, bufferSize, 0, &s_UniformBuffers[i]->Mapped());
         }
     }
-
-    void BufferPool::CreateVertexBuffers(const std::vector<Vertex>& vertices)
-    {
-        s_VertexBuffer = CreateRef<VertexBuffer>(vertices);
-    }
-
-    void BufferPool::CreateIndexBuffer(const std::vector<uint32_t>& indices)
-    {
-        s_IndexBuffer = CreateRef<IndexBuffer>(indices);
-    }
-
-    void BufferPool::CreateInstanceBuffer()
-    {
-        s_InstanceBuffer = CreateRef<InstanceBuffer>();
-    }
-
 
     void BufferPool::CreateDescriptorSetLayout()
     {
@@ -312,15 +285,6 @@ namespace Deako {
 
     void BufferPool::CleanUp()
     {
-        vkDestroyBuffer(s_VR->device, s_VertexBuffer->GetBuffer(), nullptr);
-        vkFreeMemory(s_VR->device, s_VertexBuffer->GetMemory(), nullptr);
-
-        vkDestroyBuffer(s_VR->device, s_IndexBuffer->GetBuffer(), nullptr);
-        vkFreeMemory(s_VR->device, s_IndexBuffer->GetMemory(), nullptr);
-
-        vkDestroyBuffer(s_VR->device, s_InstanceBuffer->GetBuffer(), nullptr);
-        vkFreeMemory(s_VR->device, s_InstanceBuffer->GetMemory(), nullptr);
-
         for (size_t i = 0; i < s_VS->imageCount; i++)
         {
             vkDestroyBuffer(s_VR->device, s_UniformBuffers[i]->GetBuffer(), nullptr);
@@ -345,9 +309,8 @@ namespace Deako {
         ubo.viewProjection = viewProjection * glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         // ubo.viewProjection = viewProjection;
 
-        s_UniformBuffers[currentFrame]->CopyTo(&ubo, sizeof(UniformBufferObject));
-
-
+        DK_CORE_ASSERT(s_UniformBuffers[currentFrame]->Mapped());
+        memcpy(s_UniformBuffers[currentFrame]->Mapped(), &ubo, sizeof(UniformBufferObject));
     }
 
     void Model::LoadFromFile(const std::string& path)
@@ -361,9 +324,7 @@ namespace Deako {
         if (!success)
             throw std::runtime_error(warn + err);
 
-        std::vector<Vertex> vertices{};
         std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-        std::vector<uint32_t> indices{};
 
         for (const auto& shape : shapes)
         {
@@ -383,16 +344,13 @@ namespace Deako {
 
                 if (uniqueVertices.count(vertex) == 0)
                 {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                    vertices.push_back(vertex);
+                    uniqueVertices[vertex] = static_cast<uint32_t>(m_Vertices.size());
+                    m_Vertices.push_back(vertex);
                 }
 
-                indices.push_back(uniqueVertices[vertex]);
+                m_Indices.push_back(uniqueVertices[vertex]);
             }
         }
-
-        BufferPool::CreateVertexBuffers(vertices);
-        BufferPool::CreateIndexBuffer(indices);
     }
 
 }

@@ -25,24 +25,60 @@ namespace Deako {
 
         VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-        Buffer stagingBuffer{};
-        stagingBuffer.SetInfo(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        stagingBuffer.Map();
-        stagingBuffer.CopyTo(pixels, (size_t)imageSize);
-        stagingBuffer.Unmap();
+
+
+        struct StagingBuffer {
+            VkBuffer buffer;
+            VkDeviceMemory memory;
+            void* mapped = nullptr;
+        } stagingBuffer;
+
+        VkBufferCreateInfo bufferInfo{};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = imageSize;
+        // indicates for which purposes the data in the buffer is going to be used
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        // buffers can be owned by a specific queue family or be shared
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VK_CHECK_RESULT(vkCreateBuffer(s_VR->device, &bufferInfo, nullptr, &stagingBuffer.buffer));
+
+        VkMemoryRequirements memRequirements;
+        vkGetBufferMemoryRequirements(s_VR->device, stagingBuffer.buffer, &memRequirements);
+
+        // allocate the memory
+        VkMemoryAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = Buffer::FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        VK_CHECK_RESULT(vkAllocateMemory(s_VR->device, &allocInfo, nullptr, &stagingBuffer.memory));
+
+        VK_CHECK_RESULT(vkBindBufferMemory(s_VR->device, stagingBuffer.buffer, stagingBuffer.memory, 0));
+
+        VK_CHECK_RESULT(vkMapMemory(s_VR->device, stagingBuffer.memory, 0, VK_WHOLE_SIZE, 0, &stagingBuffer.mapped));
+
+        DK_CORE_ASSERT(stagingBuffer.mapped);
+        memcpy(stagingBuffer.mapped, pixels, (size_t)imageSize);
+
+        if (stagingBuffer.mapped)
+        {
+            vkUnmapMemory(s_VR->device, stagingBuffer.memory);
+            stagingBuffer.mapped = nullptr;
+        }
+
 
         this->SetImageInfo(texWidth, texHeight, format, VK_IMAGE_TILING_OPTIMAL,
             usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         TransitionImageLayout(s_VR->viewportCommandPool, m_Image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        CopyStaging(stagingBuffer.GetBuffer(), m_Image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        CopyStaging(stagingBuffer.buffer, m_Image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
         TransitionImageLayout(s_VR->viewportCommandPool, m_Image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, imageLayout);
 
         this->SetImageViewInfo(format);
 
-        vkDestroyBuffer(s_VR->device, stagingBuffer.GetBuffer(), nullptr);
-        vkFreeMemory(s_VR->device, stagingBuffer.GetMemory(), nullptr);
+        vkDestroyBuffer(s_VR->device, stagingBuffer.buffer, nullptr);
+        vkFreeMemory(s_VR->device, stagingBuffer.memory, nullptr);
         stbi_image_free(pixels);
     }
 
@@ -203,17 +239,6 @@ namespace Deako {
         VK_CHECK_RESULT(vkCreateSampler(s_VR->device, &samplerInfo, nullptr, &s_TextureSampler));
     }
 
-    // void TexturePool::CreateTextures()
-    // {
-    //     const std::vector<std::string>& texturePaths = AssetManager::GetTexture2DPaths();
-
-    //     for (auto& texturePath : texturePaths)
-    //     {
-    //         Ref<Texture2D> texture = CreateRef<Texture2D>(texturePath);
-    //         s_Textures.push_back(texture);
-    //     }
-    // }
-
     void TexturePool::CleanUp()
     {
         vkDestroySampler(s_VR->device, s_TextureSampler, nullptr);
@@ -224,12 +249,6 @@ namespace Deako {
             vkDestroyImage(s_VR->device, texture->GetImage(), nullptr);
             vkFreeMemory(s_VR->device, texture->GetMemory(), nullptr);
         }
-    }
-
-    void Texture2D::LoadFromFile(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout)
-    {
-        Ref<Texture2D> texture = CreateRef<Texture2D>(path, format, usage, imageLayout);
-        TexturePool::GetTexture2Ds().push_back(texture);
     }
 
 }

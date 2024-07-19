@@ -25,12 +25,27 @@ namespace Deako {
     static void LoadAssets()
     {
         const std::vector<std::string>& modelPaths = AssetManager::GetModelPaths();
-        for (auto& modelPath : modelPaths)
-            Model::LoadFromFile(modelPath);
+        const std::vector<std::string>& texture2DPaths = AssetManager::GetTexture2DPaths();
 
-        const std::vector<std::string>& texturePaths = AssetManager::GetTexture2DPaths();
-        for (auto& texturePath : texturePaths)
-            Texture2D::LoadFromFile(texturePath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        std::vector<Ref<Model>>& models = BufferPool::GetModels();
+        models.resize(modelPaths.size());
+
+        std::vector<Ref<Texture2D>>& texture2Ds = TexturePool::GetTexture2Ds();
+        texture2Ds.resize(texture2DPaths.size());
+
+        for (size_t i = 0; i < modelPaths.size(); i++)
+        {
+            Ref<Model> model = CreateRef<Model>();
+            model->LoadFromFile(modelPaths[i]);
+            models[i] = model;
+        }
+
+        for (size_t i = 0; i < texture2DPaths.size(); i++)
+        {
+            Ref<Texture2D> texture2D =
+                CreateRef<Texture2D>(texture2DPaths[i], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+            texture2Ds[i] = texture2D;
+        }
     }
 
     void VulkanBase::Init(const char* appName)
@@ -54,7 +69,7 @@ namespace Deako {
         TexturePool::CreateSamplers();
 
         LoadAssets();
-        BufferPool::CreateInstanceBuffer();
+
         BufferPool::CreateUniformBuffers();
         BufferPool::CreateDescriptorPool();
         BufferPool::CreateDescriptorSets();
@@ -202,7 +217,7 @@ namespace Deako {
         return true;
     }
 
-    void VulkanBase::DrawFrame(const glm::mat4& viewProjection)
+    void VulkanBase::DrawFrame()
     {
         VkSemaphore imageAvailableSemaphore = s_Resources->imageAvailableSemaphores[s_State.currentFrame];
         VkSemaphore renderFinishedSemaphore = s_Resources->renderFinishedSemaphores[s_State.currentFrame];
@@ -233,7 +248,8 @@ namespace Deako {
         CommandPool::RecordImGuiCommandBuffer(s_Resources->imguiCommandBuffers[s_State.currentFrame], imageIndex);
         CommandPool::RecordViewportCommandBuffer(s_Resources->viewportCommandBuffers[s_State.currentFrame], s_State.currentFrame, imageIndex);
 
-        BufferPool::UpdateUniformBuffer(viewProjection);
+        // Uniform buffers are now updated before each DrawFrame() call
+        // BufferPool::UpdateUniformBuffer(viewProjection);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

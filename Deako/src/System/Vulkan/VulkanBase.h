@@ -92,8 +92,9 @@ namespace Deako {
         static VulkanState* GetState() { return &s_State; }
         static uint32_t GetCurrentFrame() { return s_State.currentFrame; }
         static float GetAspectRatio() { return s_Resources->imageExtent.width / s_Resources->imageExtent.height; }
+        static VkDevice GetLogical() { return s_Resources->device; }
 
-        static void DrawFrame(const glm::mat4& viewProjection);
+        static void DrawFrame();
 
     private:
         static void CreateInstance(const char* appName);

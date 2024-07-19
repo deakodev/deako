@@ -27,7 +27,10 @@ namespace Deako {
         bool m_ViewportHovered = false;
 
         Ref<Scene> m_ActiveScene;
-        Entity m_VikingRoomEntity;
+        Entity m_VikingRoomEntityA;
+        Entity m_VikingRoomEntityB;
+
+        Ref<Texture2D> m_VikingRoomTexture;
     };
 
 }

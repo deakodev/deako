@@ -31,11 +31,9 @@ namespace Deako {
     class Texture2D : public Texture
     {
     public:
-        Texture2D(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout)
+        Texture2D(const std::string& path, VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             :Texture(path, format, usage, imageLayout)
         {}
-
-        static void LoadFromFile(const std::string& path, VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     };
 

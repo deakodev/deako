@@ -2,13 +2,12 @@
 #include "dkpch.h"
 
 #include "Deako/Core/Application.h"
+#include "Deako/Renderer/Renderer.h"
 
 #include "VulkanFramebuffer.h"
 #include "VulkanBuffer.h"
 
 namespace Deako {
-
-    const uint16_t INSTANCE_COUNT = 2;
 
     Ref<VulkanResources> CommandPool::s_VR = VulkanBase::GetResources();
     Ref<VulkanSettings> CommandPool::s_VS = VulkanBase::GetSettings();
@@ -96,19 +95,19 @@ namespace Deako {
         scissor.extent = s_VR->imageExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        const Ref<VertexBuffer>& vertexBuffer = BufferPool::GetVertexBuffer();
-        const Ref<IndexBuffer>& indexBuffer = BufferPool::GetIndexBuffer();
-        const Ref<InstanceBuffer>& instanceBuffer = BufferPool::GetInstanceBuffer();
+        const Ref<VertexBuffer>& modelVertexBuffer = Renderer::GetModelVertexBuffer();
+        const Ref<IndexBuffer>& modelIndexBuffer = Renderer::GetModelIndexBuffer();
+        const Ref<InstanceBuffer>& modelInstanceBuffer = Renderer::GetModelInstanceBuffer();
 
-        VkBuffer vertexBuffers[] = { vertexBuffer->GetBuffer() };
+        VkBuffer vertexBuffers[] = { modelVertexBuffer->GetBuffer() };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindVertexBuffers(commandBuffer, 1, 1, &instanceBuffer->GetBuffer(), offsets);
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(commandBuffer, 1, 1, &modelInstanceBuffer->GetBuffer(), offsets);
+        vkCmdBindIndexBuffer(commandBuffer, modelIndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_VR->pipelineLayout, 0, 1, &BufferPool::GetDescriptorSet(currentFrame), 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indexBuffer->GetIndices().size()), INSTANCE_COUNT, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(modelIndexBuffer->GetDataSize()), INSTANCE_COUNT, 0, 0, 0);
 
         // end the render pass
         vkCmdEndRenderPass(commandBuffer);

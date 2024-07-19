@@ -13,16 +13,21 @@ namespace Deako {
     {
         m_ViewportTextureIDs = Application::Get().GetImGuiLayer()->GetViewportTextureIDs();
 
+        m_VikingRoomTexture = TexturePool::GetTexture2Ds()[0];
+
         m_ActiveScene = CreateRef<Scene>();
 
-        // m_PrimaryCameraEntity = m_ActiveScene->CreateEntity("Camera A");
-        // auto& primaryCameraComp = m_PrimaryCameraEntity.AddComponent<CameraComponent>(Perspective);
-        // primaryCameraComp.primary = true;
-        // auto& primaryTransformComp = m_PrimaryCameraEntity.GetComponent<TransformComponent>();
-        // primaryTransformComp.translation = { 0.0f, 0.0f, 10.0f };
+        m_VikingRoomEntityA = m_ActiveScene->CreateEntity("Viking Room A");
+        m_VikingRoomEntityA.AddComponent<TextureComponent>(m_VikingRoomTexture);
+        auto& vikingRoomATransfromComp = m_VikingRoomEntityA.GetComponent<TransformComponent>();
+        vikingRoomATransfromComp.translation = { 0.0f, 0.0f, 0.0f };
+        vikingRoomATransfromComp.scale = 1.0f;
 
-        m_VikingRoomEntity = m_ActiveScene->CreateEntity("Viking Room");
-        // m_VikingRoomEntity.AddComponent<TextureComponent>(m_VikingRoomTexture);
+        m_VikingRoomEntityB = m_ActiveScene->CreateEntity("Viking Room B");
+        m_VikingRoomEntityB.AddComponent<TextureComponent>(m_VikingRoomTexture);
+        auto& vikingRoomBTransfromComp = m_VikingRoomEntityB.GetComponent<TransformComponent>();
+        vikingRoomBTransfromComp.translation = { 1.0f, 1.0f, 1.0f };
+        vikingRoomBTransfromComp.scale = 0.25f;
     }
 
     void EditorLayer::OnDetach()

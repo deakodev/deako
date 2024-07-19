@@ -21,15 +21,15 @@ namespace Deako {
     {
         Renderer::BeginScene(viewProjection);
 
-        // {
-        //     auto group = m_Registry.group<ColorComponent>(entt::get<TransformComponent>);
-        //     for (auto entity : group)
-        //     {
-        //         auto [colorComp, transformComp] = group.get<ColorComponent, TransformComponent>(entity);
+        {
+            // auto group = m_Registry.group<TextureComponent>(entt::get<TransformComponent>);
+            // for (auto entity : group)
+            // {
+            //     auto [textureComp, transformComp] = group.get<TextureComponent, TransformComponent>(entity);
 
-        //         Renderer3D::DrawCube(transformComp.GetTransform(), colorComp);
-        //     }
-        // }
+            //     Renderer::PrepareModelInstance(transformComp.translation, transformComp.rotation, transformComp.scale, 0);
+            // }
+        }
 
         Renderer::EndScene();
     }
