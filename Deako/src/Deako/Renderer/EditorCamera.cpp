@@ -6,26 +6,26 @@
 
 namespace Deako {
 
-    EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
-        : m_Projection(glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip))
-        , m_View(glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)))
-    {
-        m_ViewProjection = m_Projection * m_View;
-    }
+    // EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
+    //     : m_Projection(glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip))
+    //     , m_View(glm::lookAt(glm::vec3(2.0f, 20.0f, 40.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)))
+    // {
+    //     m_ViewProjection = m_Projection * m_View;
+    // }
 
-    void EditorCamera::UpdateProjection(float fov, float aspectRatio, float nearClip, float farClip)
-    {
-        m_Projection = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
-        m_Projection[1][1] *= -1;
-        m_ViewProjection = m_Projection * m_View;
-    }
+    // void EditorCamera::UpdateProjection(float fov, float aspectRatio, float nearClip, float farClip)
+    // {
+    //     m_Projection = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
+    //     // m_Projection[1][1] *= -1;
+    //     m_ViewProjection = m_Projection * m_View;
+    // }
 
-    void EditorCamera::UpdateView(const glm::vec3& position, const glm::quat& orientation)
-    {
-        m_View = glm::translate(glm::mat4(1.0f), position) * glm::toMat4(orientation);
-        m_View = glm::inverse(m_View);
-        m_ViewProjection = m_Projection * m_View;
-    }
+    // void EditorCamera::UpdateView(const glm::vec3& position, const glm::quat& orientation)
+    // {
+    //     m_View = glm::translate(glm::mat4(1.0f), position) * glm::toMat4(orientation);
+    //     m_View = glm::inverse(m_View);
+    //     m_ViewProjection = m_Projection * m_View;
+    // }
 
     // void Camera::OnUpdate()
     // {

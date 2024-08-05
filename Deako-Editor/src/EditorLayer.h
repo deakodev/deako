@@ -19,10 +19,10 @@ namespace Deako {
         virtual void OnImGuiRender() override;
 
     private:
-        EditorCamera m_EditorCamera;
+        Camera m_EditorCamera;
 
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
-        std::vector<void*> m_ViewportTextureIDs;
+        std::vector<void*> m_ImGuiViewportTextureIDs;
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;
 
@@ -30,7 +30,7 @@ namespace Deako {
         Entity m_VikingRoomEntityA;
         Entity m_VikingRoomEntityB;
 
-        Ref<Texture2D> m_VikingRoomTexture;
+        // Ref<Texture2D> m_VikingRoomTexture;
     };
 
 }

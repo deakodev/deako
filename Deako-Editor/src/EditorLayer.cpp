@@ -5,29 +5,29 @@
 namespace Deako {
 
     EditorLayer::EditorLayer()
-        : Layer("EditorLayer"), m_EditorCamera(45.0f, 1.0f, 0.1f, 10.0f)
+        : Layer("EditorLayer")
     {
     }
 
     void EditorLayer::OnAttach()
     {
-        m_ViewportTextureIDs = Application::Get().GetImGuiLayer()->GetViewportTextureIDs();
+        m_ImGuiViewportTextureIDs = VulkanBase::GetImGuiViewportTextureIDs();
 
-        m_VikingRoomTexture = TexturePool::GetTexture2Ds()[0];
+        // m_VikingRoomTexture = TexturePool::GetTexture2Ds()[0];
 
         m_ActiveScene = CreateRef<Scene>();
 
-        m_VikingRoomEntityA = m_ActiveScene->CreateEntity("Viking Room A");
-        m_VikingRoomEntityA.AddComponent<TextureComponent>(m_VikingRoomTexture);
-        auto& vikingRoomATransfromComp = m_VikingRoomEntityA.GetComponent<TransformComponent>();
-        vikingRoomATransfromComp.translation = { 0.0f, 0.0f, 0.0f };
-        vikingRoomATransfromComp.scale = 1.0f;
+        // m_VikingRoomEntityA = m_ActiveScene->CreateEntity("Viking Room A");
+        // m_VikingRoomEntityA.AddComponent<TextureComponent>(m_VikingRoomTexture);
+        // auto& vikingRoomATransfromComp = m_VikingRoomEntityA.GetComponent<TransformComponent>();
+        // vikingRoomATransfromComp.translation = { 0.0f, 0.0f, 0.0f };
+        // vikingRoomATransfromComp.scale = 1.0f;
 
-        m_VikingRoomEntityB = m_ActiveScene->CreateEntity("Viking Room B");
-        m_VikingRoomEntityB.AddComponent<TextureComponent>(m_VikingRoomTexture);
-        auto& vikingRoomBTransfromComp = m_VikingRoomEntityB.GetComponent<TransformComponent>();
-        vikingRoomBTransfromComp.translation = { 1.0f, 1.0f, 1.0f };
-        vikingRoomBTransfromComp.scale = 0.25f;
+        // m_VikingRoomEntityB = m_ActiveScene->CreateEntity("Viking Room B");
+        // m_VikingRoomEntityB.AddComponent<TextureComponent>(m_VikingRoomTexture);
+        // auto& vikingRoomBTransfromComp = m_VikingRoomEntityB.GetComponent<TransformComponent>();
+        // vikingRoomBTransfromComp.translation = { 1.0f, 1.0f, 1.0f };
+        // vikingRoomBTransfromComp.scale = 0.25f;
     }
 
     void EditorLayer::OnDetach()
@@ -37,9 +37,7 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        float aspectRatio = VulkanBase::GetAspectRatio();
-        m_EditorCamera.UpdateProjection(45.0f, aspectRatio, 0.1f, 10.0f);
-        m_ActiveScene->OnUpdateEditor(m_EditorCamera.GetViewProjection());
+        m_ActiveScene->OnUpdateEditor(m_EditorCamera);
     }
 
     void EditorLayer::OnImGuiRender()
@@ -120,8 +118,11 @@ namespace Deako {
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+
+        VulkanBase::SetViewportSize(m_ViewportSize);
+
         uint32_t currentFrame = VulkanBase::GetCurrentFrame();
-        ImGui::Image((ImTextureID)m_ViewportTextureIDs[currentFrame], ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
+        ImGui::Image((ImTextureID)m_ImGuiViewportTextureIDs[currentFrame], ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
 
         ImGui::End();
         ImGui::PopStyleVar();

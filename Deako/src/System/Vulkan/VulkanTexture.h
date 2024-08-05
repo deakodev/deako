@@ -1,57 +1,69 @@
 #pragma once
 
-#include "VulkanBase.h"
+#include "VulkanTypes.h"
 
 #include <vulkan/vulkan.h>
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#include <tiny_gltf.h>
 
 namespace Deako {
+
+    struct TextureSampler
+    {
+        VkFilter magFilter;
+        VkFilter minFilter;
+        VkSamplerAddressMode addressModeU;
+        VkSamplerAddressMode addressModeV;
+        VkSamplerAddressMode addressModeW;
+
+        void SetFilterModes(int32_t min, int32_t mag);
+        void SetWrapModes(int32_t wrapS, int32_t wrapT);
+    };
 
     class Texture
     {
     public:
-        Texture(const std::string& path, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout);
+        void UpdateDescriptor();
+        void Destroy();
 
-        VkImage& GetImage() { return m_Image; }
-        VkImageView& GetImageView() { return m_ImageView; }
-        VkDeviceMemory& GetMemory() { return m_ImageMemory; }
+        AllocatedImage& GetImage() { return m_Image; }
+        VkSampler& GetSampler() { return m_Sampler; }
+        VkDescriptorImageInfo& GetDescriptor() { return m_Descriptor; }
 
-        void SetImageInfo(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
-        void SetImageViewInfo(VkFormat format);
-        void CopyStaging(VkBuffer stagingBuffer, VkImage receivingImage, uint32_t width, uint32_t height);
-        static void TransitionImageLayout(VkCommandPool commandPool, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
-    private:
-        VkImage m_Image{ VK_NULL_HANDLE };
-        VkImageView m_ImageView{ VK_NULL_HANDLE };
-        VkDeviceMemory m_ImageMemory{ VK_NULL_HANDLE };
-
-        static  Ref<VulkanResources> s_VR;
+    protected:
+        AllocatedImage m_Image;
+        VkSampler m_Sampler;
+        VkImageLayout m_ImageLayout;
+        VkDescriptorImageInfo m_Descriptor;
+        uint32_t m_MipLevels;
+        uint32_t m_LayerCount;
     };
 
     class Texture2D : public Texture
     {
     public:
-        Texture2D(const std::string& path, VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-            :Texture(path, format, usage, imageLayout)
-        {}
+        void LoadFromFile(std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags =
+            VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+        void LoadFromGLTFImage(tinygltf::Image& gltfimage, std::string path, TextureSampler textureSampler);
     };
 
-    class TexturePool
+    class TextureCubeMap : public Texture
     {
     public:
-        static void CreateSamplers();
-        // static void CreateTextures();
-        static void CleanUp();
+        enum Target { NONE = 0, IRRADIANCE = 1, PREFILTERED = 2 };
 
-        static VkSampler& GetTextureSampler() { return s_TextureSampler; }
-        static std::vector<Ref<Texture2D>>& GetTexture2Ds() { return s_Textures; }
+        TextureCubeMap(Target target) : m_Target(target) {}
+
+        void LoadFromFile(std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags =
+            VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        void GenerateCubeMap();
 
     private:
-        static VkSampler s_TextureSampler;
-        static std::vector<Ref<Texture2D>> s_Textures;
-
-        static  Ref<VulkanResources> s_VR;
+        Target m_Target;
     };
+
+    void LoadEnvironment(std::string filename);
 
 }

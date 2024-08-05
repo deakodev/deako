@@ -31,7 +31,7 @@ namespace Deako {
 
         virtual bool IsVSync() const override;
         virtual void SetVSync(bool enabled) override;
-        virtual std::pair<int, int> GetWindowFramebufferSize() override;
+        virtual std::pair<uint32_t, uint32_t> GetWindowFramebufferSize() override;
 
         virtual void SetEventCallback(const EventCallbackFn& callback) override
         {

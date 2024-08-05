@@ -5,23 +5,33 @@
 #include <vulkan/vulkan.h>
 
 namespace Deako {
+    namespace VulkanDebug {
 
-    // Can have multiple, but class structured for one for now
-    class DebugMessenger
-    {
-    public:
-        static void Create();
-        static void CleanUp();
+        VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT messageType,
+            const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+            void* pUserData);
 
-        static void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+        void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
-    private:
-        static VkResult CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo);
-        static void DestroyDebugUtilsMessengerEXT();
+        VkResult CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo);
 
-    private:
-        static VkDebugUtilsMessengerEXT s_DebugMessenger;
-        static Ref<VulkanResources> s_VR;
-    };
+        void DestroyDebugUtilsMessengerEXT();
 
+    }
+
+    std::string ErrorString(VkResult errorCode);
+
+    #define VkCR(f)																				            \
+    {																										\
+        VkResult res = (f);																					\
+        if (res != VK_SUCCESS)																				\
+        {																									\
+            std::cout << "Fatal : VkResult is \"" << ErrorString(res) << "\" in " << __FILE__ << " at line " << __LINE__ << "\n";                                                                                           \
+            assert(res == VK_SUCCESS);																		\
+        }																									\
+    }
 }
+
+

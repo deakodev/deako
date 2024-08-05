@@ -1,112 +1,147 @@
 #include "VulkanBase.h"
 #include "dkpch.h"
 
-#include "Deako/Renderer/AssetManager.h"
+#include "Deako/Core/Application.h"
+#include "System/MacOS/MacUtils.h"
 
-#include "VulkanDebug.h"
-#include "VulkanDevice.h"
-#include "VulkanSwapChain.h"
-#include "VulkanPipeline.h"
-#include "VulkanRenderPass.h"
-#include "VulkanFramebuffer.h"
-#include "VulkanCommand.h"
-#include "VulkanBuffer.h"
-#include "VulkanDepth.h"
-#include "VulkanTexture.h"
-#include "VulkanViewport.h"
-#include "VulkanSync.h"
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 namespace Deako {
 
-    Ref<VulkanSettings> VulkanBase::s_Settings = CreateRef<VulkanSettings>();
-    Ref<VulkanResources> VulkanBase::s_Resources = CreateRef<VulkanResources>();
-    VulkanState VulkanBase::s_State;
-
-    static void LoadAssets()
-    {
-        const std::vector<std::string>& modelPaths = AssetManager::GetModelPaths();
-        const std::vector<std::string>& texture2DPaths = AssetManager::GetTexture2DPaths();
-
-        std::vector<Ref<Model>>& models = BufferPool::GetModels();
-        models.resize(modelPaths.size());
-
-        std::vector<Ref<Texture2D>>& texture2Ds = TexturePool::GetTexture2Ds();
-        texture2Ds.resize(texture2DPaths.size());
-
-        for (size_t i = 0; i < modelPaths.size(); i++)
-        {
-            Ref<Model> model = CreateRef<Model>();
-            model->LoadFromFile(modelPaths[i]);
-            models[i] = model;
-        }
-
-        for (size_t i = 0; i < texture2DPaths.size(); i++)
-        {
-            Ref<Texture2D> texture2D =
-                CreateRef<Texture2D>(texture2DPaths[i], VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-            texture2Ds[i] = texture2D;
-        }
-    }
+    Ref<VulkanResources> VulkanBase::vr = CreateRef<VulkanResources>();
+    Ref<VulkanSettings> VulkanBase::vs = CreateRef<VulkanSettings>();
 
     void VulkanBase::Init(const char* appName)
     {
         CreateInstance(appName);
 
-        if (s_Settings->validation)
-            DebugMessenger::Create();
+        SetUpDebugMessenger();
 
-        SwapChain::CreateSurface(); // Surface needed to find supported queue families in next step
-        Device::Create(); // Selects phyical, then creates logical
-        SwapChain::Create(); // Creates the swap chain images too
-        SwapChain::CreateImageViews(); // Just the swap chain image views
-        RenderPass::Create();
-        BufferPool::CreateDescriptorSetLayout(); // Required before creating pipline
-        Pipeline::Create();
-        CommandPool::Create(); // Also creates assc buffers
-        Viewport::Create(); // Creates images and views
-        Depth::CreateAttachment();
-        FramebufferPool::CreateFramebuffers();
-        TexturePool::CreateSamplers();
+        SetUpDevice();
 
-        LoadAssets();
+        SetUpSwapchain();
 
-        BufferPool::CreateUniformBuffers();
-        BufferPool::CreateDescriptorPool();
-        BufferPool::CreateDescriptorSets();
+        SetUpCommands();
 
-        Sync::CreateObjects();
+        SetUpRenderPasses();
+
+        SetUpFramebuffers();
+
+        SetUpSyncObjects();
+
+        SetUpAssets();
+
+
+
+        SetUpUniforms();
+
+        SetUpDescriptors();
+
+        SetUpPipelines();
+
+        SetUpImGui();
+
+        vr->camera.type = Camera::CameraType::lookat;
+        vr->camera.setPerspective(45.0f, (float)vr->scImageExtent.width / (float)vr->scImageExtent.height, 0.01f, 256.0f);
+        vr->camera.rotationSpeed = 0.25f;
+        vr->camera.movementSpeed = 0.1f;
+        vr->camera.setPosition({ 0.0f, 0.0f, 10.0f });
+        vr->camera.setRotation({ 0.0f, 0.0f, 0.0f });
+        vr->camera.updateViewMatrix();
+
+        vr->prepared = true;
     }
 
     void VulkanBase::Idle()
     {
-        vkDeviceWaitIdle(s_Resources->device);
+        vkDeviceWaitIdle(vr->device);
     }
 
     void VulkanBase::Shutdown()
     {
-        Sync::CleanUp();
-        BufferPool::CleanUp();
-        TexturePool::CleanUp();
-        FramebufferPool::CleanUp();
-        Depth::CleanUp();
-        Viewport::CleanUp();
-        CommandPool::CleanUp();
-        Pipeline::CleanUp();
-        RenderPass::CleanUp();
-        SwapChain::CleanUp();
-        Device::CleanUp();
-        SwapChain::CleanUpSurface();
+        VulkanBase::Idle();
 
-        if (s_Settings->validation)
-            DebugMessenger::CleanUp();
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        vkDestroyDescriptorPool(vr->device, vr->imguiDescriptorPool, nullptr);
 
-        vkDestroyInstance(s_Resources->instance, nullptr);
+        for (auto& [prefix, pipeline] : vr->pipelines)
+            vkDestroyPipeline(vr->device, pipeline, nullptr);
+
+        vkDestroyPipelineLayout(vr->device, vr->pipelineLayout, nullptr);
+
+        vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
+
+        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.scene, nullptr);
+        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.material, nullptr);
+        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.node, nullptr);
+        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.materialBuffer, nullptr);
+        vkDestroyDescriptorPool(vr->device, vr->descriptorPool, nullptr);
+
+        for (auto& uniform : vr->uniforms)
+        {
+            VulkanBuffer::Destroy(uniform.scene.buffer);
+            VulkanBuffer::Destroy(uniform.skybox.buffer);
+            VulkanBuffer::Destroy(uniform.params.buffer);
+        }
+
+        VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
+
+        vr->models.skybox.Destroy();
+        vr->models.scene.Destroy();
+
+        vr->textures.lutBrdf.Destroy();
+        vr->textures.irradianceCube.Destroy();
+        vr->textures.prefilteredCube.Destroy();
+        vr->textures.environmentCube.Destroy();
+        vr->textures.empty.Destroy();
+
+        for (auto semaphore : vr->renderCompleteSemaphores)
+            vkDestroySemaphore(vr->device, semaphore, nullptr);
+        for (auto semaphore : vr->presentCompleteSemaphores)
+            vkDestroySemaphore(vr->device, semaphore, nullptr);
+        for (auto fence : vr->waitFences)
+            vkDestroyFence(vr->device, fence, nullptr);
+
+        for (auto image : vr->viewportImages)
+            VulkanImage::Destroy(image);
+
+        for (auto framebuffer : vr->viewportFramebuffers)
+            vkDestroyFramebuffer(vr->device, framebuffer, nullptr);
+
+        for (auto framebuffer : vr->framebuffers)
+            vkDestroyFramebuffer(vr->device, framebuffer, nullptr);
+
+        VulkanImage::Destroy(vr->depthStencil);
+        VulkanImage::Destroy(vr->multisampleTarget.depth);
+        VulkanImage::Destroy(vr->multisampleTarget.color);
+
+        vkDestroyRenderPass(vr->device, vr->renderPass, nullptr);
+
+        vkDestroyCommandPool(vr->device, vr->commandPool, nullptr);
+
+        for (auto imageView : vr->scImageViews)
+            vkDestroyImageView(vr->device, imageView, nullptr);
+
+        vkDestroySwapchainKHR(vr->device, vr->swapchain, nullptr);
+
+        vkDestroyDevice(vr->device, nullptr);
+
+        vkDestroySurfaceKHR(vr->instance, vr->surface, nullptr);
+
+        if (vs->validationEnabled) VulkanDebug::DestroyDebugUtilsMessengerEXT();
+
+        vkDestroyInstance(vr->instance, nullptr);
     }
 
     void VulkanBase::CreateInstance(const char* appName)
     {
         #if defined(VK_VALIDATION)
-        s_Settings->validation = true;
+        vs->validationEnabled = true;
         #endif
 
         VkApplicationInfo appInfo = {};
@@ -117,189 +152,1381 @@ namespace Deako {
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
-        VkInstanceCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        createInfo.pApplicationInfo = &appInfo;
-
-        #ifdef VK_USE_PLATFORM_MACOS_MVK
-        createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
-        #endif
-
-        DetermineExtensions();
-        createInfo.enabledExtensionCount = static_cast<uint32_t>(s_Settings->instanceExtensions.size());
-        createInfo.ppEnabledExtensionNames = s_Settings->instanceExtensions.data();
-
-        if (s_Settings->validation && AreValidationsAvailable())
-        {
-            createInfo.enabledLayerCount = static_cast<uint32_t>(s_Settings->validationLayers.size());
-            createInfo.ppEnabledLayerNames = s_Settings->validationLayers.data();
-            // Used to debug creation/destruction of the instance without needing a instance to refer to
-            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-            DebugMessenger::PopulateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext = &debugCreateInfo;
-        }
-        else
-        {
-            createInfo.enabledLayerCount = 0;
-            createInfo.pNext = nullptr;
-        }
-
-        VkResult result = vkCreateInstance(&createInfo, nullptr, &s_Resources->instance);
-        DK_CORE_ASSERT(!result, "Failed to create vulkan instance!");
-    }
-
-    void VulkanBase::DetermineExtensions()
-    {
-        // Required instanceExtensions - GLFW handy built-in func to get instanceExtensions required for our driver
         uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions; // pointer to a char pointer
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+        std::vector<const char*> instanceExtensions{ glfwExtensions, glfwExtensions + glfwExtensionCount };
 
         for (uint32_t i = 0; i < glfwExtensionCount; i++)
-            s_Settings->instanceExtensions.emplace_back(glfwExtensions[i]);
+            instanceExtensions.emplace_back(glfwExtensions[i]);
 
-        #ifdef VK_USE_PLATFORM_MACOS_MVK
-        s_Settings->instanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-        s_Settings->instanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        #if defined(VK_USE_PLATFORM_MACOS_MVK) // enable surface extensions depending for mac
+        instanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+        instanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         #endif
+        if (vs->validationEnabled)
+            instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-        // Required for debug messenger
-        if (s_Settings->validation)
-            s_Settings->instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-        // Check if required instanceExtensions are supported
+        // check if required instanceExtensions are supported
         uint32_t extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
         std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.data());
 
-        for (const char* requiredExtension : s_Settings->instanceExtensions)
+        for (const char* requiredExtension : instanceExtensions)
         {
             bool supported = false;
             for (const auto& supportedExtension : supportedExtensions)
             {
                 if (strcmp(requiredExtension, supportedExtension.extensionName) == 0)
                 {
-                    supported = true;
-                    break;
+                    supported = true; break;
                 }
             }
-            DK_CORE_ASSERT(supported);
+            DK_CORE_ASSERT(supported, "Required instance extensions not supported!");
         }
-    }
 
-    bool VulkanBase::AreValidationsAvailable()
-    {
-        // Get list of validation layers available
-        uint32_t layerCount = 0;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+        VkInstanceCreateInfo instanceInfo = {};
+        instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instanceInfo.pNext = nullptr;
+        instanceInfo.pApplicationInfo = &appInfo;
+        #if defined(VK_USE_PLATFORM_MACOS_MVK)
+        instanceInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        #endif
 
-        std::vector<VkLayerProperties> availableLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-        // Check if each requested validation layer is available
-        for (const char* validationLayers : s_Settings->validationLayers)
+        if (instanceExtensions.size() > 0)
         {
-            bool available = false;
-            for (const auto& availableLayer : availableLayers)
-            {
-                if (strcmp(validationLayers, availableLayer.layerName) == 0)
-                {
-                    available = true;
-                    break;
-                }
-            }
-
-            if (!available)
-                return false;
+            instanceInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
+            instanceInfo.ppEnabledExtensionNames = instanceExtensions.data();
         }
-        return true;
+
+        std::vector<const char*> validationLayerNames;
+        if (vs->validationEnabled)
+        {
+            validationLayerNames.push_back("VK_LAYER_KHRONOS_validation");
+            instanceInfo.enabledLayerCount = (uint32_t)validationLayerNames.size();
+            instanceInfo.ppEnabledLayerNames = validationLayerNames.data();
+            // used to debug instance creation without needing instance reference
+            VkDebugUtilsMessengerCreateInfoEXT debugInfo = {};
+            VulkanDebug::PopulateDebugMessengerCreateInfo(debugInfo);
+            instanceInfo.pNext = &debugInfo;
+        }
+
+        VkCR(vkCreateInstance(&instanceInfo, nullptr, &vr->instance));
     }
 
-    void VulkanBase::DrawFrame()
+    void VulkanBase::SetUpDebugMessenger()
     {
-        VkSemaphore imageAvailableSemaphore = s_Resources->imageAvailableSemaphores[s_State.currentFrame];
-        VkSemaphore renderFinishedSemaphore = s_Resources->renderFinishedSemaphores[s_State.currentFrame];
-        VkFence inFlightFence = s_Resources->inFlightFences[s_State.currentFrame];
+        if (vs->validationEnabled)
+        {
+            VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
+            VulkanDebug::PopulateDebugMessengerCreateInfo(debugInfo);
+            VkCR(VulkanDebug::CreateDebugUtilsMessengerEXT(&debugInfo));
+        }
+    }
 
-        // (1) wait until previous frame is finished, so command buffer/semaphores are available to use. Waits on host for either any or all of the fences to be signaled before returning. VK_TRUE indicates to wait for all fences, last param is timeout that we set to the max value of UINT64_MAX, which effectively disables timeout
-        vkWaitForFences(s_Resources->device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+    void VulkanBase::SetUpDevice()
+    {
+        /* CREATE SURFACE */
+        GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        VkCR(glfwCreateWindowSurface(vr->instance, window, nullptr, &vr->surface));
 
-        // (2) acquire an image from the swap chain
-        // third param specifies timeout in nanosecs for an image to become available. Max value of UINT64_MAX, which disables timeout, next two params specify synchronization
+        /* DETERMINE PHYSICAL */
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, nullptr);
+        DK_CORE_ASSERT(deviceCount);  // check if any devices are supported
+
+        std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
+        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, physicalDevices.data());
+
+        std::multimap<int, VkPhysicalDevice> candidates;
+        for (const auto& physicalDevice : physicalDevices)
+        {   // determine scores of each device
+            int score = VulkanDevice::RatePhysical(physicalDevice);
+            candidates.insert(std::make_pair(score, physicalDevice));
+        }
+
+        // determine best candidate and set as physical device
+        if (candidates.rbegin()->first > 0) vr->physicalDevice = candidates.rbegin()->second;
+        else DK_CORE_ASSERT(false);
+
+        // set family indices of our selected physical device
+        VulkanDevice::FindQueueFamilies(vr->physicalDevice);
+
+        /* CREATE LOGICAL */
+        std::vector<VkDeviceQueueCreateInfo> queueCreateInfos; // obtain
+        std::set<uint32_t> queueFamilies = { vr->graphicsFamily.value(), vr->presentFamily.value() };
+
+        float queuePriority = 1.0f; // 0.0 - 1.0, influences scheduling of command buffer
+        for (uint32_t queueFamily : queueFamilies)
+        {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
+
+        VkPhysicalDeviceFeatures enabledFeatures{};
+        enabledFeatures.samplerAnisotropy = VK_TRUE;
+
+        std::vector<const char*> enabledExtensions{};
+        enabledExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        enabledExtensions.push_back("VK_KHR_portability_subset");
+        VulkanDevice::CheckExtensionSupport(vr->physicalDevice, enabledExtensions);
+
+        VkDeviceCreateInfo deviceCreateInfo = {};
+        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());;
+        deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+        deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
+
+        if (enabledExtensions.size() > 0)
+        {
+            deviceCreateInfo.enabledExtensionCount = (uint32_t)enabledExtensions.size();
+            deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
+        }
+
+        VkCR(vkCreateDevice(vr->physicalDevice, &deviceCreateInfo, nullptr, &vr->device));
+
+        /* GET QUEUE FAMILIES */
+        vkGetDeviceQueue(vr->device, vr->graphicsFamily.value(), 0, &vr->graphicsQueue);
+        vkGetDeviceQueue(vr->device, vr->presentFamily.value(), 0, &vr->presentQueue);
+    }
+
+    void VulkanBase::SetUpSwapchain()
+    {
+        /* SWAPCHAIN CREATION */
+        VkSwapchainKHR oldSwapchain = vr->swapchain;
+
+        VulkanSwapchain::QuerySupport(vr->physicalDevice);
+
+        VkSurfaceCapabilitiesKHR caps = vr->scDetails.capabilities;
+        std::vector<VkSurfaceFormatKHR> formats = vr->scDetails.formats;
+        std::vector<VkPresentModeKHR> presentModes = vr->scDetails.presentModes;
+
+        VkSurfaceFormatKHR surfaceFormat = VulkanSwapchain::ChooseSurfaceFormat(formats);
+        vr->scColorFormat = surfaceFormat.format;
+        VkPresentModeKHR presentMode = VulkanSwapchain::ChoosePresentMode(presentModes);
+        vr->scImageExtent = VulkanSwapchain::ChooseExtent(caps);
+
+        // check to make sure we dont exceed the max number of possible images
+        vr->scImageCount = caps.minImageCount;
+        if (caps.maxImageCount > 0 && vr->scImageCount > caps.maxImageCount)
+            vr->scImageCount = caps.maxImageCount;
+
+        // find the transformation of the surface
+        VkSurfaceTransformFlagsKHR preTransform;
+        if (caps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+            preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;// We prefer a non-rotated transform
+        else
+            preTransform = caps.currentTransform;
+
+        // find a supported composite alpha format (not all devices support alpha opaque)
+        VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        std::vector<VkCompositeAlphaFlagBitsKHR> compositeAlphaFlags = {
+            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+            VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+            VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+        };
+
+        for (auto& compositeAlphaFlag : compositeAlphaFlags)
+        {
+            if (caps.supportedCompositeAlpha & compositeAlphaFlag)
+            {
+                compositeAlpha = compositeAlphaFlag; break;
+            };
+        }
+
+        VkSwapchainCreateInfoKHR swapchainInfo = {};
+        swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapchainInfo.surface = vr->surface;
+        swapchainInfo.minImageCount = vr->scImageCount;
+        swapchainInfo.imageFormat = vr->scColorFormat;
+        swapchainInfo.imageColorSpace = surfaceFormat.colorSpace;
+        swapchainInfo.imageExtent = vr->scImageExtent;
+        swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        swapchainInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
+        swapchainInfo.imageArrayLayers = 1;
+        swapchainInfo.presentMode = presentMode;
+        swapchainInfo.clipped = VK_TRUE;
+        swapchainInfo.compositeAlpha = compositeAlpha;
+        swapchainInfo.oldSwapchain = oldSwapchain;
+
+        // set additional usage flag for blitting from sc images if supported
+        VkFormatProperties formatProps;
+        vkGetPhysicalDeviceFormatProperties(vr->physicalDevice, vr->scColorFormat, &formatProps);
+        if ((formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR) || (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
+        {
+            swapchainInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        uint32_t queueFamilyIndices[] = { vr->graphicsFamily.value(), vr->presentFamily.value() };
+        if (vr->graphicsFamily != vr->presentFamily)
+        {
+            swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+            swapchainInfo.queueFamilyIndexCount = 2;
+            swapchainInfo.pQueueFamilyIndices = queueFamilyIndices;
+        }
+        else
+        {
+            swapchainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            swapchainInfo.queueFamilyIndexCount = 0;
+            swapchainInfo.pQueueFamilyIndices = nullptr;
+        }
+
+        VkCR(vkCreateSwapchainKHR(vr->device, &swapchainInfo, nullptr, &vr->swapchain));
+
+        // if an existing swap chain is re-created, destroy the old swap chain
+        if (oldSwapchain != VK_NULL_HANDLE)
+        {
+            for (auto imageView : vr->scImageViews)
+                vkDestroyImageView(vr->device, imageView, nullptr);
+            vkDestroySwapchainKHR(vr->device, oldSwapchain, nullptr);
+        }
+
+        /* SWAPCHAIN IMAGES */
+        vkGetSwapchainImagesKHR(vr->device, vr->swapchain, &vr->scImageCount, nullptr);
+        vr->scImages.resize(vr->scImageCount);
+        vkGetSwapchainImagesKHR(vr->device, vr->swapchain, &vr->scImageCount, vr->scImages.data());
+
+        /* SWAPCHAIN IMAGE VIEWS */
+        vr->scImageViews.resize(vr->scImageCount);
+        for (size_t i = 0; i < vr->scImageCount; i++)
+        {
+            VkImageViewCreateInfo imageViewInfo = {};
+            imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            imageViewInfo.image = vr->scImages[i];
+            imageViewInfo.format = vr->scColorFormat;
+            imageViewInfo.subresourceRange.baseMipLevel = 0;
+            imageViewInfo.subresourceRange.levelCount = 1;
+            imageViewInfo.subresourceRange.baseArrayLayer = 0;
+            imageViewInfo.subresourceRange.layerCount = 1;
+            imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+            imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+            imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+            imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+
+            VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &vr->scImageViews[i]));
+        }
+
+        /* DEPTH FORMAT */
+        vr->scDepthFormat = VulkanDepth::FindFormat();
+    }
+
+    void VulkanBase::SetUpCommands()
+    {
+        /* COMMAND POOL */
+        VkCommandPoolCreateInfo commandPoolInfo = {};
+        commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        commandPoolInfo.queueFamilyIndex = vr->graphicsFamily.value();
+        commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        VkCR(vkCreateCommandPool(vr->device, &commandPoolInfo, nullptr, &vr->commandPool));
+
+        /* COMMANDS */
+        vr->commandBuffers.resize(vr->scImageCount);
+        VkCommandBufferAllocateInfo commandBufferInfo{};
+        commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferInfo.commandPool = vr->commandPool;
+        commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        commandBufferInfo.commandBufferCount = static_cast<uint32_t>(vr->commandBuffers.size());
+        VkCR(vkAllocateCommandBuffers(vr->device, &commandBufferInfo, vr->commandBuffers.data()));
+    }
+
+    void VulkanBase::SetUpRenderPasses()
+    {
+        if (vs->multiSampling)
+        {
+            std::array<VkAttachmentDescription, 4> attachments = {};
+            // multisampled attachment that we render to
+            attachments[0].format = vr->scColorFormat;
+            attachments[0].samples = vs->sampleCount;
+            attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            // frame buffer attachment to where the multisampled image will be resolved to
+            // will be presented to the swapchain
+            attachments[1].format = vr->scColorFormat;
+            attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+            attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachments[1].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+            // multisampled depth attachment we render to
+            attachments[2].format = vr->scDepthFormat;
+            attachments[2].samples = vs->sampleCount;
+            attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachments[2].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            // depth resolve attachment
+            attachments[3].format = vr->scDepthFormat;
+            attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
+            attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[3].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachments[3].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            VkAttachmentReference colorReference = {};
+            colorReference.attachment = 0;
+            colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            VkAttachmentReference depthReference = {};
+            depthReference.attachment = 2;
+            depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            VkAttachmentReference resolveReference = {};
+            resolveReference.attachment = 1;
+            resolveReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            VkSubpassDescription subpass = {};
+            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.colorAttachmentCount = 1;
+            subpass.pColorAttachments = &colorReference;
+            subpass.pResolveAttachments = &resolveReference;
+            subpass.pDepthStencilAttachment = &depthReference;
+
+            std::array<VkSubpassDependency, 2> dependencies;
+            dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+            dependencies[0].dstSubpass = 0;
+            dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+            dependencies[1].srcSubpass = 0;
+            dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+            dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+            VkRenderPassCreateInfo renderPassInfo = {};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            renderPassInfo.pAttachments = attachments.data();
+            renderPassInfo.subpassCount = 1;
+            renderPassInfo.pSubpasses = &subpass;
+            renderPassInfo.dependencyCount = 2;
+            renderPassInfo.pDependencies = dependencies.data();
+            VkCR(vkCreateRenderPass(vr->device, &renderPassInfo, nullptr, &vr->renderPass));
+        }
+        else
+        {
+            std::array<VkAttachmentDescription, 2> attachments = {};
+            // color attachment
+            attachments[0].format = vr->scColorFormat;
+            attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+            attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+            // depth attachment
+            attachments[1].format = vr->scDepthFormat;
+            attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+            attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            VkAttachmentReference colorReference = {};
+            colorReference.attachment = 0;
+            colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            VkAttachmentReference depthReference = {};
+            depthReference.attachment = 1;
+            depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            VkSubpassDescription subpassDescription = {};
+            subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpassDescription.colorAttachmentCount = 1;
+            subpassDescription.pColorAttachments = &colorReference;
+            subpassDescription.pDepthStencilAttachment = &depthReference;
+            subpassDescription.inputAttachmentCount = 0;
+            subpassDescription.pInputAttachments = nullptr;
+            subpassDescription.preserveAttachmentCount = 0;
+            subpassDescription.pPreserveAttachments = nullptr;
+            subpassDescription.pResolveAttachments = nullptr;
+
+            // subpass dependencies for layout transitions
+            std::array<VkSubpassDependency, 2> dependencies;
+            dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+            dependencies[0].dstSubpass = 0;
+            dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+            dependencies[1].srcSubpass = 0;
+            dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+            dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+            VkRenderPassCreateInfo renderPassInfo = {};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+            renderPassInfo.pAttachments = attachments.data();
+            renderPassInfo.subpassCount = 1;
+            renderPassInfo.pSubpasses = &subpassDescription;
+            renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+            renderPassInfo.pDependencies = dependencies.data();
+            VkCR(vkCreateRenderPass(vr->device, &renderPassInfo, nullptr, &vr->renderPass));
+        }
+    }
+
+    void VulkanBase::SetUpFramebuffers()
+    {
+        {
+            uint32_t width = vr->scImageExtent.width;
+            uint32_t height = vr->scImageExtent.height;
+
+            if (vs->multiSampling)
+            {
+                vr->multisampleTarget.color =
+                    VulkanImage::Create(VkExtent3D{ width, height, 1 }, vr->scColorFormat, vs->sampleCount, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+                vr->multisampleTarget.depth =
+                    VulkanImage::Create(VkExtent3D{ width, height, 1 }, vr->scDepthFormat, vs->sampleCount, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            }
+
+            // same for all frame buffers
+            vr->depthStencil =
+                VulkanImage::Create(VkExtent3D{ width, height, 1 }, vr->scDepthFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+            VkImageView attachments[4];
+            if (vs->multiSampling)
+            {
+                attachments[0] = vr->multisampleTarget.color.view;
+                attachments[2] = vr->multisampleTarget.depth.view;
+                attachments[3] = vr->depthStencil.view;
+            }
+            else
+            {
+                attachments[1] = vr->depthStencil.view;
+            }
+
+            VkFramebufferCreateInfo frameBufferInfo = {};
+            frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            frameBufferInfo.renderPass = vr->renderPass;
+            frameBufferInfo.attachmentCount = vs->multiSampling ? 4 : 2;
+            frameBufferInfo.pAttachments = attachments;
+            frameBufferInfo.width = width;
+            frameBufferInfo.height = height;
+            frameBufferInfo.layers = 1;
+
+            // create frame buffers for every swap chain image
+            vr->framebuffers.resize(vr->scImageCount);
+            for (uint32_t i = 0; i < vr->framebuffers.size(); i++)
+            {
+                if (vs->multiSampling) attachments[1] = vr->scImageViews[i];
+                else attachments[0] = vr->scImageViews[i];
+                VkCR(vkCreateFramebuffer(vr->device, &frameBufferInfo, nullptr, &vr->framebuffers[i]));
+            }
+
+            // create viewport framebuffers
+            // viewport images
+            vr->viewportImages.resize(vr->scImageCount);
+            for (uint32_t i = 0; i < vr->viewportImages.size(); i++)
+            {
+                vr->viewportImages[i] =
+                    VulkanImage::Create({ vr->scImageExtent.width, vr->scImageExtent.height, 1 }, vr->scColorFormat, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
+            }
+
+            vr->viewportFramebuffers.resize(vr->scImageCount);
+            for (uint32_t i = 0; i < vr->viewportFramebuffers.size(); i++)
+            {
+                if (vs->multiSampling) attachments[1] = vr->viewportImages[i].view;
+                else attachments[0] = vr->viewportImages[i].view;
+                VkCR(vkCreateFramebuffer(vr->device, &frameBufferInfo, nullptr, &vr->viewportFramebuffers[i]));
+            }
+        }
+
+        // pipeline cache
+        VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
+        pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+        VkCR(vkCreatePipelineCache(vr->device, &pipelineCacheCreateInfo, nullptr, &vr->pipelineCache));
+    }
+
+    void VulkanBase::SetUpSyncObjects()
+    {
+        vr->waitFences.resize(vs->frameOverlap);
+        vr->presentCompleteSemaphores.resize(vs->frameOverlap);
+        vr->renderCompleteSemaphores.resize(vs->frameOverlap);
+
+        VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
+        VkSemaphoreCreateInfo semaphoreInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
+        for (int i = 0; i < vs->frameOverlap; i++)
+        {
+            VkCR(vkCreateFence(vr->device, &fenceInfo, nullptr, &vr->waitFences[i]));
+            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vr->presentCompleteSemaphores[i]));
+            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vr->renderCompleteSemaphores[i]));
+        }
+    }
+
+    void VulkanBase::SetUpAssets()
+    {
+        MacUtils::ReadDirectory(vs->assetPath + "environments", "ktx", vr->environments, false);
+
+        vr->textures.empty.LoadFromFile("textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
+
+        VulkanLoad::Scene("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
+
+        vr->models.skybox.LoadFromFile("models/Box/glTF-Embedded/Box.gltf");
+
+        LoadEnvironment("environments/papermill.ktx");
+
+        GenerateBRDFLookUpTable();
+    }
+
+    void VulkanBase::SetUpUniforms()
+    {
+        VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        vr->uniforms.resize(vr->scImageCount);
+        for (auto& uniform : vr->uniforms)
+        {
+            uniform.scene.buffer = VulkanBuffer::Create(sizeof(VulkanResources::ShaderValuesMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.scene.descriptor = { uniform.scene.buffer.buffer, 0, sizeof(VulkanResources::ShaderValuesMatrices) };
+            VkCR(vkMapMemory(vr->device, uniform.scene.buffer.memory, 0, sizeof(VulkanResources::ShaderValuesMatrices), 0, &uniform.scene.buffer.mapped));
+
+            uniform.skybox.buffer = VulkanBuffer::Create(sizeof(VulkanResources::ShaderValuesMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.skybox.descriptor = { uniform.skybox.buffer.buffer, 0, sizeof(VulkanResources::ShaderValuesMatrices) };
+            VkCR(vkMapMemory(vr->device, uniform.skybox.buffer.memory, 0, sizeof(VulkanResources::ShaderValuesMatrices), 0, &uniform.skybox.buffer.mapped));
+
+            uniform.params.buffer = VulkanBuffer::Create(sizeof(VulkanResources::ShaderValuesParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.params.descriptor = { uniform.params.buffer.buffer, 0, sizeof(VulkanResources::ShaderValuesParams) };
+            VkCR(vkMapMemory(vr->device, uniform.params.buffer.memory, 0, sizeof(VulkanResources::ShaderValuesParams), 0, &uniform.params.buffer.mapped));
+        }
+
+        UpdateUniforms();
+    }
+
+    void VulkanBase::SetUpDescriptors()
+    {
+        /* DESCRIPTOR POOL */
+        uint32_t imageSamplerCount = 0;
+        uint32_t materialCount = 0;
+        uint32_t meshCount = 0;
+
+        // environment samplers (radiance, irradiance, brdf lut)
+        imageSamplerCount += 3;
+
+        std::vector<Model*> modelList = { &vr->models.skybox, &vr->models.scene };
+        for (auto& model : modelList)
+        {
+            for (auto& material : model->materials)
+            {
+                imageSamplerCount += 5;
+                materialCount++;
+            }
+
+            for (auto node : model->linearNodes)
+                if (node->mesh) meshCount++;
+        }
+
+        std::vector<VkDescriptorPoolSize> poolSizes = {
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (4 + meshCount) * vr->scImageCount },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageSamplerCount * vr->scImageCount },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 } // One SSBO for the shader material buffer
+        };
+
+        VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+        poolInfo.pPoolSizes = poolSizes.data();
+        poolInfo.maxSets = (2 + materialCount + meshCount) * vr->scImageCount;
+        VkCR(vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->descriptorPool));
+
+        /* DESCRIPTOR SETS */
+        vr->descriptorSets.resize(vr->scImageCount);
+
+        {   // scene (matrices and environment maps)
+            std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+                { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+            };
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.pBindings = setLayoutBindings.data();
+            layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+            VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.scene));
+
+            for (auto i = 0; i < vr->descriptorSets.size(); i++)
+            {
+                VkDescriptorSetAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                allocInfo.descriptorPool = vr->descriptorPool;
+                allocInfo.pSetLayouts = &vr->descriptorSetLayouts.scene;
+                allocInfo.descriptorSetCount = 1;
+                VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &vr->descriptorSets[i].scene));
+
+                std::array<VkWriteDescriptorSet, 5> write{};
+
+                write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                write[0].descriptorCount = 1;
+                write[0].dstSet = vr->descriptorSets[i].scene;
+                write[0].dstBinding = 0;
+                write[0].pBufferInfo = &vr->uniforms[i].scene.descriptor;
+
+                write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                write[1].descriptorCount = 1;
+                write[1].dstSet = vr->descriptorSets[i].scene;
+                write[1].dstBinding = 1;
+                write[1].pBufferInfo = &vr->uniforms[i].params.descriptor;
+
+                write[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write[2].descriptorCount = 1;
+                write[2].dstSet = vr->descriptorSets[i].scene;
+                write[2].dstBinding = 2;
+                write[2].pImageInfo = &vr->textures.irradianceCube.GetDescriptor();
+
+                write[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write[3].descriptorCount = 1;
+                write[3].dstSet = vr->descriptorSets[i].scene;
+                write[3].dstBinding = 3;
+                write[3].pImageInfo = &vr->textures.prefilteredCube.GetDescriptor();
+
+                write[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write[4].descriptorCount = 1;
+                write[4].dstSet = vr->descriptorSets[i].scene;
+                write[4].dstBinding = 4;
+                write[4].pImageInfo = &vr->textures.lutBrdf.GetDescriptor();
+
+                vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, NULL);
+            }
+        }
+
+        {   // material (samplers)
+            std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+                { 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr }
+            };
+
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.pBindings = setLayoutBindings.data();
+            layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+            VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
+
+            // per-material descriptor sets
+            for (auto& material : vr->models.scene.materials)
+            {
+                VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty.GetDescriptor();
+
+                VkDescriptorSetAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                allocInfo.descriptorPool = vr->descriptorPool;
+                allocInfo.pSetLayouts = &vr->descriptorSetLayouts.material;
+                allocInfo.descriptorSetCount = 1;
+                VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &material.descriptorSet));
+
+                std::vector<VkDescriptorImageInfo> imageDescriptors = {
+                    emptyTextureDescriptor,
+                    emptyTextureDescriptor,
+                    material.normalTexture ? material.normalTexture->GetDescriptor() : emptyTextureDescriptor,
+                    material.occlusionTexture ? material.occlusionTexture->GetDescriptor() : emptyTextureDescriptor,
+                    material.emissiveTexture ? material.emissiveTexture->GetDescriptor() : emptyTextureDescriptor
+                };
+
+                if (material.pbrWorkflows.metallicRoughness)
+                {
+                    if (material.baseColorTexture)
+                        imageDescriptors[0] = material.baseColorTexture->GetDescriptor();
+                    if (material.metallicRoughnessTexture)
+                        imageDescriptors[1] = material.metallicRoughnessTexture->GetDescriptor();
+                }
+                else if (material.pbrWorkflows.specularGlossiness)
+                {
+                    if (material.extension.diffuseTexture)
+                        imageDescriptors[0] = material.extension.diffuseTexture->GetDescriptor();
+                    if (material.extension.specularGlossinessTexture)
+                        imageDescriptors[1] = material.extension.specularGlossinessTexture->GetDescriptor();
+                }
+
+                std::array<VkWriteDescriptorSet, 5> write{};
+                for (size_t i = 0; i < imageDescriptors.size(); i++)
+                {
+                    write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    write[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    write[i].descriptorCount = 1;
+                    write[i].dstSet = material.descriptorSet;
+                    write[i].dstBinding = static_cast<uint32_t>(i);
+                    write[i].pImageInfo = &imageDescriptors[i];
+                }
+
+                vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, NULL);
+            }
+
+
+            {   // model node (matrices)
+                std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+                    { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
+                };
+
+                VkDescriptorSetLayoutCreateInfo layoutInfo{};
+                layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+                layoutInfo.pBindings = setLayoutBindings.data();
+                layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+                VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.node));
+
+                for (auto& node : vr->models.scene.nodes) // per-node descriptor set
+                    node->SetDescriptorSet();
+            }
+
+            {   // material buffer
+                std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+                    { 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                };
+                VkDescriptorSetLayoutCreateInfo layoutInfo{};
+                layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+                layoutInfo.pBindings = setLayoutBindings.data();
+                layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
+                VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.materialBuffer));
+
+                VkDescriptorSetAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                allocInfo.descriptorPool = vr->descriptorPool;
+                allocInfo.pSetLayouts = &vr->descriptorSetLayouts.materialBuffer;
+                allocInfo.descriptorSetCount = 1;
+                VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &vr->shaderMaterialDescriptorSet));
+
+                VkWriteDescriptorSet write{};
+                write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                write.descriptorCount = 1;
+                write.dstSet = vr->shaderMaterialDescriptorSet;
+                write.dstBinding = 0;
+                write.pBufferInfo = &vr->shaderMaterialDescriptorInfo;
+                vkUpdateDescriptorSets(vr->device, 1, &write, 0, nullptr);
+            }
+        }
+
+        // skybox (fixed set)
+        for (auto i = 0; i < vr->uniforms.size(); i++)
+        {
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = vr->descriptorPool;
+            allocInfo.pSetLayouts = &vr->descriptorSetLayouts.scene;
+            allocInfo.descriptorSetCount = 1;
+            VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &vr->descriptorSets[i].skybox));
+
+            std::array<VkWriteDescriptorSet, 3> write{};
+            write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            write[0].descriptorCount = 1;
+            write[0].dstSet = vr->descriptorSets[i].skybox;
+            write[0].dstBinding = 0;
+            write[0].pBufferInfo = &vr->uniforms[i].skybox.descriptor;
+
+            write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            write[1].descriptorCount = 1;
+            write[1].dstSet = vr->descriptorSets[i].skybox;
+            write[1].dstBinding = 1;
+            write[1].pBufferInfo = &vr->uniforms[i].params.descriptor;
+
+            write[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            write[2].descriptorCount = 1;
+            write[2].dstSet = vr->descriptorSets[i].skybox;
+            write[2].dstBinding = 2;
+            write[2].pImageInfo = &vr->textures.prefilteredCube.GetDescriptor();
+
+            vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, nullptr);
+        }
+    }
+
+    void VulkanBase::SetUpPipelines()
+    {
+        // depending on material setting, we need different pipeline variants per set
+        // eg. one with back-face culling, one without and one with alpha-blending enabled
+        AddPipelineSet("skybox", "shaders/bin/skybox.vert.spv", "shaders/bin/skybox.frag.spv");
+
+        AddPipelineSet("pbr", "shaders/bin/pbr.vert.spv", "shaders/bin/material_pbr.frag.spv");
+
+        AddPipelineSet("unlit", "shaders/bin/pbr.vert.spv", "shaders/bin/material_unlit.frag.spv");
+    }
+
+    void VulkanBase::AddPipelineSet(const std::string prefix, const std::string vertexShader, const std::string fragmentShader)
+    {
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+        VkPipelineRasterizationStateCreateInfo rasterization{};
+        rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterization.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterization.lineWidth = 1.0f;
+
+        VkPipelineColorBlendAttachmentState blendAttachment{};
+        blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        blendAttachment.blendEnable = VK_FALSE;
+
+        VkPipelineColorBlendStateCreateInfo colorBlend{};
+        colorBlend.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlend.attachmentCount = 1;
+        colorBlend.pAttachments = &blendAttachment;
+
+        VkPipelineDepthStencilStateCreateInfo depthStencil{};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = (prefix == "skybox" ? VK_FALSE : VK_TRUE);
+        depthStencil.depthWriteEnable = (prefix == "skybox" ? VK_FALSE : VK_TRUE);
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+        depthStencil.front = depthStencil.back;
+        depthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+
+        VkPipelineViewportStateCreateInfo viewport{};
+        viewport.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewport.viewportCount = 1;
+        viewport.scissorCount = 1;
+
+        VkPipelineMultisampleStateCreateInfo multisample{};
+        multisample.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        if (vs->multiSampling)
+            multisample.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
+
+        std::vector<VkDynamicState> dynamicEnables = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR
+        };
+
+        VkPipelineDynamicStateCreateInfo dynamic{};
+        dynamic.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamic.pDynamicStates = dynamicEnables.data();
+        dynamic.dynamicStateCount = static_cast<uint32_t>(dynamicEnables.size());
+
+        // pipeline layout
+        const std::vector<VkDescriptorSetLayout> setLayouts = {
+            vr->descriptorSetLayouts.scene,
+            vr->descriptorSetLayouts.material,
+            vr->descriptorSetLayouts.node,
+            vr->descriptorSetLayouts.materialBuffer
+        };
+
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.size = sizeof(uint32_t);
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        if (vr->pipelineLayout == VK_NULL_HANDLE)
+        {
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+            pipelineLayoutInfo.pSetLayouts = setLayouts.data();
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+            VkCR(vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &vr->pipelineLayout));
+        }
+
+        // vertex bindings and attributes
+        VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
+
+        std::vector<VkVertexInputAttributeDescription>  vertexInputAttributes;
+
+        if (prefix == "skybox")
+        {
+            vertexInputAttributes = {
+                { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, pos)},
+                { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, normal) },
+                { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Model::Vertex, uv0) },
+            };
+        }
+        else
+        {
+            vertexInputAttributes = {
+                { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, pos)},
+                { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, normal) },
+                { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Model::Vertex, uv0) },
+                { 3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Model::Vertex, uv1) },
+                { 4, 0, VK_FORMAT_R32G32B32A32_UINT, offsetof(Model::Vertex, joint0) },
+                { 5, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Model::Vertex, weight0) },
+                { 6, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Model::Vertex, color) }
+            };
+        }
+
+        VkPipelineVertexInputStateCreateInfo vertexInput{};
+        vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInput.vertexBindingDescriptionCount = 1;
+        vertexInput.pVertexBindingDescriptions = &vertexInputBinding;
+        vertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexInputAttributes.size());
+        vertexInput.pVertexAttributeDescriptions = vertexInputAttributes.data();
+
+        // shaders
+        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {};
+
+        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[0].pNext = nullptr;
+        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStages[0].pName = "main";
+        shaderStages[0].module = VulkanShader::CreateShaderModule(vertexShader);
+
+        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStages[1].pNext = nullptr;
+        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStages[1].pName = "main";
+        shaderStages[1].module = VulkanShader::CreateShaderModule(fragmentShader);
+
+        // pipeline
+        VkGraphicsPipelineCreateInfo pipelineInfo = {};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.layout = vr->pipelineLayout;
+        pipelineInfo.renderPass = vr->renderPass;
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+        pipelineInfo.pVertexInputState = &vertexInput;
+        pipelineInfo.pRasterizationState = &rasterization;
+        pipelineInfo.pColorBlendState = &colorBlend;
+        pipelineInfo.pMultisampleState = &multisample;
+        pipelineInfo.pViewportState = &viewport;
+        pipelineInfo.pDepthStencilState = &depthStencil;
+        pipelineInfo.pDynamicState = &dynamic;
+        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.pStages = shaderStages.data();
+
+        VkPipeline pipeline = {};
+
+        // default pipeline with back-face culling
+        VkCR(vkCreateGraphicsPipelines(vr->device, vr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+        vr->pipelines[prefix] = pipeline;
+
+        // double sided
+        rasterization.cullMode = VK_CULL_MODE_NONE;
+        VkCR(vkCreateGraphicsPipelines(vr->device, vr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+        vr->pipelines[prefix + "_double_sided"] = pipeline;
+
+        // alpha blending
+        rasterization.cullMode = VK_CULL_MODE_NONE;
+        blendAttachment.blendEnable = VK_TRUE;
+        blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+        blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+        VkCR(vkCreateGraphicsPipelines(vr->device, vr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+        vr->pipelines[prefix + "_alpha_blending"] = pipeline;
+
+        for (auto shaderStage : shaderStages)
+            vkDestroyShaderModule(vr->device, shaderStage.module, nullptr);
+    }
+
+    void VulkanBase::RenderFrame()
+    {
+        if (!vr->prepared) return;
+
+        auto tStart = std::chrono::high_resolution_clock::now();
+
+        VkSemaphore presentCompleteSemaphore = vr->presentCompleteSemaphores[vr->currentFrame];
+        VkSemaphore renderCompleteSemaphore = vr->renderCompleteSemaphores[vr->currentFrame];
+        VkFence waitFence = vr->waitFences[vr->currentFrame];
+
+        VkCR(vkWaitForFences(vr->device, 1, &waitFence, VK_TRUE, UINT64_MAX));
+
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(s_Resources->device, s_Resources->swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(vr->device, vr->swapchain, UINT64_MAX, presentCompleteSemaphore, VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
-            SwapChain::Recreate();
-            return;
+            WindowResize();
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
-            DK_CORE_ASSERT(false);
+            DK_CORE_ASSERT(result);
         }
 
         // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
-        vkResetFences(s_Resources->device, 1, &inFlightFence);
+        vkResetFences(vr->device, 1, &waitFence);
 
-        // (3) record a command buffer which draws the scene onto that image
-        CommandPool::RecordImGuiCommandBuffer(s_Resources->imguiCommandBuffers[s_State.currentFrame], imageIndex);
-        CommandPool::RecordViewportCommandBuffer(s_Resources->viewportCommandBuffers[s_State.currentFrame], s_State.currentFrame, imageIndex);
+        RecordCommandBuffer(imageIndex);
 
-        // Uniform buffers are now updated before each DrawFrame() call
-        // BufferPool::UpdateUniformBuffer(viewProjection);
+        UpdateUniforms();
 
-        VkSubmitInfo submitInfo{};
+        VulkanResources::UniformSet uniformSet = vr->uniforms[vr->currentFrame];
+        memcpy(uniformSet.scene.buffer.mapped, &vr->shaderValuesScene, sizeof(VulkanResources::ShaderValuesMatrices));
+        memcpy(uniformSet.params.buffer.mapped, &vr->shaderValuesParams, sizeof(VulkanResources::ShaderValuesParams));
+        memcpy(uniformSet.skybox.buffer.mapped, &vr->shaderValuesSkybox, sizeof(VulkanResources::ShaderValuesMatrices));
+
+        const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
-        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        submitInfo.pWaitDstStageMask = &waitDstStageMask;
+        submitInfo.pWaitSemaphores = &presentCompleteSemaphore;
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-
-        std::array<VkCommandBuffer, 2> submitCommandBuffers = {
-            s_Resources->imguiCommandBuffers[s_State.currentFrame],
-            s_Resources->viewportCommandBuffers[s_State.currentFrame],
-        };
-        submitInfo.commandBufferCount = static_cast<uint32_t>(submitCommandBuffers.size());;
-        submitInfo.pCommandBuffers = submitCommandBuffers.data(); // the recorded command buffers
-
-        VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+        submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
+        submitInfo.pCommandBuffers = &vr->commandBuffers[vr->currentFrame];
+        submitInfo.commandBufferCount = 1;
+        VkCR(vkQueueSubmit(vr->graphicsQueue, 1, &submitInfo, waitFence));
 
-        // (4) submit info with recorded command buffer
-        result = vkQueueSubmit(s_Resources->graphicsQueue, 1, &submitInfo, inFlightFence);
-        DK_CORE_ASSERT(!result);
-
-        VkPresentInfoKHR presentInfo{};
+        VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
-
-        VkSwapchainKHR swapChains[] = { s_Resources->swapChain };
+        presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
+        VkSwapchainKHR swapChains[] = { vr->swapchain };
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &imageIndex;
         presentInfo.pResults = nullptr; // Optional
 
-        // (5) present the swap chain image
-        result = vkQueuePresentKHR(s_Resources->presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(vr->presentQueue, &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || s_State.framebufferResized)
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR /*|| s_State.framebufferResized*/)
         {
-            s_State.framebufferResized = false;
-            SwapChain::Recreate();
+            WindowResize();
+            return;
         }
         else if (result != VK_SUCCESS)
         {
-            DK_CORE_ASSERT(false);
+            DK_CORE_ASSERT(result);
         }
 
-        // Set current frame for the next frame
-        s_State.currentFrame = (s_State.currentFrame + 1) % s_Settings->imageCount;
+        vr->currentFrame = (vr->currentFrame + 1) % vs->frameOverlap;
+
+        auto tEnd = std::chrono::high_resolution_clock::now();
+        auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+        float frameTimer = (float)tDiff / 1000.0f;
+        vr->camera.update(frameTimer);
+
+        if (!vs->animationPaused)
+        {
+            if ((vr->models.animate) && (vr->models.scene.animations.size() > 0))
+            {
+                vr->models.animationTimer += frameTimer;
+                if (vr->models.animationTimer > vr->models.scene.animations[vr->models.animationIndex].end)
+                    vr->models.animationTimer -= vr->models.scene.animations[vr->models.animationIndex].end;
+
+                vr->models.scene.UpdateAnimation(vr->models.animationIndex, vr->models.animationTimer);
+            }
+
+            UpdateShaderParams();
+        }
+
+        if (vr->camera.updated) UpdateUniforms();
+    }
+
+    void VulkanBase::RecordCommandBuffer(uint32_t imageIndex)
+    {
+        VkCommandBuffer commandBuffer = vr->commandBuffers[vr->currentFrame];
+        vkResetCommandBuffer(commandBuffer, 0);
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        VkCR(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+        VkClearValue clearValues[3];
+        if (vs->multiSampling)
+        {
+            clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+            clearValues[1].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+            clearValues[2].depthStencil = { 1.0f, 0 };
+        }
+        else
+        {
+            clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+            clearValues[1].depthStencil = { 1.0f, 0 };
+        }
+
+        // {   // render ImGui
+        //     VkRenderPassBeginInfo imguiRenderPassBeginInfo = {};
+        //     imguiRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        //     imguiRenderPassBeginInfo.renderPass = vr->renderPass;
+        //     imguiRenderPassBeginInfo.renderArea.offset = { 0, 0 };
+        //     imguiRenderPassBeginInfo.renderArea.extent = vr->scImageExtent;
+        //     imguiRenderPassBeginInfo.clearValueCount = vs->multiSampling ? 3 : 2;
+        //     imguiRenderPassBeginInfo.pClearValues = clearValues;
+        //     imguiRenderPassBeginInfo.framebuffer = vr->framebuffers[imageIndex];
+
+        //     vkCmdBeginRenderPass(commandBuffer, &imguiRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        //     // Set viewport and scissor for ImGui
+        //     VkViewport imguiViewport{};
+        //     imguiViewport.width = static_cast<float>(vr->scImageExtent.width);
+        //     imguiViewport.height = static_cast<float>(vr->scImageExtent.height);
+        //     imguiViewport.minDepth = 0.0f;
+        //     imguiViewport.maxDepth = 1.0f;
+        //     vkCmdSetViewport(commandBuffer, 0, 1, &imguiViewport);
+
+        //     VkRect2D imguiScissor{};
+        //     imguiScissor.extent = vr->viewportImageExtent;
+        //     vkCmdSetScissor(commandBuffer, 0, 1, &imguiScissor);
+
+        //     LayerStack& layerStack = Application::Get().GetLayerStack();
+        //     ImGuiLayer* imguiLayer = Application::Get().GetImGuiLayer();
+
+        //     imguiLayer->Begin();
+        //     for (Layer* layer : layerStack)
+        //         layer->OnImGuiRender();
+        //     imguiLayer->End(commandBuffer);
+
+        //     vkCmdEndRenderPass(commandBuffer);
+        // }
+
+        {   // render viewport scene
+            VkRenderPassBeginInfo renderPassBeginInfo = {};
+            renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassBeginInfo.renderPass = vr->renderPass;
+            renderPassBeginInfo.renderArea.offset = { 0, 0 };
+            renderPassBeginInfo.renderArea.extent = vr->scImageExtent;
+            renderPassBeginInfo.clearValueCount = vs->multiSampling ? 3 : 2;
+            renderPassBeginInfo.pClearValues = clearValues;
+            renderPassBeginInfo.framebuffer = vr->framebuffers[imageIndex];
+
+            vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            VkViewport viewport{};
+            viewport.width = vr->scImageExtent.width;
+            viewport.height = vr->scImageExtent.height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+            VkRect2D scissor{};
+            scissor.extent = { vr->scImageExtent.width, vr->scImageExtent.height };
+            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+            VkDeviceSize offsets[1] = { 0 };
+
+            if (vs->displayBackground)
+            {
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 0, nullptr);
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelines["skybox"]);
+                vr->models.skybox.Draw(commandBuffer);
+            }
+
+            Model& model = vr->models.scene;
+
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model.vertices.buffer, offsets);
+
+            if (model.indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffer, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vr->boundPipeline = VK_NULL_HANDLE;
+
+            // opaque primitives first
+            for (auto node : model.nodes)
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE);
+            // alpha masked primitives
+            for (auto node : model.nodes)
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK);
+            // transparent primitives
+            // TODO: Correct depth sorting
+            for (auto node : model.nodes)
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND);
+
+            vkCmdEndRenderPass(commandBuffer);
+        }
+
+        VkCR(vkEndCommandBuffer(commandBuffer));
+    }
+
+
+    void VulkanBase::UpdateUniforms()
+    {
+        // scene
+        vr->shaderValuesScene.projection = vr->camera.matrices.perspective;
+        vr->shaderValuesScene.view = vr->camera.matrices.view;
+
+        // // Center and scale model
+        glm::mat4 aabb = vr->models.scene.aaBoundingBox;
+        float scale = (1.0f / std::max(aabb[0][0], std::max(aabb[1][1], aabb[2][2]))) * 0.5f;
+        glm::vec3 translate = -glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
+        translate += -0.5f * glm::vec3(aabb[0][0], aabb[1][1], aabb[2][2]);
+
+        vr->shaderValuesScene.model = glm::mat4(1.0f);
+        vr->shaderValuesScene.model[0][0] = 0.1;
+        vr->shaderValuesScene.model[1][1] = 0.1;
+        vr->shaderValuesScene.model[2][2] = 0.1;
+
+        static auto startTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+        vr->shaderValuesScene.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        // vr->shaderValuesScene.model = glm::translate(vr->shaderValuesScene.model, translate);
+
+        // shader requires camera position in world space
+        glm::mat4 cv = glm::inverse(vr->camera.matrices.view);
+        vr->shaderValuesScene.camPos = glm::vec3(cv[3]);
+
+        // skybox
+        vr->shaderValuesSkybox.projection = vr->camera.matrices.perspective;
+        vr->shaderValuesSkybox.view = vr->camera.matrices.view;
+        vr->shaderValuesSkybox.model = glm::mat4(glm::mat3(vr->camera.matrices.view));
+    }
+
+    void VulkanBase::UpdateShaderParams()
+    {
+        vr->shaderValuesParams.lightDir = glm::vec4(
+            sin(glm::radians(vr->lightSource.rotation.x)) * cos(glm::radians(vr->lightSource.rotation.y)),
+            sin(glm::radians(vr->lightSource.rotation.y)),
+            cos(glm::radians(vr->lightSource.rotation.x)) * cos(glm::radians(vr->lightSource.rotation.y)),
+            0.0f);
+    }
+
+
+    void VulkanBase::SetUpImGui()
+    {
+        VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
+
+        VkDescriptorPoolCreateInfo poolInfo = {};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets = 1000;
+        poolInfo.poolSizeCount = (uint32_t)std::size(poolSizes);
+        poolInfo.pPoolSizes = poolSizes;
+
+        VkCR(vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->imguiDescriptorPool));
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+        GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        ImGui_ImplGlfw_InitForVulkan(window, true);
+
+        ImGui_ImplVulkan_InitInfo initInfo{};
+        initInfo.Instance = vr->instance;
+        initInfo.DescriptorPool = vr->imguiDescriptorPool;
+        initInfo.RenderPass = vr->renderPass;
+        initInfo.PipelineCache = vr->pipelineCache;
+        initInfo.Device = vr->device;
+        initInfo.PhysicalDevice = vr->physicalDevice;
+        initInfo.QueueFamily = vr->graphicsFamily.value();
+        initInfo.Queue = vr->graphicsQueue;
+        initInfo.ImageCount = vs->frameOverlap;
+        initInfo.MinImageCount = 2;
+        initInfo.MSAASamples = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;;
+        initInfo.Allocator = VK_NULL_HANDLE;
+
+        // TODO
+        initInfo.UseDynamicRendering = false;
+        // // dynamic rendering parameters for imgui to use
+        // initInfo.PipelineRenderingCreateInfo = {};
+        // initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        // initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+        // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->scImageFormat;
+
+        ImGui_ImplVulkan_Init(&initInfo);
+
+        VkSamplerCreateInfo sampler{};
+        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sampler.magFilter = VK_FILTER_LINEAR;
+        sampler.minFilter = VK_FILTER_LINEAR;
+        vkCreateSampler(vr->device, &sampler, nullptr, &vr->viewportSampler);
+
+        // viewport images
+        vr->viewportTextureIDs.resize(vr->scImageCount);
+        for (uint32_t i = 0; i < vr->viewportImages.size(); i++)
+        {
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+
+            VulkanImage::TransitionImage(commandBuffer, vr->viewportImages[i].image, vr->scColorFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+            VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+
+            vr->viewportTextureIDs[i] =
+                ImGui_ImplVulkan_AddTexture(vr->viewportSampler, vr->viewportImages[i].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+    }
+
+    void VulkanBase::WindowResize()
+    {
+        if (!vr->prepared) return;
+
+        vr->prepared = false;
+
+        vkDeviceWaitIdle(vr->device);
+
+        SetUpSwapchain();
+
+        if (vs->multiSampling)
+        {
+            VulkanImage::Destroy(vr->multisampleTarget.depth);
+            VulkanImage::Destroy(vr->multisampleTarget.color);
+        }
+
+        VulkanImage::Destroy(vr->depthStencil);
+
+        vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
+
+        for (auto framebuffer : vr->framebuffers)
+            vkDestroyFramebuffer(vr->device, framebuffer, nullptr);
+
+        SetUpFramebuffers();
+
+        vkDeviceWaitIdle(vr->device);
+
+        vr->camera.updateAspectRatio((float)vr->scImageExtent.width / (float)vr->scImageExtent.height);
+
+        vkDeviceWaitIdle(vr->device);
+
+        UpdateUniforms();
+        // updateOverlay();
+
+        vr->prepared = true;
+    }
+
+    void VulkanBase::SetViewportSize(glm::vec2& size)
+    {
+        vr->viewportImageExtent = { static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y) };
     }
 
 }

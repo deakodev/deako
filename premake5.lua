@@ -13,10 +13,14 @@ workspace "Deako"
     IncludeDir = {}
     IncludeDir["glm"] = "Deako/vendor/glm"
     IncludeDir["glfw"] = "Deako/vendor/glfw/include"
+    IncludeDir["gli"] = "Deako/vendor/gli"
     IncludeDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/include"
-    IncludeDir["imgui"] = "Deako/vendor/imgui"
+    IncludeDir["vma"] = "Deako/vendor/vma"
     IncludeDir["stb_image"] = "Deako/vendor/stb_image"
-    IncludeDir["tiny_obj_loader"] = "Deako/vendor/tiny_obj_loader"
+    IncludeDir["tinygltf"] = "Deako/vendor/tinygltf"
+    IncludeDir["basisu_transcoder"] = "Deako/vendor/basisu/transcoder"
+    IncludeDir["basisu_zstd"] = "Deako/vendor/basisu/zstd"
+    IncludeDir["imgui"] = "Deako/vendor/imgui"
     IncludeDir["entt"] = "Deako/vendor/entt/include"
 
     LibDir = {}
@@ -45,9 +49,18 @@ project "Deako"
         "%{prj.name}/src/**.mm",
         "%{prj.name}/glm/glm/**.hpp",
         "%{prj.name}/glm/glm/**.inl",
-        "%{prj.name}/vendor/tiny_obj_loader/**.h",
+        "%{prj.name}/vendor/gli/gli/gli.hpp",
+        "%{prj.name}/vendor/gli/gli/**.inl",
+        "%{prj.name}/vendor/vma/**.h",
+        "%{prj.name}/vendor/vma/**.cpp",
+        "%{prj.name}/vendor/tinygltf/**.h",
+        "%{prj.name}/vendor/tinygltf/**.cpp",
+        "%{prj.name}/vendor/basisu/transcoder/basisu_transcoder.h",
+        "%{prj.name}/vendor/basisu/transcoder/basisu_transcoder.cpp",
+        "%{prj.name}/vendor/basisu/zstd/zstd.h",
+        "%{prj.name}/vendor/basisu/zstd/zstd.c",
         "%{prj.name}/vendor/stb_image/**.h",
-		"%{prj.name}/vendor/stb_image/**.cpp"
+		"%{prj.name}/vendor/stb_image/**.cpp",
     }
 
     defines
@@ -61,11 +74,15 @@ project "Deako"
         "%{prj.name}/vendor/spdlog/include",
         "%{IncludeDir.glm}",
         "%{IncludeDir.glfw}",
+        "%{IncludeDir.gli}",
         "%{IncludeDir.vulkan}",
-        "%{IncludeDir.imgui}",
-        "%{IncludeDir.tiny_obj_loader}",
+        "%{IncludeDir.vma}",
         "%{IncludeDir.stb_image}",
-        "%{IncludeDir.entt}"
+        "%{IncludeDir.tinygltf}",
+        "%{IncludeDir.basisu_transcoder}",
+        "%{IncludeDir.basisu_zstd}",
+        "%{IncludeDir.imgui}",
+        "%{IncludeDir.entt}",
     }
 
     libdirs
@@ -83,6 +100,8 @@ project "Deako"
         "CoreVideo.framework"
     }
 
+    buildoptions { "-Wno-nullability-completeness" }
+
     filter "system:macosx"
         systemversion "11.0"
 
@@ -93,6 +112,9 @@ project "Deako"
         }
 
     filter "files:vendor/imguizmo/**.cpp"
+        flags { "NoPCH" }
+    
+    filter "files:**.c"
         flags { "NoPCH" }
     
     filter "files:**.mm"
@@ -136,10 +158,29 @@ project "Deako-Editor"
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
      -- Shader compilation commands
-     prebuildcommands {
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/shader.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.vert.spv",
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/shader.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/shader.frag.spv"
-        }
+     prebuildcommands 
+     {
+        -- filtercube vert
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/filtercube.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/filtercube.vert.spv",
+        -- irradiancecube frag
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/irradiancecube.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/irradiancecube.frag.spv",
+        -- prefilterenvmap frag
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/prefilterenvmap.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/prefilterenvmap.frag.spv",
+        -- skybox vert
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/skybox.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/skybox.vert.spv",
+        -- skybox frag
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/skybox.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/skybox.frag.spv",
+        -- pbr vert
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/pbr.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/pbr.vert.spv",
+        -- material_pbr frag
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/material_pbr.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/material_pbr.frag.spv",
+        -- material_unlit frag
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/material_unlit.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/material_unlit.frag.spv",
+        -- genbrdflut vert
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/genbrdflut.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/genbrdflut.vert.spv",
+        -- genbrdflut frag
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/genbrdflut.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/genbrdflut.frag.spv",
+    }
 
     files
     {
@@ -153,8 +194,12 @@ project "Deako-Editor"
         "Deako/vendor",
         "Deako/vendor/spdlog/include",
         "%{IncludeDir.glm}",
-        "%{IncludeDir.vulkan}" ,
-        "%{IncludeDir.entt}"
+        "%{IncludeDir.vulkan}",
+        "%{IncludeDir.vma}",
+        "%{IncludeDir.tinygltf}",
+        "%{IncludeDir.basisu_transcoder}",
+        "%{IncludeDir.basisu_zstd}",
+        "%{IncludeDir.entt}",
     }
 
     libdirs
@@ -174,9 +219,11 @@ project "Deako-Editor"
     }
 
     linkoptions
-        {
-            "-rpath %{LibDir.vulkan}"
-        }
+    {
+        "-rpath %{LibDir.vulkan}"
+    }
+
+    buildoptions { "-Wno-nullability-completeness" }
 
     filter "system:macosx"
         systemversion "11.0"

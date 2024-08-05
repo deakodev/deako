@@ -1,6 +1,8 @@
 #pragma once
 
-#include "System/Vulkan/VulkanBuffer.h"
+// #include "System/Vulkan/VulkanBuffer.h"
+
+#include <glm/glm.hpp>
 
 namespace Deako {
 
@@ -13,10 +15,10 @@ namespace Deako {
         // uint32_t batchVerticesCount;
         // uint32_t batchIndicesCount;
 
-        std::vector<InstanceData> modelInstanceData;
-        Ref<InstanceBuffer> modelInstanceBuffer;
-        Ref<VertexBuffer> modelVertexBuffer;
-        Ref<IndexBuffer> modelIndexBuffer;
+        // std::vector<InstanceData> modelInstanceData;
+        // Ref<InstanceBuffer> modelInstanceBuffer;
+        // Ref<VertexBuffer> modelVertexBuffer;
+        // Ref<IndexBuffer> modelIndexBuffer;
     };
 
     class Renderer
@@ -25,15 +27,16 @@ namespace Deako {
         static void Init(const char* appName);
         static void Shutdown();
 
-        static void BeginScene(const glm::mat4 viewProjection);
+        static void BeginScene();
+        static void BeginScene(const glm::mat4& viewProjection);
         static void EndScene();
         static void NextBatch();
 
-        static void PrepareModelInstance(const glm::vec3& position, const glm::vec3& rotation, float scale, uint32_t textureIndex);
+        // static void PrepareModelInstance(const glm::vec3& position, const glm::vec3& rotation, float scale, uint32_t textureIndex);
 
-        static const Ref<VertexBuffer>& GetModelVertexBuffer() { return s_Data.modelVertexBuffer; }
-        static const Ref<IndexBuffer>& GetModelIndexBuffer() { return s_Data.modelIndexBuffer; }
-        static const Ref<InstanceBuffer>& GetModelInstanceBuffer() { return s_Data.modelInstanceBuffer; }
+        // static const Ref<VertexBuffer>& GetModelVertexBuffer() { return s_Data.modelVertexBuffer; }
+        // static const Ref<IndexBuffer>& GetModelIndexBuffer() { return s_Data.modelIndexBuffer; }
+        // static const Ref<InstanceBuffer>& GetModelInstanceBuffer() { return s_Data.modelInstanceBuffer; }
 
     private:
         static void Flush();

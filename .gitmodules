@@ -10,3 +10,12 @@
 [submodule "Deako/vendor/imgui"]
 	path = Deako/vendor/imgui
 	url = https://github.com/deak1zm/imgui.git
+[submodule "Deako/vendor/fastgltf"]
+	path = Deako/vendor/fastgltf
+	url = https://github.com/deak1zm/fastgltf.git
+[submodule "Deako/vendor/simdjson"]
+	path = Deako/vendor/simdjson
+	url = https://github.com/simdjson/simdjson.git
+[submodule "Deako/vendor/gli"]
+	path = Deako/vendor/gli
+	url = https://github.com/g-truc/gli.git

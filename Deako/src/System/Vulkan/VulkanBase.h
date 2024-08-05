@@ -1,83 +1,155 @@
 #pragma once
 
+#include "Deako/Renderer/EditorCamera.h"
+
+#include "VulkanDebug.h"
+#include "VulkanModel.h"
+#include "VulkanTexture.h"
+#include "VulkanTypes.h"
 #include "VulkanUtils.h"
-#include "VulkanDepth.h"
-#include "VulkanInitializers.h"
 
 #include <vulkan/vulkan.h>
 
-#include <glm/glm.hpp>
-
 namespace Deako {
-
     struct VulkanSettings
     {
-        bool                               validation{ false };
-        std::vector<const char*>           instanceExtensions;
-        std::vector<const char*>           deviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset" };
-        std::vector<const char*>           validationLayers{ "VK_LAYER_KHRONOS_validation" };
-        uint32_t                           minImageCount{ 2 };
-        uint32_t                           imageCount{ 2 }; // previously MAX_FRAMES_IN_FLIGHT
-        VkSampleCountFlagBits              MSAASamples{ VK_SAMPLE_COUNT_1_BIT };
+        bool                               validationEnabled{ true };
+        bool                               vsync{ false };
+        bool                               multiSampling{ true };
+        bool                               displayBackground{ true };
+        bool                               animationPaused{ false };
 
-        uint16_t                           maxTextures{ 16 };
+        VkSampleCountFlagBits              sampleCount{ VK_SAMPLE_COUNT_4_BIT };
+        uint32_t                           frameOverlap = 2;
+
+        std::string                        assetPath{ "Deako-Editor/assets/" };
     };
 
     struct VulkanResources
     {
+        bool                               prepared{ false };
+        uint32_t                           currentFrame{ 0 };
+
         VkInstance                         instance{ VK_NULL_HANDLE };
-        VkPhysicalDevice                   physicalDevice{ VK_NULL_HANDLE };
+        VkDebugUtilsMessengerEXT           debugMessenger{ VK_NULL_HANDLE };
+
+        VkSurfaceKHR                       surface;
         VkDevice                           device{ VK_NULL_HANDLE };
-        std::optional<uint32_t>            graphicsFamily;
-        std::optional<uint32_t>            presentFamily;
+        VkPhysicalDevice                   physicalDevice{ VK_NULL_HANDLE };
         VkQueue                            graphicsQueue{ VK_NULL_HANDLE };
         VkQueue                            presentQueue{ VK_NULL_HANDLE };
+        std::optional<uint32_t>            graphicsFamily;
+        std::optional<uint32_t>            presentFamily;
 
-        VkFormat                           imageFormat;
-        VkExtent2D                         imageExtent;
+        VkSwapchainKHR                     swapchain{ VK_NULL_HANDLE };
+        SwapchainDetails                   scDetails;
+        VkFormat                           scColorFormat;
+        VkFormat                           scDepthFormat;
+        VkExtent2D                         scImageExtent;
+        std::vector<VkImage>               scImages;
+        std::vector<VkImageView>           scImageViews;
+        uint32_t                           scImageCount;
 
-        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
-        VkDescriptorSetLayout              descriptorSetLayout{ VK_NULL_HANDLE };
+        VkCommandPool                      commandPool{ VK_NULL_HANDLE };
+        std::vector <VkCommandBuffer>      commandBuffers;
+
+        VkRenderPass                       renderPass{ VK_NULL_HANDLE };
+
+        MultisampleTarget                  multisampleTarget;
+        AllocatedImage                     depthStencil;
+        std::vector<VkFramebuffer>         framebuffers;
+        VkPipelineCache                    pipelineCache;
         VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
+        std::unordered_map<std::string, VkPipeline>         pipelines;
+        VkPipeline                                          boundPipeline{ VK_NULL_HANDLE };
 
-        // Swapchain
-        VkSurfaceKHR                       surface{ VK_NULL_HANDLE };
-        VkSwapchainKHR                     swapChain{ VK_NULL_HANDLE };
-        std::vector<VkImage>               swapChainImages;
-        std::vector<VkImageView>           swapChainImageViews;
+        std::vector<VkSemaphore>           presentCompleteSemaphores;
+        std::vector<VkSemaphore>           renderCompleteSemaphores;
+        std::vector<VkFence>               waitFences;
 
-        // Viewport
-        VkRenderPass                       viewportRenderPass{ VK_NULL_HANDLE };
-        VkPipeline                         viewportPipeline{ VK_NULL_HANDLE };
-        VkCommandPool                      viewportCommandPool{ VK_NULL_HANDLE };
-        std::vector<VkCommandBuffer>       viewportCommandBuffers;
+        // assets
+        struct Textures
+        {
+            Texture2D empty;
+            Texture2D lutBrdf;
+            TextureCubeMap environmentCube{ TextureCubeMap::NONE };
+            TextureCubeMap irradianceCube{ TextureCubeMap::IRRADIANCE };
+            TextureCubeMap prefilteredCube{ TextureCubeMap::PREFILTERED };
+        } textures;
+
+        struct Models
+        {
+            Model scene;
+            Model skybox;
+
+            int32_t animationIndex{ 0 };
+            float animationTimer{ 0.0f };
+            bool animate{ true };
+        } models;
+
+        struct ShaderValuesMatrices
+        {
+            glm::mat4 projection{ 1.0f };
+            glm::mat4 model{ 1.0f };
+            glm::mat4 view{ 1.0f };
+            glm::vec3 camPos{ 0.0f };
+        } shaderValuesScene, shaderValuesSkybox;
+
+        struct ShaderValuesParams
+        {
+            glm::vec4 lightDir;
+            float exposure = 4.5f;
+            float gamma = 2.2f;
+            float prefilteredCubeMipLevels;
+            float scaleIBLAmbient = 1.0f;
+            float debugViewInputs = 0;
+            float debugViewEquation = 0;
+        } shaderValuesParams;
+
+        struct LightSource
+        {
+            glm::vec3 color = glm::vec3(1.0f);
+            glm::vec3 rotation = glm::vec3(75.0f, -40.0f, 0.0f);
+        } lightSource;
+
+        struct UniformSet
+        {
+            UniformBuffer scene;
+            UniformBuffer skybox;
+            UniformBuffer params;
+        };
+
+        struct DescriptorSetLayouts
+        {
+            VkDescriptorSetLayout scene{ VK_NULL_HANDLE };
+            VkDescriptorSetLayout material{ VK_NULL_HANDLE };
+            VkDescriptorSetLayout node{ VK_NULL_HANDLE };
+            VkDescriptorSetLayout materialBuffer{ VK_NULL_HANDLE };
+        } descriptorSetLayouts;
+
+        struct DescriptorSets
+        {
+            VkDescriptorSet scene;
+            VkDescriptorSet skybox;
+        };
+
+        std::map<std::string, std::string> environments;
+        AllocatedBuffer                    shaderMaterialBuffer;
+        VkDescriptorBufferInfo             shaderMaterialDescriptorInfo{ VK_NULL_HANDLE };
+        VkDescriptorSet                    shaderMaterialDescriptorSet{ VK_NULL_HANDLE };
+
+        std::vector<UniformSet>            uniforms;
+        std::vector<DescriptorSets>        descriptorSets;
+        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
+
+        VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
+        VkSampler                          viewportSampler{ VK_NULL_HANDLE };
         std::vector<VkFramebuffer>         viewportFramebuffers;
-        std::vector<VkImage>               viewportImages;
-        std::vector<VkDeviceMemory>        viewportImageMemory;
-        std::vector<VkImageView>           viewportImageViews;
+        std::vector<AllocatedImage>        viewportImages;
+        std::vector<void*>                 viewportTextureIDs;
+        VkExtent2D                         viewportImageExtent;
 
-        // ImGui
-        VkRenderPass                       imguiRenderPass{ VK_NULL_HANDLE };
-        VkPipeline                         imguiPipeline{ VK_NULL_HANDLE };
-        VkCommandPool                      imguiCommandPool{ VK_NULL_HANDLE };
-        std::vector<VkCommandBuffer>       imguiCommandBuffers;
-        std::vector<VkFramebuffer>         imguiFramebuffers;
-
-        // Depth Attachment
-        VkImage                            depthImage{ VK_NULL_HANDLE };
-        VkImageView                        depthImageView{ VK_NULL_HANDLE };
-        VkDeviceMemory                     depthImageMemory{ VK_NULL_HANDLE };
-
-        // Sync
-        std::vector<VkSemaphore>           imageAvailableSemaphores;
-        std::vector<VkSemaphore>           renderFinishedSemaphores;
-        std::vector<VkFence>               inFlightFences;
-    };
-
-    struct VulkanState
-    {
-        uint32_t                           currentFrame{ 0 };
-        bool                               framebufferResized{ false };
+        Camera                             camera;
     };
 
     class VulkanBase
@@ -87,24 +159,43 @@ namespace Deako {
         static void Idle();
         static void Shutdown();
 
-        static Ref<VulkanSettings>& GetSettings() { return s_Settings; }
-        static Ref<VulkanResources>& GetResources() { return s_Resources; }
-        static VulkanState* GetState() { return &s_State; }
-        static uint32_t GetCurrentFrame() { return s_State.currentFrame; }
-        static float GetAspectRatio() { return s_Resources->imageExtent.width / s_Resources->imageExtent.height; }
-        static VkDevice GetLogical() { return s_Resources->device; }
+        static void RenderFrame();
 
-        static void DrawFrame();
+        static Ref<VulkanSettings>& GetSettings() { return vs; }
+        static Ref<VulkanResources>& GetResources() { return vr; }
+        static uint32_t GetCurrentFrame() { return vr->currentFrame; }
+        static const std::vector<void*>& GetImGuiViewportTextureIDs() { return vr->viewportTextureIDs; }
+
+        static void SetViewportSize(glm::vec2& size);
 
     private:
         static void CreateInstance(const char* appName);
-        static void DetermineExtensions();
-        static bool AreValidationsAvailable();
+        static void SetUpDebugMessenger();
+        static void SetUpDevice();
+        static void SetUpSwapchain();
+        static void SetUpCommands();
+        static void SetUpRenderPasses();
+        static void SetUpFramebuffers();
+        static void SetUpSyncObjects();
+        static void SetUpAssets();
+        static void SetUpUniforms();
+        static void SetUpDescriptors();
+        static void SetUpPipelines();
+        static void SetUpImGui();
+
+        static void AddPipelineSet(const std::string prefix, const std::string vertexShader, const std::string fragmentShader);
+
+        static void RecordCommandBuffer(uint32_t imageIndex);
+
+
+        static void UpdateUniforms();
+        static void UpdateShaderParams();
+
+        static void WindowResize();
 
     private:
-        static Ref<VulkanSettings>         s_Settings;
-        static Ref<VulkanResources>        s_Resources;
-        static VulkanState                 s_State;
+        static Ref<VulkanResources>        vr;
+        static Ref<VulkanSettings>         vs;
     };
 
 }

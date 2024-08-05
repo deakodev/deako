@@ -5,7 +5,7 @@
 #include "Deako/Events/MouseEvent.h"
 #include "Deako/Events/KeyEvent.h"
 
-#include "System/Vulkan/VulkanBase.h"
+// #include "System/Vulkan/VulkanBase.h"
 
 #include <vulkan/vulkan.h>
 
@@ -167,7 +167,7 @@ namespace Deako {
 
         glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
             {
-                VulkanBase::GetState()->framebufferResized = true;
+                // VulkanBase::GetState()->framebufferResized = true;
 
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
                 data.width = width;
@@ -201,11 +201,11 @@ namespace Deako {
         // TODO: vulkan
     }
 
-    std::pair<int, int> MacWindow::GetWindowFramebufferSize()
+    std::pair<uint32_t, uint32_t> MacWindow::GetWindowFramebufferSize()
     {
         int width, height;
         glfwGetFramebufferSize(m_Window, &width, &height);
-        return { width, height };
+        return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     }
 
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "System/Vulkan/VulkanTexture.h"
+// #include "System/Vulkan/VulkanTexture.h"
 
 
 #include <glm/glm.hpp>
@@ -43,12 +43,12 @@ namespace Deako {
 
     struct TextureComponent
     {
-        Ref<Texture> texture;
+        // Ref<Texture> texture;
 
-        TextureComponent() = default;
-        TextureComponent(const TextureComponent&) = default;
-        TextureComponent(const Ref<Texture>& texture)
-            : texture(texture) {}
+        // TextureComponent() = default;
+        // TextureComponent(const TextureComponent&) = default;
+        // TextureComponent(const Ref<Texture>& texture)
+        //     : texture(texture) {}
     };
 
 

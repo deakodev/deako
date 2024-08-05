@@ -17,19 +17,9 @@ namespace Deako {
     {
     }
 
-    void Scene::OnUpdateEditor(const glm::mat4& viewProjection)
+    void Scene::OnUpdateEditor(Camera& editorCamera)
     {
-        Renderer::BeginScene(viewProjection);
-
-        {
-            // auto group = m_Registry.group<TextureComponent>(entt::get<TransformComponent>);
-            // for (auto entity : group)
-            // {
-            //     auto [textureComp, transformComp] = group.get<TextureComponent, TransformComponent>(entity);
-
-            //     Renderer::PrepareModelInstance(transformComp.translation, transformComp.rotation, transformComp.scale, 0);
-            // }
-        }
+        Renderer::BeginScene();
 
         Renderer::EndScene();
     }

@@ -25,22 +25,6 @@
 
 #define DK_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
-// static void check_vk_result(VkResult err)
-// {
-//     if (err == 0)
-//         return;
-//     fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-//     if (err < 0)
-//         abort();
-// }
-
-// static void Check(VkResult result)
-// {
-//     if (!result)
-
-
-// }
-
 namespace Deako {
 
     template<typename T>

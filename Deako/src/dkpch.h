@@ -18,6 +18,6 @@
 #include <optional>
 #include <limits>
 #include <algorithm>
-
+#include <deque>
 
 #include "Deako/Core/Log.h"

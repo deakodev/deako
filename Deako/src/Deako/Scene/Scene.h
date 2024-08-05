@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "Deako/Renderer/Camera/EditorCameraController.h"
+#include "Deako/Renderer/EditorCamera.h"
 // #include "Deako/Core/Timestep.h"
 #include <entt.hpp>
 #include <glm/glm.hpp>
@@ -15,14 +15,10 @@ namespace Deako {
         Scene();
         ~Scene();
 
-        void OnUpdateEditor(const glm::mat4& viewProjection);
-        // void OnUpdateRuntime(Timestep timestep);
-        // void OnViewportResize(float width, float height);
+        void OnUpdateEditor(Camera& editorCamera);
 
         Entity CreateEntity(const std::string& name = std::string());
         void DestroyEntity(Entity entity);
-
-        // Entity GetPrimaryCameraEntity();
 
     private:
         template<typename T>
