@@ -20,26 +20,26 @@ namespace Deako {
 
     void ImGuiLayer::OnAttach()
     {
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        // ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 16.0f);
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 16.0f);
+        // io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 16.0f);
+        // io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 16.0f);
 
-        ImGuiStyle& style = ImGui::GetStyle();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        }
+        // ImGuiStyle& style = ImGui::GetStyle();
+        // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        // {
+        //     style.WindowRounding = 0.0f;
+        //     style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+        // }
 
-        style.WindowMenuButtonPosition = ImGuiDir_None;
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 8.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
+        // style.WindowMenuButtonPosition = ImGuiDir_None;
+        // ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
+        // ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        // ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+        // ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 8.0f);
+        // ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
 
-        SetDarkThemeColors();
+        // SetDarkThemeColors();
     }
 
     void ImGuiLayer::OnDetach()
@@ -48,34 +48,34 @@ namespace Deako {
 
     void ImGuiLayer::OnEvent(Event& event)
     {
-        if (m_BlockEvents)
-        {
-            ImGuiIO& io = ImGui::GetIO();
-            event.Handled |= event.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;
-            event.Handled |= event.IsInCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
-        }
+        // if (m_BlockEvents)
+        // {
+        //     ImGuiIO& io = ImGui::GetIO();
+        //     event.Handled |= event.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;
+        //     event.Handled |= event.IsInCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
+        // }
     }
 
     void ImGuiLayer::Begin()
     {
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        // ImGui_ImplVulkan_NewFrame();
+        // ImGui_ImplGlfw_NewFrame();
+        // ImGui::NewFrame();
     }
 
     void ImGuiLayer::End(VkCommandBuffer commandBuffer)
     {
-        ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+        // ImGui::Render();
+        // ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backupCurrentContext);
-        }
+        // ImGuiIO& io = ImGui::GetIO();
+        // if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        // {
+        //     GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
+        //     ImGui::UpdatePlatformWindows();
+        //     ImGui::RenderPlatformWindowsDefault();
+        //     glfwMakeContextCurrent(backupCurrentContext);
+        // }
     }
 
     void ImGuiLayer::SetDarkThemeColors()

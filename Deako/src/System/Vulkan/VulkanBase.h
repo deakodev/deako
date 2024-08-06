@@ -11,6 +11,14 @@
 #include <vulkan/vulkan.h>
 
 namespace Deako {
+
+    // extension functions since macos doesn't support vk 1.3
+    extern PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR;
+    extern PFN_vkQueueSubmit2KHR vkQueueSubmit2KHR;
+    extern PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR;
+    extern PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR;
+    extern PFN_vkCmdBlitImage2KHR vkCmdBlitImage2KHR;
+
     struct VulkanSettings
     {
         bool                               validationEnabled{ true };
@@ -41,31 +49,30 @@ namespace Deako {
         std::optional<uint32_t>            graphicsFamily;
         std::optional<uint32_t>            presentFamily;
 
-        VkSwapchainKHR                     swapchain{ VK_NULL_HANDLE };
-        SwapchainDetails                   scDetails;
-        VkFormat                           scColorFormat;
-        VkFormat                           scDepthFormat;
-        VkExtent2D                         scImageExtent;
-        std::vector<VkImage>               scImages;
-        std::vector<VkImageView>           scImageViews;
-        uint32_t                           scImageCount;
+        struct SwapChain
+        {
 
-        VkCommandPool                      commandPool{ VK_NULL_HANDLE };
-        std::vector <VkCommandBuffer>      commandBuffers;
+            VkSwapchainKHR                 swapchain{ VK_NULL_HANDLE };
+            SwapchainDetails               details;
+            VkFormat                       format;
+            VkExtent2D                     extent;
+            std::vector<VkImage>           images;
+            std::vector<VkImageView>       views;
+            uint32_t                       imageCount;
+        } swapchain;
 
-        VkRenderPass                       renderPass{ VK_NULL_HANDLE };
+        AllocatedImage                     drawImage;
+        AllocatedImage                     depthImage;
 
-        MultisampleTarget                  multisampleTarget;
-        AllocatedImage                     depthStencil;
-        std::vector<VkFramebuffer>         framebuffers;
+        VkCommandPool                      singleUseCommandPool;
+
+        std::vector<FrameData>             frames;
+
         VkPipelineCache                    pipelineCache;
         VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
         std::unordered_map<std::string, VkPipeline>         pipelines;
         VkPipeline                                          boundPipeline{ VK_NULL_HANDLE };
 
-        std::vector<VkSemaphore>           presentCompleteSemaphores;
-        std::vector<VkSemaphore>           renderCompleteSemaphores;
-        std::vector<VkFence>               waitFences;
 
         // assets
         struct Textures
@@ -144,7 +151,6 @@ namespace Deako {
 
         VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
         VkSampler                          viewportSampler{ VK_NULL_HANDLE };
-        std::vector<VkFramebuffer>         viewportFramebuffers;
         std::vector<AllocatedImage>        viewportImages;
         std::vector<void*>                 viewportTextureIDs;
         VkExtent2D                         viewportImageExtent;
@@ -174,8 +180,6 @@ namespace Deako {
         static void SetUpDevice();
         static void SetUpSwapchain();
         static void SetUpCommands();
-        static void SetUpRenderPasses();
-        static void SetUpFramebuffers();
         static void SetUpSyncObjects();
         static void SetUpAssets();
         static void SetUpUniforms();
@@ -185,7 +189,7 @@ namespace Deako {
 
         static void AddPipelineSet(const std::string prefix, const std::string vertexShader, const std::string fragmentShader);
 
-        static void RecordCommandBuffer(uint32_t imageIndex);
+        static void DrawMain(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 
         static void UpdateUniforms();

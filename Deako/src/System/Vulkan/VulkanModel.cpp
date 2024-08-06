@@ -253,7 +253,7 @@ namespace Deako {
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         }
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
         VkBufferCopy copyRegion = {};
         copyRegion.size = vertexBufferSize;
@@ -265,7 +265,7 @@ namespace Deako {
             vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
         }
 
-        VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(vertexStaging);
         if (indexBufferSize > 0)

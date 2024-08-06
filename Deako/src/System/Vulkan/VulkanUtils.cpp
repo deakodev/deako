@@ -18,25 +18,25 @@ namespace Deako {
 
         SwapchainDetails QuerySupport(VkPhysicalDevice physicalDevice)
         {
-            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, vr->surface, &vr->scDetails.capabilities);
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, vr->surface, &vr->swapchain.details.capabilities);
 
             uint32_t formatCount;  // swap chain formats
             vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vr->surface, &formatCount, nullptr);
             if (formatCount != 0)
             {
-                vr->scDetails.formats.resize(formatCount);
-                vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vr->surface, &formatCount, vr->scDetails.formats.data());
+                vr->swapchain.details.formats.resize(formatCount);
+                vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vr->surface, &formatCount, vr->swapchain.details.formats.data());
             }
 
             uint32_t presentModeCount; // swap chain present modes
             vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vr->surface, &presentModeCount, nullptr);
             if (presentModeCount != 0)
             {
-                vr->scDetails.presentModes.resize(presentModeCount);
-                vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vr->surface, &presentModeCount, vr->scDetails.presentModes.data());
+                vr->swapchain.details.presentModes.resize(presentModeCount);
+                vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vr->surface, &presentModeCount, vr->swapchain.details.presentModes.data());
             }
 
-            return vr->scDetails;
+            return vr->swapchain.details;
         }
 
         VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
@@ -278,7 +278,7 @@ namespace Deako {
             VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
             if (format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
                 format == VK_FORMAT_D24_UNORM_S8_UINT)
-                aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+                aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
 
             // create image view 
             VkImageViewCreateInfo imageViewInfo = {};
@@ -308,127 +308,58 @@ namespace Deako {
             vkFreeMemory(vr->device, allocImage.memory, nullptr);
         }
 
-        void TransitionImage(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout)
+        void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout)
         {
-            VkImageMemoryBarrier imageBarrier{};
-            imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            imageBarrier.image = image;
+            VkImageMemoryBarrier2 imageBarrier{};
+            imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            imageBarrier.pNext = nullptr;
+            imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+            imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
             imageBarrier.oldLayout = currentLayout;
             imageBarrier.newLayout = newLayout;
 
-            imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBarrier.subresourceRange.aspectMask =
+                (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL ||
+                    newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) ?
+                VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT :
+                VK_IMAGE_ASPECT_COLOR_BIT;;
             imageBarrier.subresourceRange.baseMipLevel = 0;
             imageBarrier.subresourceRange.levelCount = mipLevels;
             imageBarrier.subresourceRange.baseArrayLayer = 0;
             imageBarrier.subresourceRange.layerCount = 1;
 
-            VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+            imageBarrier.image = image;
 
-            if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-            {
-                imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            VkDependencyInfo dependInfo{};
+            dependInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            dependInfo.pNext = nullptr;
+            dependInfo.imageMemoryBarrierCount = 1;
+            dependInfo.pImageMemoryBarriers = &imageBarrier;
 
-                if (format == VK_FORMAT_D32_SFLOAT || format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
-                    format == VK_FORMAT_D24_UNORM_S8_UINT)
-                    imageBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-            }
+            vkCmdPipelineBarrier2KHR(commandBuffer, &dependInfo);
+        }
 
-            switch (currentLayout)
-            {
-            case VK_IMAGE_LAYOUT_UNDEFINED:
-                switch (newLayout)
-                {
-                case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-                    imageBarrier.srcAccessMask = 0;
-                    imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    break;
-                case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-                    imageBarrier.srcAccessMask = 0;
-                    imageBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-                    break;
-                case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                    imageBarrier.srcAccessMask = 0;
-                    imageBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    break;
-                case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                    imageBarrier.srcAccessMask = 0;
-                    imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                    break;
-                default:
-                    DK_CORE_ASSERT(false, "Unable to determine image memory barrier values for transition!");
-                    return;
-                }
-                break;
-            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-                switch (newLayout)
-                {
-                case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                    imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                    break;
-                case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-                    imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    break;
-                default:
-                    DK_CORE_ASSERT(false, "Unable to determine image memory barrier values for transition!");
-                    return;
-                }
-                break;
-            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-                switch (newLayout)
-                {
-                case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-                    imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                    break;
-                case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                    imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    imageBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    break;
-                default:
-                    DK_CORE_ASSERT(false, "Unable to determine image memory barrier values for transition!");
-                    return;
-                }
-                break;
-            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-                if (newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-                {
-                    imageBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-                    imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                    sourceStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    break;
-                }
-                else
-                {
-                    DK_CORE_ASSERT(false, "Unable to determine image memory barrier values for transition!");
-                    return;
-                }
-                break;
-            default:
-                DK_CORE_ASSERT(false, "Unable to determine image memory barrier values for transition!");
-                return;
-            }
+        void Copy(VkCommandBuffer commandBuffer, VkImage source, VkImage destination, VkExtent2D copyRegionExtent)
+        {
+            VkImageCopy imageCopyRegion = {};
+            imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageCopyRegion.srcSubresource.mipLevel = 0;
+            imageCopyRegion.srcSubresource.baseArrayLayer = 0;
+            imageCopyRegion.srcSubresource.layerCount = 1;
+            imageCopyRegion.srcOffset = { 0, 0, 0 };
+            imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageCopyRegion.dstSubresource.mipLevel = 0;
+            imageCopyRegion.dstSubresource.baseArrayLayer = 0;
+            imageCopyRegion.dstSubresource.layerCount = 1;
+            imageCopyRegion.dstOffset = { 0, 0, 0 };
+            imageCopyRegion.extent = { copyRegionExtent.width, copyRegionExtent.height, 1 };
 
-            vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+            vkCmdCopyImage(commandBuffer,
+                source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                destination, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1, &imageCopyRegion);
         }
 
 
@@ -801,7 +732,7 @@ namespace Deako {
         renderPassBeginInfo.pClearValues = clearValues;
         renderPassBeginInfo.framebuffer = framebuffer;
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -821,7 +752,7 @@ namespace Deako {
         vkCmdDraw(commandBuffer, 3, 1, 0, 0);
         vkCmdEndRenderPass(commandBuffer);
 
-        VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
         vkDestroyPipeline(vr->device, pipeline, nullptr);
         vkDestroyPipelineLayout(vr->device, pipelineLayout, nullptr);

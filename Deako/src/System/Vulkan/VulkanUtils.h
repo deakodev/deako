@@ -57,7 +57,9 @@ namespace Deako {
 
         void Destroy(const AllocatedImage& allocImage);
 
-        void TransitionImage(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout);
+        void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout);
+
+        void Copy(VkCommandBuffer commandBuffer, VkImage source, VkImage destination, VkExtent2D copyRegionExtent);
 
     } // end namespace VulkanImage
 ///////////////////////////////////////////////////////////////////////

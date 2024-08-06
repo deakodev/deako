@@ -85,17 +85,17 @@ namespace Deako {
             offset += static_cast<uint32_t>(texture[i].size());
         }
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-        VulkanImage::TransitionImage(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         // copy mip levels from staging buffer
         vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
 
-        VulkanImage::TransitionImage(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_ImageLayout);
+        VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_ImageLayout);
 
-        VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(staging);
 
@@ -258,9 +258,9 @@ namespace Deako {
             m_Image =
                 VulkanImage::Create(m_Image.extent, m_Image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_MipLevels);
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-            VulkanImage::TransitionImage(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             // transcode and copy all image levels
             VkDeviceSize bufferOffset = 0;
@@ -284,9 +284,9 @@ namespace Deako {
                 bufferOffset += outputSize;
             }
 
-            VulkanImage::TransitionImage(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
             VulkanBuffer::Destroy(staging);
 
@@ -345,9 +345,9 @@ namespace Deako {
             m_Image =
                 VulkanImage::Create(m_Image.extent, m_Image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_MipLevels);
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-            VulkanImage::TransitionImage(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             VkBufferImageCopy copyRegion = {};
             copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -358,14 +358,14 @@ namespace Deako {
 
             vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-            VulkanImage::TransitionImage(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
             VulkanBuffer::Destroy(staging);
 
             // generate the mip chain (glTF uses jpg and png, so we need to create this manually)
-            VkCommandBuffer blitCommandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+            VkCommandBuffer blitCommandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
             for (uint32_t i = 1; i < m_MipLevels; i++)
             {
@@ -416,9 +416,9 @@ namespace Deako {
                 }
             }
 
-            VulkanImage::TransitionImage(blitCommandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VulkanImage::Transition(blitCommandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vr->commandPool, blitCommandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, blitCommandBuffer);
         }
 
         m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -517,7 +517,7 @@ namespace Deako {
             }
         }
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -553,7 +553,7 @@ namespace Deako {
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         }
 
-        VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(staging);
 
@@ -733,11 +733,11 @@ namespace Deako {
             framebufferInfo.layers = 1;
             VkCR(vkCreateFramebuffer(vr->device, &framebufferInfo, nullptr, &offscreen.framebuffer));
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-            VulkanImage::TransitionImage(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
         }
 
         // descriptors
@@ -947,7 +947,7 @@ namespace Deako {
         subresourceRange.layerCount = 6;
 
         {   // change image layout for all cubemap faces to transfer destination
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -959,14 +959,14 @@ namespace Deako {
             imageMemoryBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-            VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
         }
 
         for (uint32_t m = 0; m < numMips; m++)
         {
             for (uint32_t f = 0; f < 6; f++)
             {
-                VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+                VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
                 viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
                 viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
@@ -1003,7 +1003,7 @@ namespace Deako {
                 subresourceRange.levelCount = numMips;
                 subresourceRange.layerCount = 6;
 
-                VulkanImage::TransitionImage(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                VulkanImage::Transition(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
                 // copy region for transfer from framebuffer to cube face
                 VkImageCopy copyRegion{};
@@ -1024,14 +1024,14 @@ namespace Deako {
                 vkCmdCopyImage(commandBuffer, offscreen.image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-                VulkanImage::TransitionImage(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                VulkanImage::Transition(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-                VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+                VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
             }
         }
 
         {
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->commandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             imageMemoryBarrier.image = m_Image.image;
@@ -1041,7 +1041,7 @@ namespace Deako {
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
             imageMemoryBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            VulkanCommand::EndSingleTimeCommands(vr->commandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
         }
 
         vkDestroyRenderPass(vr->device, renderPass, nullptr);
