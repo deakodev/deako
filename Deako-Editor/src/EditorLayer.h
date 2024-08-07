@@ -22,9 +22,11 @@ namespace Deako {
         Camera m_EditorCamera;
 
         glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
-        std::vector<void*> m_ImGuiViewportTextureIDs;
+        bool m_ViewportResize = false;
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;
+
+        std::vector<void*> m_ImGuiViewportTextureIDs;
 
         Ref<Scene> m_ActiveScene;
         Entity m_VikingRoomEntityA;

@@ -49,7 +49,7 @@ namespace Deako {
 
         SetUpPipelines();
 
-        // SetUpImGui();
+        SetUpImGui();
 
         vr->prepared = true;
     }
@@ -63,11 +63,14 @@ namespace Deako {
     {
         VulkanBase::Idle();
 
-        // ImGui_ImplVulkan_Shutdown();
-        // ImGui_ImplGlfw_Shutdown();
-        // ImGui::DestroyContext();
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
         vkDestroyDescriptorPool(vr->device, vr->imguiDescriptorPool, nullptr);
-        vkDestroySampler(vr->device, vr->viewportSampler, nullptr);
+        vkDestroySampler(vr->device, vr->viewport.sampler, nullptr);
+
+        for (auto image : vr->viewport.images)
+            VulkanImage::Destroy(image);
 
         for (auto& [prefix, pipeline] : vr->pipelines)
             vkDestroyPipeline(vr->device, pipeline, nullptr);
@@ -106,9 +109,6 @@ namespace Deako {
         }
 
         vkDestroyCommandPool(vr->device, vr->singleUseCommandPool, nullptr);
-
-        for (auto image : vr->viewportImages)
-            VulkanImage::Destroy(image);
 
         for (auto imageView : vr->swapchain.views)
             vkDestroyImageView(vr->device, imageView, nullptr);
@@ -979,7 +979,99 @@ namespace Deako {
             vkDestroyShaderModule(vr->device, shaderStage.module, nullptr);
     }
 
-    void VulkanBase::RenderFrame()
+
+    void VulkanBase::SetUpImGui()
+    {
+        VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+                { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+                { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
+
+        VkDescriptorPoolCreateInfo poolInfo = {};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        poolInfo.maxSets = 1000;
+        poolInfo.poolSizeCount = (uint32_t)std::size(poolSizes);
+        poolInfo.pPoolSizes = poolSizes;
+
+        VkCR(vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->imguiDescriptorPool));
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+
+        GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        ImGui_ImplGlfw_InitForVulkan(window, true);
+
+        ImGui_ImplVulkan_InitInfo initInfo{};
+        initInfo.Instance = vr->instance;
+        initInfo.DescriptorPool = vr->imguiDescriptorPool;
+        // initInfo.RenderPass = vr->renderPass;
+        initInfo.PipelineCache = vr->pipelineCache;
+        initInfo.Device = vr->device;
+        initInfo.PhysicalDevice = vr->physicalDevice;
+        initInfo.QueueFamily = vr->graphicsFamily.value();
+        initInfo.Queue = vr->graphicsQueue;
+        initInfo.ImageCount = vs->frameOverlap;
+        initInfo.MinImageCount = 2;
+        initInfo.MSAASamples = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;;
+        initInfo.Allocator = VK_NULL_HANDLE;
+
+        initInfo.UseDynamicRendering = true;
+        // dynamic rendering parameters for imgui to use
+        initInfo.PipelineRenderingCreateInfo = {};
+        initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->drawImage.format;
+
+        ImGui_ImplVulkan_Init(&initInfo);
+
+        VkSamplerCreateInfo sampler{};
+        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        sampler.magFilter = VK_FILTER_LINEAR;
+        sampler.minFilter = VK_FILTER_LINEAR;
+        vkCreateSampler(vr->device, &sampler, nullptr, &vr->viewport.sampler);
+
+        // viewport images
+        vr->viewport.images.resize(vr->swapchain.imageCount);
+        vr->viewport.textureIDs.resize(vr->swapchain.imageCount);
+        for (uint32_t i = 0; i < vr->viewport.images.size(); i++)
+        {
+            vr->viewport.format = VK_FORMAT_B8G8R8A8_SRGB;
+            VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
+
+            VkImageUsageFlags usages{};
+            usages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
+            usages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+            vr->viewport.images[i] =
+                VulkanImage::Create({ vr->swapchain.extent.width, vr->swapchain.extent.height, 1 }, vr->viewport.format, samples, usages, 1, VK_IMAGE_TYPE_2D);
+
+            vr->viewport.textureIDs[i] =
+                ImGui_ImplVulkan_AddTexture(vr->viewport.sampler, vr->viewport.images[i].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+    }
+
+    // TODO: maybe refractor similar to dynamic rendering ex
+    void VulkanBase::Render()
+    {
+        DrawFrame();
+    }
+
+    void VulkanBase::DrawFrame()
     {
         if (!vr->prepared) return;
 
@@ -1007,6 +1099,9 @@ namespace Deako {
         VkImage depthImage = vr->depthImage.image;
         VkFormat depthFormat = vr->depthImage.format;
 
+        VkImage viewportImage = vr->viewport.images[scImageIndex].image;
+        VkFormat viewportFormat = vr->viewport.format;
+
         VkImage swapchainImage = vr->swapchain.images[scImageIndex];
         VkFormat swapchainFormat = vr->swapchain.format;
 
@@ -1021,12 +1116,19 @@ namespace Deako {
         VkCR(vkBeginCommandBuffer(frame.commandBuffer, &commandBufferBeginInfo));
 
         VulkanImage::Transition(frame.commandBuffer, drawImage, drawFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-        VulkanImage::Transition(frame.commandBuffer, swapchainImage, swapchainFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
         VulkanImage::Transition(frame.commandBuffer, depthImage, depthFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-        DrawMain(frame.commandBuffer, scImageIndex);
+        DrawViewport(frame.commandBuffer, scImageIndex);
 
-        VulkanImage::Transition(frame.commandBuffer, swapchainImage, swapchainFormat, 1, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        VulkanImage::Transition(frame.commandBuffer, drawImage, drawFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VulkanImage::Transition(frame.commandBuffer, swapchainImage, swapchainFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        DrawImGui(frame.commandBuffer, scImageIndex);
+
+        VulkanImage::Transition(frame.commandBuffer, swapchainImage, swapchainFormat, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VkCR(vkEndCommandBuffer(frame.commandBuffer));
 
@@ -1119,7 +1221,7 @@ namespace Deako {
         if (vr->camera.updated) UpdateUniforms();
     }
 
-    void VulkanBase::DrawMain(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    void VulkanBase::DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex)
     {
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -1127,7 +1229,7 @@ namespace Deako {
         colorAttachment.imageView = vr->drawImage.view;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-        colorAttachment.resolveImageView = vr->swapchain.views[imageIndex];
+        colorAttachment.resolveImageView = vr->viewport.images[imageIndex].view;
         colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1144,7 +1246,7 @@ namespace Deako {
         VkRenderingInfo renderInfo = {};
         renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderInfo.pNext = nullptr;
-        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vr->drawImage.extent.width, vr->drawImage.extent.height };
+        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 },  vr->drawImage.extent.width,  vr->drawImage.extent.height };
         renderInfo.layerCount = 1;
         renderInfo.colorAttachmentCount = 1;
         renderInfo.pColorAttachments = &colorAttachment;
@@ -1161,7 +1263,7 @@ namespace Deako {
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
-        scissor.extent = { vr->drawImage.extent.width, vr->drawImage.extent.height };
+        scissor.extent = { vr->drawImage.extent.width,  vr->drawImage.extent.height };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
         VkDeviceSize offsets[1] = { 0 };
@@ -1192,6 +1294,42 @@ namespace Deako {
         // TODO: Correct depth sorting
         for (auto node : model.nodes)
             RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND);
+
+        vkCmdEndRenderingKHR(commandBuffer);
+    }
+
+    void VulkanBase::DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    {
+        VkRenderingAttachmentInfo colorAttachment = {};
+        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachment.pNext = nullptr;
+        colorAttachment.imageView = vr->drawImage.view;
+        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+        colorAttachment.resolveImageView = vr->swapchain.views[imageIndex];
+        colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+        VkRenderingInfo renderInfo = {};
+        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderInfo.pNext = nullptr;
+        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vr->swapchain.extent.width, vr->swapchain.extent.height };
+        renderInfo.layerCount = 1;
+        renderInfo.colorAttachmentCount = 1;
+        renderInfo.pColorAttachments = &colorAttachment;
+        renderInfo.pDepthAttachment = nullptr;
+        renderInfo.pStencilAttachment = nullptr;
+
+        vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
+
+        LayerStack& layerStack = Application::Get().GetLayerStack();
+        ImGuiLayer* imguiLayer = Application::Get().GetImGuiLayer();
+
+        imguiLayer->Begin();
+        for (Layer* layer : layerStack)
+            layer->OnImGuiRender();
+        imguiLayer->End(commandBuffer);
 
         vkCmdEndRenderingKHR(commandBuffer);
     }
@@ -1241,114 +1379,46 @@ namespace Deako {
             0.0f);
     }
 
-
-    void VulkanBase::SetUpImGui()
-    {
-        VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-                { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-                { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-                { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-                { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 } };
-
-        VkDescriptorPoolCreateInfo poolInfo = {};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        poolInfo.maxSets = 1000;
-        poolInfo.poolSizeCount = (uint32_t)std::size(poolSizes);
-        poolInfo.pPoolSizes = poolSizes;
-
-        VkCR(vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->imguiDescriptorPool));
-
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-
-        ImGuiIO& io = ImGui::GetIO(); (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-
-        GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-        ImGui_ImplGlfw_InitForVulkan(window, true);
-
-        ImGui_ImplVulkan_InitInfo initInfo{};
-        initInfo.Instance = vr->instance;
-        initInfo.DescriptorPool = vr->imguiDescriptorPool;
-        // initInfo.RenderPass = vr->renderPass;
-        initInfo.PipelineCache = vr->pipelineCache;
-        initInfo.Device = vr->device;
-        initInfo.PhysicalDevice = vr->physicalDevice;
-        initInfo.QueueFamily = vr->graphicsFamily.value();
-        initInfo.Queue = vr->graphicsQueue;
-        initInfo.ImageCount = vs->frameOverlap;
-        initInfo.MinImageCount = 2;
-        initInfo.MSAASamples = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;;
-        initInfo.Allocator = VK_NULL_HANDLE;
-
-        // TODO
-        initInfo.UseDynamicRendering = false;
-        // // dynamic rendering parameters for imgui to use
-        // initInfo.PipelineRenderingCreateInfo = {};
-        // initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-        // initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        // initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->scImageFormat;
-
-        ImGui_ImplVulkan_Init(&initInfo);
-
-        VkSamplerCreateInfo sampler{};
-        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        sampler.magFilter = VK_FILTER_LINEAR;
-        sampler.minFilter = VK_FILTER_LINEAR;
-        vkCreateSampler(vr->device, &sampler, nullptr, &vr->viewportSampler);
-
-        // viewport images
-        vr->viewportTextureIDs.resize(vr->swapchain.imageCount);
-        for (uint32_t i = 0; i < vr->viewportImages.size(); i++)
-        {
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
-
-            VulkanImage::Transition(commandBuffer, vr->viewportImages[i].image, vr->swapchain.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-            VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
-
-            vr->viewportTextureIDs[i] =
-                ImGui_ImplVulkan_AddTexture(vr->viewportSampler, vr->viewportImages[i].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-    }
-
     void VulkanBase::WindowResize()
     {
         if (!vr->prepared) return;
 
         vr->prepared = false;
 
-        vkDeviceWaitIdle(vr->device);
+        VulkanBase::Idle();
+
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        vkDestroyDescriptorPool(vr->device, vr->imguiDescriptorPool, nullptr);
+        vkDestroySampler(vr->device, vr->viewport.sampler, nullptr);
+
+        for (auto image : vr->viewport.images)
+            VulkanImage::Destroy(image);
+
+        VulkanImage::Destroy(vr->drawImage);
+        VulkanImage::Destroy(vr->depthImage);
 
         vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
 
+        VulkanBase::Idle();
+
         SetUpSwapchain();
 
-        vkDeviceWaitIdle(vr->device);
-
-        vr->camera.updateAspectRatio((float)vr->swapchain.extent.width / (float)vr->swapchain.extent.height);
-
-        vkDeviceWaitIdle(vr->device);
-
         UpdateUniforms();
-        // updateOverlay();
+
+        SetUpImGui();
+
+        ImGuiLayer::SetStyles();
+
+        VulkanBase::Idle();
 
         vr->prepared = true;
     }
 
-    void VulkanBase::SetViewportSize(glm::vec2& size)
+    void VulkanBase::ViewportResize(const glm::vec2& viewportSize)
     {
-        vr->viewportImageExtent = { static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y) };
+        vr->camera.updateAspectRatio((float)viewportSize.x / (float)viewportSize.y);
     }
 
 }

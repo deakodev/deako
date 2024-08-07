@@ -17,7 +17,7 @@ namespace Deako {
     {
     }
 
-    void Scene::OnUpdateEditor(Camera& editorCamera)
+    void Scene::OnUpdateEditor(Camera& editorCamera, glm::vec2& vSize)
     {
         Renderer::BeginScene();
 

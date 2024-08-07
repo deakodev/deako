@@ -49,7 +49,21 @@ namespace Deako {
         std::optional<uint32_t>            graphicsFamily;
         std::optional<uint32_t>            presentFamily;
 
-        struct SwapChain
+        VkPipelineCache                    pipelineCache;
+        VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
+        std::unordered_map<std::string, VkPipeline>         pipelines;
+        VkPipeline                                          boundPipeline{ VK_NULL_HANDLE };
+
+        std::vector<FrameData>             frames;
+
+        AllocatedImage                     drawImage;
+        AllocatedImage                     depthImage;
+        AllocatedImage                     viewportDrawImage;
+        AllocatedImage                     viewportDepthImage;
+
+        VkCommandPool                      singleUseCommandPool;
+
+        struct Swapchain
         {
 
             VkSwapchainKHR                 swapchain{ VK_NULL_HANDLE };
@@ -61,18 +75,15 @@ namespace Deako {
             uint32_t                       imageCount;
         } swapchain;
 
-        AllocatedImage                     drawImage;
-        AllocatedImage                     depthImage;
+        struct Viewport
+        {
+            VkSampler                      sampler{ VK_NULL_HANDLE };
+            VkFormat                       format;
+            std::vector<AllocatedImage>    images;
+            std::vector<void*>             textureIDs;
+        } viewport;
 
-        VkCommandPool                      singleUseCommandPool;
-
-        std::vector<FrameData>             frames;
-
-        VkPipelineCache                    pipelineCache;
-        VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
-        std::unordered_map<std::string, VkPipeline>         pipelines;
-        VkPipeline                                          boundPipeline{ VK_NULL_HANDLE };
-
+        VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
 
         // assets
         struct Textures
@@ -149,12 +160,6 @@ namespace Deako {
         std::vector<DescriptorSets>        descriptorSets;
         VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
 
-        VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
-        VkSampler                          viewportSampler{ VK_NULL_HANDLE };
-        std::vector<AllocatedImage>        viewportImages;
-        std::vector<void*>                 viewportTextureIDs;
-        VkExtent2D                         viewportImageExtent;
-
         Camera                             camera;
     };
 
@@ -165,14 +170,14 @@ namespace Deako {
         static void Idle();
         static void Shutdown();
 
-        static void RenderFrame();
+        static void Render();
 
         static Ref<VulkanSettings>& GetSettings() { return vs; }
         static Ref<VulkanResources>& GetResources() { return vr; }
         static uint32_t GetCurrentFrame() { return vr->currentFrame; }
-        static const std::vector<void*>& GetImGuiViewportTextureIDs() { return vr->viewportTextureIDs; }
+        static const std::vector<void*>& GetImGuiViewportTextureIDs() { return vr->viewport.textureIDs; }
 
-        static void SetViewportSize(glm::vec2& size);
+        static void ViewportResize(const glm::vec2& viewportSize);
 
     private:
         static void CreateInstance(const char* appName);
@@ -189,8 +194,9 @@ namespace Deako {
 
         static void AddPipelineSet(const std::string prefix, const std::string vertexShader, const std::string fragmentShader);
 
-        static void DrawMain(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
+        static void DrawFrame();
+        static void DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
         static void UpdateUniforms();
         static void UpdateShaderParams();

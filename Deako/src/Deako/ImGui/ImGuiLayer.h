@@ -25,8 +25,10 @@ namespace Deako {
 
         void BlockEvents(bool block) { m_BlockEvents = block; }
 
+        static void SetStyles();
+
     private:
-        void SetDarkThemeColors();
+        static void SetDarkThemeColors();
 
     private:
         bool m_BlockEvents = true;

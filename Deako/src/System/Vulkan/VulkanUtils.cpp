@@ -341,28 +341,6 @@ namespace Deako {
             vkCmdPipelineBarrier2KHR(commandBuffer, &dependInfo);
         }
 
-        void Copy(VkCommandBuffer commandBuffer, VkImage source, VkImage destination, VkExtent2D copyRegionExtent)
-        {
-            VkImageCopy imageCopyRegion = {};
-            imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            imageCopyRegion.srcSubresource.mipLevel = 0;
-            imageCopyRegion.srcSubresource.baseArrayLayer = 0;
-            imageCopyRegion.srcSubresource.layerCount = 1;
-            imageCopyRegion.srcOffset = { 0, 0, 0 };
-            imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            imageCopyRegion.dstSubresource.mipLevel = 0;
-            imageCopyRegion.dstSubresource.baseArrayLayer = 0;
-            imageCopyRegion.dstSubresource.layerCount = 1;
-            imageCopyRegion.dstOffset = { 0, 0, 0 };
-            imageCopyRegion.extent = { copyRegionExtent.width, copyRegionExtent.height, 1 };
-
-            vkCmdCopyImage(commandBuffer,
-                source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                destination, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1, &imageCopyRegion);
-        }
-
-
     } // end namespace VulkanImage
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
