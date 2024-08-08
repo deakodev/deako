@@ -138,50 +138,53 @@ namespace Deako {
     {
         std::vector<ShaderMaterial> shaderMaterials{};
 
-        for (auto& material : vr->models.scene.materials)
+        for (auto& model : vr->scene.models)
         {
-            ShaderMaterial shaderMaterial{};
+            for (auto& material : model.materials)
+            {
+                ShaderMaterial shaderMaterial{};
 
-            shaderMaterial.emissiveFactor = material.emissiveFactor;
-            // To save space, availabilty and texture coordinate set are combined
-            // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-            shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ?
-                material.texCoordSets.baseColor : -1;
+                shaderMaterial.emissiveFactor = material.emissiveFactor;
+                // To save space, availabilty and texture coordinate set are combined
+                // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
+                shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ?
+                    material.texCoordSets.baseColor : -1;
 
-            shaderMaterial.normalTextureSet = material.normalTexture != nullptr ?
-                material.texCoordSets.normal : -1;
+                shaderMaterial.normalTextureSet = material.normalTexture != nullptr ?
+                    material.texCoordSets.normal : -1;
 
-            shaderMaterial.occlusionTextureSet = material.occlusionTexture != nullptr ?
-                material.texCoordSets.occlusion : -1;
+                shaderMaterial.occlusionTextureSet = material.occlusionTexture != nullptr ?
+                    material.texCoordSets.occlusion : -1;
 
-            shaderMaterial.emissiveTextureSet = material.emissiveTexture != nullptr ?
-                material.texCoordSets.emissive : -1;
+                shaderMaterial.emissiveTextureSet = material.emissiveTexture != nullptr ?
+                    material.texCoordSets.emissive : -1;
 
-            shaderMaterial.alphaMask = static_cast<float>(material.alphaMode == Material::ALPHAMODE_MASK);
+                shaderMaterial.alphaMask = static_cast<float>(material.alphaMode == Material::ALPHAMODE_MASK);
 
-            shaderMaterial.alphaMaskCutoff = material.alphaCutoff;
+                shaderMaterial.alphaMaskCutoff = material.alphaCutoff;
 
-            shaderMaterial.emissiveStrength = material.emissiveStrength;
+                shaderMaterial.emissiveStrength = material.emissiveStrength;
 
-            if (material.pbrWorkflows.metallicRoughness)
-            {   // metallic roughness workflow
-                shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-                shaderMaterial.baseColorFactor = material.baseColorFactor;
-                shaderMaterial.metallicFactor = material.metallicFactor;
-                shaderMaterial.roughnessFactor = material.roughnessFactor;
-                shaderMaterial.PhysicalDescriptorTextureSet = material.metallicRoughnessTexture != nullptr ? material.texCoordSets.metallicRoughness : -1;
-                shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
+                if (material.pbrWorkflows.metallicRoughness)
+                {   // metallic roughness workflow
+                    shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+                    shaderMaterial.baseColorFactor = material.baseColorFactor;
+                    shaderMaterial.metallicFactor = material.metallicFactor;
+                    shaderMaterial.roughnessFactor = material.roughnessFactor;
+                    shaderMaterial.PhysicalDescriptorTextureSet = material.metallicRoughnessTexture != nullptr ? material.texCoordSets.metallicRoughness : -1;
+                    shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
+                }
+                else if (material.pbrWorkflows.specularGlossiness)
+                {   // specular glossiness workflow
+                    shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSSINESS);
+                    shaderMaterial.PhysicalDescriptorTextureSet = material.extension.specularGlossinessTexture != nullptr ? material.texCoordSets.specularGlossiness : -1;
+                    shaderMaterial.colorTextureSet = material.extension.diffuseTexture != nullptr ? material.texCoordSets.baseColor : -1;
+                    shaderMaterial.diffuseFactor = material.extension.diffuseFactor;
+                    shaderMaterial.specularFactor = glm::vec4(material.extension.specularFactor, 1.0f);
+                }
+
+                shaderMaterials.push_back(shaderMaterial);
             }
-            else if (material.pbrWorkflows.specularGlossiness)
-            {   // specular glossiness workflow
-                shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSSINESS);
-                shaderMaterial.PhysicalDescriptorTextureSet = material.extension.specularGlossinessTexture != nullptr ? material.texCoordSets.specularGlossiness : -1;
-                shaderMaterial.colorTextureSet = material.extension.diffuseTexture != nullptr ? material.texCoordSets.baseColor : -1;
-                shaderMaterial.diffuseFactor = material.extension.diffuseFactor;
-                shaderMaterial.specularFactor = glm::vec4(material.extension.specularFactor, 1.0f);
-            }
-
-            shaderMaterials.push_back(shaderMaterial);
         }
 
         if (vr->shaderMaterialBuffer.buffer != VK_NULL_HANDLE)

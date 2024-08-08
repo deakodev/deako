@@ -200,6 +200,7 @@ project "Deako-Editor"
         "%{IncludeDir.basisu_transcoder}",
         "%{IncludeDir.basisu_zstd}",
         "%{IncludeDir.entt}",
+        "%{IncludeDir.imgui}",
     }
 
     libdirs

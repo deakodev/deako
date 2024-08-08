@@ -1084,6 +1084,11 @@ namespace Deako {
         boundingBox.valid = true;
     }
 
+    BoundingBox::BoundingBox(glm::vec3 min, glm::vec3 max)
+        : min(min), max(max)
+    {
+    };
+
     BoundingBox BoundingBox::GetAABB(glm::mat4 m)
     {
         glm::vec3 min = glm::vec3(m[3]);

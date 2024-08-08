@@ -51,6 +51,16 @@ namespace Deako {
         //     : texture(texture) {}
     };
 
+    struct ModelComponent
+    {
+        std::string relativePath;
+
+        ModelComponent() = default;
+        ModelComponent(const ModelComponent&) = default;
+        ModelComponent(const std::string& relativePath)
+            : relativePath(relativePath) {}
+    };
+
 
 
 

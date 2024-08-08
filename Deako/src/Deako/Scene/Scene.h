@@ -15,7 +15,9 @@ namespace Deako {
         Scene();
         ~Scene();
 
-        void OnUpdateEditor(Camera& editorCamera, glm::vec2& vSize);
+        void Prepare();
+
+        void OnUpdateEditor(Camera& editorCamera);
 
         Entity CreateEntity(const std::string& name = std::string());
         void DestroyEntity(Entity entity);

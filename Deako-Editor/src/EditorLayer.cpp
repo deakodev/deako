@@ -1,7 +1,5 @@
 #include "EditorLayer.h"
 
-#include <imgui/imgui.h>
-
 namespace Deako {
 
     EditorLayer::EditorLayer()
@@ -11,23 +9,15 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        m_ImGuiViewportTextureIDs = VulkanBase::GetImGuiViewportTextureIDs();
-
-        // m_VikingRoomTexture = TexturePool::GetTexture2Ds()[0];
-
         m_ActiveScene = CreateRef<Scene>();
 
-        // m_VikingRoomEntityA = m_ActiveScene->CreateEntity("Viking Room A");
-        // m_VikingRoomEntityA.AddComponent<TextureComponent>(m_VikingRoomTexture);
-        // auto& vikingRoomATransfromComp = m_VikingRoomEntityA.GetComponent<TransformComponent>();
-        // vikingRoomATransfromComp.translation = { 0.0f, 0.0f, 0.0f };
-        // vikingRoomATransfromComp.scale = 1.0f;
+        m_BrokenHelmet = m_ActiveScene->CreateEntity("Broken Helmet");
+        m_BrokenHelmet.AddComponent<ModelComponent>("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
+        auto& brokenHelmetTransfromComp = m_BrokenHelmet.GetComponent<TransformComponent>();
+        brokenHelmetTransfromComp.translation = { 0.0f, 0.0f, 0.0f };
+        brokenHelmetTransfromComp.scale = 1.0f;
 
-        // m_VikingRoomEntityB = m_ActiveScene->CreateEntity("Viking Room B");
-        // m_VikingRoomEntityB.AddComponent<TextureComponent>(m_VikingRoomTexture);
-        // auto& vikingRoomBTransfromComp = m_VikingRoomEntityB.GetComponent<TransformComponent>();
-        // vikingRoomBTransfromComp.translation = { 1.0f, 1.0f, 1.0f };
-        // vikingRoomBTransfromComp.scale = 0.25f;
+        m_ActiveScene->Prepare();
     }
 
     void EditorLayer::OnDetach()
@@ -43,14 +33,10 @@ namespace Deako {
             m_ViewportResize = false;
         }
 
-        m_ActiveScene->OnUpdateEditor(m_EditorCamera, m_ViewportSize);
-
-
-        m_ImGuiViewportTextureIDs = VulkanBase::GetImGuiViewportTextureIDs();
-
+        m_ActiveScene->OnUpdateEditor(m_EditorCamera);
     }
 
-    void EditorLayer::OnImGuiRender()
+    void EditorLayer::OnImGuiRender(ImTextureID textureID)
     {
         static bool dockingEnabled = true;
         static bool fullscreenEnabled = true;
@@ -133,8 +119,7 @@ namespace Deako {
 
         m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
-        uint32_t currentFrame = VulkanBase::GetCurrentFrame();
-        ImGui::Image((ImTextureID)m_ImGuiViewportTextureIDs[currentFrame], ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
+        ImGui::Image(textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
 
         ImGui::End();
         ImGui::PopStyleVar();

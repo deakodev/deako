@@ -21,8 +21,6 @@ namespace Deako {
 
     Application* CreateApplication()
     {
-        AssetManager::SetModelPath("/models/viking_room.obj");
-        AssetManager::SetTexturePath("/textures/viking_room.png");
         return new DeakoEditor();
     }
 

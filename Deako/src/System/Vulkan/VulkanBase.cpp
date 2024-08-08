@@ -92,8 +92,10 @@ namespace Deako {
 
         VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
-        vr->models.skybox.Destroy();
-        vr->models.scene.Destroy();
+        vr->scene.skybox.Destroy();
+
+        for (auto& model : vr->scene.models) model.Destroy();
+
         vr->textures.lutBrdf.Destroy();
         vr->textures.irradianceCube.Destroy();
         vr->textures.prefilteredCube.Destroy();
@@ -113,8 +115,9 @@ namespace Deako {
         for (auto imageView : vr->swapchain.views)
             vkDestroyImageView(vr->device, imageView, nullptr);
 
-        VulkanImage::Destroy(vr->drawImage);
-        VulkanImage::Destroy(vr->depthImage);
+        VulkanImage::Destroy(vr->swapchain.colorTarget);
+        VulkanImage::Destroy(vr->multisampleTarget.color);
+        VulkanImage::Destroy(vr->multisampleTarget.depth);
 
         vkDestroySwapchainKHR(vr->device, vr->swapchain.swapchain, nullptr);
 
@@ -436,19 +439,22 @@ namespace Deako {
             VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &vr->swapchain.views[i]));
         }
 
-        /* DRAW IMAGE */
-        VkExtent3D drawExtent = { vr->swapchain.extent.width, vr->swapchain.extent.height, 1 };
-        VkFormat drawFormat = VK_FORMAT_B8G8R8A8_SRGB;
-        VkSampleCountFlagBits drawSamples = VK_SAMPLE_COUNT_4_BIT;
+        /* COLOR TARGET */ // resolves to the sc image view
+        VkExtent3D colorExtent = { vr->swapchain.extent.width, vr->swapchain.extent.height, 1 };
+        VkFormat colorFormat = VK_FORMAT_B8G8R8A8_SRGB;
+        VkSampleCountFlagBits colorSamples = VK_SAMPLE_COUNT_4_BIT;
 
-        VkImageUsageFlags drawUsages{};
-        drawUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        drawUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        VkImageUsageFlags colorUsages{};
+        colorUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        colorUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        vr->drawImage =
-            VulkanImage::Create(drawExtent, drawFormat, drawSamples, drawUsages, 1, VK_IMAGE_TYPE_2D);
+        vr->swapchain.colorTarget =
+            VulkanImage::Create(colorExtent, colorFormat, colorSamples, colorUsages, 1, VK_IMAGE_TYPE_2D);
 
-        /* DEPTH IMAGE */
+        /* MULTISAMPLE TARGET */ // resolves to the viewport image view
+        vr->multisampleTarget.color =
+            VulkanImage::Create(colorExtent, colorFormat, colorSamples, colorUsages, 1, VK_IMAGE_TYPE_2D);
+
         VkExtent3D depthExtent = { vr->swapchain.extent.width, vr->swapchain.extent.height, 1 };
         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
         VkSampleCountFlagBits depthSamples = VK_SAMPLE_COUNT_4_BIT;
@@ -456,7 +462,7 @@ namespace Deako {
         VkImageUsageFlags depthUsages{};
         depthUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-        vr->depthImage =
+        vr->multisampleTarget.depth =
             VulkanImage::Create(depthExtent, depthFormat, depthSamples, depthUsages, 1, VK_IMAGE_TYPE_2D);
 
         /* PIPELINE CACHE */
@@ -511,9 +517,17 @@ namespace Deako {
 
         vr->textures.empty.LoadFromFile("textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
 
-        VulkanLoad::Scene("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
+        const std::vector<std::string>& modelPaths = { "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf" };
 
-        vr->models.skybox.LoadFromFile("models/Box/glTF-Embedded/Box.gltf");
+        vr->scene.models.resize(modelPaths.size());
+        for (uint32_t i = 0; i < vr->scene.models.size(); i++)
+        {
+            VulkanLoad::Scene(vr->scene.models[i], modelPaths[i]);
+        }
+
+        CreateMaterialBuffer();
+
+        vr->scene.skybox.LoadFromFile("models/Box/glTF-Embedded/Box.gltf");
 
         LoadEnvironment("environments/papermill.ktx");
 
@@ -527,17 +541,17 @@ namespace Deako {
         vr->uniforms.resize(vr->swapchain.imageCount);
         for (auto& uniform : vr->uniforms)
         {
-            uniform.scene.buffer = VulkanBuffer::Create(sizeof(VulkanResources::ShaderValuesMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.scene.descriptor = { uniform.scene.buffer.buffer, 0, sizeof(VulkanResources::ShaderValuesMatrices) };
-            VkCR(vkMapMemory(vr->device, uniform.scene.buffer.memory, 0, sizeof(VulkanResources::ShaderValuesMatrices), 0, &uniform.scene.buffer.mapped));
+            uniform.scene.buffer = VulkanBuffer::Create(sizeof(vr->shaderValuesScene), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.scene.descriptor = { uniform.scene.buffer.buffer, 0, sizeof(vr->shaderValuesScene) };
+            VkCR(vkMapMemory(vr->device, uniform.scene.buffer.memory, 0, sizeof(vr->shaderValuesScene), 0, &uniform.scene.buffer.mapped));
 
-            uniform.skybox.buffer = VulkanBuffer::Create(sizeof(VulkanResources::ShaderValuesMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.skybox.descriptor = { uniform.skybox.buffer.buffer, 0, sizeof(VulkanResources::ShaderValuesMatrices) };
-            VkCR(vkMapMemory(vr->device, uniform.skybox.buffer.memory, 0, sizeof(VulkanResources::ShaderValuesMatrices), 0, &uniform.skybox.buffer.mapped));
+            uniform.skybox.buffer = VulkanBuffer::Create(sizeof(vr->shaderValuesSkybox), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.skybox.descriptor = { uniform.skybox.buffer.buffer, 0, sizeof(vr->shaderValuesSkybox) };
+            VkCR(vkMapMemory(vr->device, uniform.skybox.buffer.memory, 0, sizeof(vr->shaderValuesSkybox), 0, &uniform.skybox.buffer.mapped));
 
-            uniform.params.buffer = VulkanBuffer::Create(sizeof(VulkanResources::ShaderValuesParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.params.descriptor = { uniform.params.buffer.buffer, 0, sizeof(VulkanResources::ShaderValuesParams) };
-            VkCR(vkMapMemory(vr->device, uniform.params.buffer.memory, 0, sizeof(VulkanResources::ShaderValuesParams), 0, &uniform.params.buffer.mapped));
+            uniform.params.buffer = VulkanBuffer::Create(sizeof(vr->shaderValuesParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.params.descriptor = { uniform.params.buffer.buffer, 0, sizeof(vr->shaderValuesParams) };
+            VkCR(vkMapMemory(vr->device, uniform.params.buffer.memory, 0, sizeof(vr->shaderValuesParams), 0, &uniform.params.buffer.mapped));
         }
 
         UpdateUniforms();
@@ -553,16 +567,26 @@ namespace Deako {
         // environment samplers (radiance, irradiance, brdf lut)
         imageSamplerCount += 3;
 
-        std::vector<Model*> modelList = { &vr->models.skybox, &vr->models.scene };
-        for (auto& model : modelList)
+        for (auto& model : vr->scene.models)
         {
-            for (auto& material : model->materials)
+            for (auto& material : model.materials)
             {
                 imageSamplerCount += 5;
                 materialCount++;
             }
 
-            for (auto node : model->linearNodes)
+            for (auto node : model.linearNodes)
+                if (node->mesh) meshCount++;
+        }
+
+        {
+            for (auto& material : vr->scene.skybox.materials)
+            {
+                imageSamplerCount += 5;
+                materialCount++;
+            }
+
+            for (auto node : vr->scene.skybox.linearNodes)
                 if (node->mesh) meshCount++;
         }
 
@@ -663,54 +687,56 @@ namespace Deako {
             VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
 
             // per-material descriptor sets
-            for (auto& material : vr->models.scene.materials)
+            for (auto& model : vr->scene.models)
             {
-                VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty.GetDescriptor();
-
-                VkDescriptorSetAllocateInfo allocInfo{};
-                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-                allocInfo.descriptorPool = vr->descriptorPool;
-                allocInfo.pSetLayouts = &vr->descriptorSetLayouts.material;
-                allocInfo.descriptorSetCount = 1;
-                VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &material.descriptorSet));
-
-                std::vector<VkDescriptorImageInfo> imageDescriptors = {
-                    emptyTextureDescriptor,
-                    emptyTextureDescriptor,
-                    material.normalTexture ? material.normalTexture->GetDescriptor() : emptyTextureDescriptor,
-                    material.occlusionTexture ? material.occlusionTexture->GetDescriptor() : emptyTextureDescriptor,
-                    material.emissiveTexture ? material.emissiveTexture->GetDescriptor() : emptyTextureDescriptor
-                };
-
-                if (material.pbrWorkflows.metallicRoughness)
+                for (auto& material : model.materials)
                 {
-                    if (material.baseColorTexture)
-                        imageDescriptors[0] = material.baseColorTexture->GetDescriptor();
-                    if (material.metallicRoughnessTexture)
-                        imageDescriptors[1] = material.metallicRoughnessTexture->GetDescriptor();
-                }
-                else if (material.pbrWorkflows.specularGlossiness)
-                {
-                    if (material.extension.diffuseTexture)
-                        imageDescriptors[0] = material.extension.diffuseTexture->GetDescriptor();
-                    if (material.extension.specularGlossinessTexture)
-                        imageDescriptors[1] = material.extension.specularGlossinessTexture->GetDescriptor();
-                }
+                    VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty.GetDescriptor();
 
-                std::array<VkWriteDescriptorSet, 5> write{};
-                for (size_t i = 0; i < imageDescriptors.size(); i++)
-                {
-                    write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    write[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    write[i].descriptorCount = 1;
-                    write[i].dstSet = material.descriptorSet;
-                    write[i].dstBinding = static_cast<uint32_t>(i);
-                    write[i].pImageInfo = &imageDescriptors[i];
-                }
+                    VkDescriptorSetAllocateInfo allocInfo{};
+                    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                    allocInfo.descriptorPool = vr->descriptorPool;
+                    allocInfo.pSetLayouts = &vr->descriptorSetLayouts.material;
+                    allocInfo.descriptorSetCount = 1;
+                    VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &material.descriptorSet));
 
-                vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, NULL);
+                    std::vector<VkDescriptorImageInfo> imageDescriptors = {
+                        emptyTextureDescriptor,
+                        emptyTextureDescriptor,
+                        material.normalTexture ? material.normalTexture->GetDescriptor() : emptyTextureDescriptor,
+                        material.occlusionTexture ? material.occlusionTexture->GetDescriptor() : emptyTextureDescriptor,
+                        material.emissiveTexture ? material.emissiveTexture->GetDescriptor() : emptyTextureDescriptor
+                    };
+
+                    if (material.pbrWorkflows.metallicRoughness)
+                    {
+                        if (material.baseColorTexture)
+                            imageDescriptors[0] = material.baseColorTexture->GetDescriptor();
+                        if (material.metallicRoughnessTexture)
+                            imageDescriptors[1] = material.metallicRoughnessTexture->GetDescriptor();
+                    }
+                    else if (material.pbrWorkflows.specularGlossiness)
+                    {
+                        if (material.extension.diffuseTexture)
+                            imageDescriptors[0] = material.extension.diffuseTexture->GetDescriptor();
+                        if (material.extension.specularGlossinessTexture)
+                            imageDescriptors[1] = material.extension.specularGlossinessTexture->GetDescriptor();
+                    }
+
+                    std::array<VkWriteDescriptorSet, 5> write{};
+                    for (size_t i = 0; i < imageDescriptors.size(); i++)
+                    {
+                        write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                        write[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                        write[i].descriptorCount = 1;
+                        write[i].dstSet = material.descriptorSet;
+                        write[i].dstBinding = static_cast<uint32_t>(i);
+                        write[i].pImageInfo = &imageDescriptors[i];
+                    }
+
+                    vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, NULL);
+                }
             }
-
 
             {   // model node (matrices)
                 std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
@@ -723,8 +749,11 @@ namespace Deako {
                 layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
                 VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.node));
 
-                for (auto& node : vr->models.scene.nodes) // per-node descriptor set
-                    node->SetDescriptorSet();
+                for (auto& model : vr->scene.models)
+                {
+                    for (auto& node : model.nodes) // per-node descriptor set
+                        node->SetDescriptorSet();
+                }
             }
 
             {   // material buffer
@@ -929,9 +958,9 @@ namespace Deako {
         VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
         pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
         pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        pipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->drawImage.format;
-        pipelineRenderingCreateInfo.depthAttachmentFormat = vr->depthImage.format;
-        pipelineRenderingCreateInfo.stencilAttachmentFormat = vr->depthImage.format;
+        pipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->multisampleTarget.color.format;
+        pipelineRenderingCreateInfo.depthAttachmentFormat = vr->multisampleTarget.depth.format;
+        pipelineRenderingCreateInfo.stencilAttachmentFormat = vr->multisampleTarget.depth.format;
 
         // pipeline
         VkGraphicsPipelineCreateInfo pipelineInfo = {};
@@ -1034,7 +1063,7 @@ namespace Deako {
         initInfo.PipelineRenderingCreateInfo = {};
         initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->drawImage.format;
+        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->swapchain.colorTarget.format;
 
         ImGui_ImplVulkan_Init(&initInfo);
 
@@ -1093,17 +1122,20 @@ namespace Deako {
             DK_CORE_ASSERT(result);
         }
 
-        VkImage drawImage = vr->drawImage.image;
-        VkFormat drawFormat = vr->drawImage.format;
+        VkImage msColorTarget = vr->multisampleTarget.color.image;
+        VkFormat msColorTargetFormat = vr->multisampleTarget.color.format;
 
-        VkImage depthImage = vr->depthImage.image;
-        VkFormat depthFormat = vr->depthImage.format;
+        VkImage msDepthTarget = vr->multisampleTarget.depth.image;
+        VkFormat msDepthTargetFormat = vr->multisampleTarget.depth.format;
 
         VkImage viewportImage = vr->viewport.images[scImageIndex].image;
         VkFormat viewportFormat = vr->viewport.format;
 
-        VkImage swapchainImage = vr->swapchain.images[scImageIndex];
-        VkFormat swapchainFormat = vr->swapchain.format;
+        VkImage scColorTarget = vr->swapchain.colorTarget.image;
+        VkFormat scColorTargetFormat = vr->swapchain.colorTarget.format;
+
+        VkImage scImage = vr->swapchain.images[scImageIndex];
+        VkFormat scFormat = vr->swapchain.format;
 
         // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
         vkResetFences(vr->device, 1, &frame.waitFence);
@@ -1115,29 +1147,32 @@ namespace Deako {
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         VkCR(vkBeginCommandBuffer(frame.commandBuffer, &commandBufferBeginInfo));
 
-        VulkanImage::Transition(frame.commandBuffer, drawImage, drawFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+        VulkanImage::Transition(frame.commandBuffer, msColorTarget, msColorTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+        VulkanImage::Transition(frame.commandBuffer, msDepthTarget, msDepthTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
         VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-        VulkanImage::Transition(frame.commandBuffer, depthImage, depthFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
         DrawViewport(frame.commandBuffer, scImageIndex);
 
         VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        VulkanImage::Transition(frame.commandBuffer, drawImage, drawFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VulkanImage::Transition(frame.commandBuffer, swapchainImage, swapchainFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VulkanImage::Transition(frame.commandBuffer, scColorTarget, scColorTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        VulkanImage::Transition(frame.commandBuffer, scImage, scFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         DrawImGui(frame.commandBuffer, scImageIndex);
 
-        VulkanImage::Transition(frame.commandBuffer, swapchainImage, swapchainFormat, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VulkanImage::Transition(frame.commandBuffer, scImage, scFormat, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VkCR(vkEndCommandBuffer(frame.commandBuffer));
 
-        UpdateUniforms();
+        // UpdateUniforms();
 
         VulkanResources::UniformSet uniformSet = vr->uniforms[vr->currentFrame];
-        memcpy(uniformSet.scene.buffer.mapped, &vr->shaderValuesScene, sizeof(VulkanResources::ShaderValuesMatrices));
-        memcpy(uniformSet.params.buffer.mapped, &vr->shaderValuesParams, sizeof(VulkanResources::ShaderValuesParams));
-        memcpy(uniformSet.skybox.buffer.mapped, &vr->shaderValuesSkybox, sizeof(VulkanResources::ShaderValuesMatrices));
+        memcpy(uniformSet.scene.buffer.mapped, &vr->shaderValuesScene, sizeof(vr->shaderValuesScene));
+        memcpy(uniformSet.params.buffer.mapped, &vr->shaderValuesParams, sizeof(vr->shaderValuesParams));
+        memcpy(uniformSet.skybox.buffer.mapped, &vr->shaderValuesSkybox, sizeof(vr->shaderValuesSkybox));
 
         const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -1204,32 +1239,37 @@ namespace Deako {
         float frameTimer = (float)tDiff / 1000.0f;
         vr->camera.update(frameTimer);
 
-        if (!vs->animationPaused)
-        {
-            if ((vr->models.animate) && (vr->models.scene.animations.size() > 0))
-            {
-                vr->models.animationTimer += frameTimer;
-                if (vr->models.animationTimer > vr->models.scene.animations[vr->models.animationIndex].end)
-                    vr->models.animationTimer -= vr->models.scene.animations[vr->models.animationIndex].end;
+        // TODO
+        // if (!vs->animationPaused)
+        // {
+        //     if ((vr->models.animate) && (vr->models.scene.animations.size() > 0))
+        //     {
+        //         vr->models.animationTimer += frameTimer;
+        //         if (vr->models.animationTimer > vr->models.scene.animations[vr->models.animationIndex].end)
+        //             vr->models.animationTimer -= vr->models.scene.animations[vr->models.animationIndex].end;
 
-                vr->models.scene.UpdateAnimation(vr->models.animationIndex, vr->models.animationTimer);
-            }
+        //         vr->models.scene.UpdateAnimation(vr->models.animationIndex, vr->models.animationTimer);
+        //     }
 
-            UpdateShaderParams();
-        }
+        //     UpdateShaderParams();
+        // }
 
         if (vr->camera.updated) UpdateUniforms();
     }
 
     void VulkanBase::DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex)
     {
+        AllocatedImage& colorTarget = vr->multisampleTarget.color;
+        AllocatedImage& depthTarget = vr->multisampleTarget.depth;
+        AllocatedImage& viewportImage = vr->viewport.images[imageIndex];
+
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = vr->drawImage.view;
+        colorAttachment.imageView = colorTarget.view;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-        colorAttachment.resolveImageView = vr->viewport.images[imageIndex].view;
+        colorAttachment.resolveImageView = viewportImage.view;
         colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1237,7 +1277,7 @@ namespace Deako {
         VkRenderingAttachmentInfo depthStencilAttachment = {};
         depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         depthStencilAttachment.pNext = nullptr;
-        depthStencilAttachment.imageView = vr->depthImage.view;
+        depthStencilAttachment.imageView = depthTarget.view;
         depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         depthStencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthStencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1246,7 +1286,7 @@ namespace Deako {
         VkRenderingInfo renderInfo = {};
         renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderInfo.pNext = nullptr;
-        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 },  vr->drawImage.extent.width,  vr->drawImage.extent.height };
+        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, colorTarget.extent.width, colorTarget.extent.height };
         renderInfo.layerCount = 1;
         renderInfo.colorAttachmentCount = 1;
         renderInfo.pColorAttachments = &colorAttachment;
@@ -1256,14 +1296,14 @@ namespace Deako {
         vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
 
         VkViewport viewport{};
-        viewport.width = vr->drawImage.extent.width;
-        viewport.height = vr->drawImage.extent.height;
+        viewport.width = colorTarget.extent.width;
+        viewport.height = colorTarget.extent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
-        scissor.extent = { vr->drawImage.extent.width,  vr->drawImage.extent.height };
+        scissor.extent = { colorTarget.extent.width,  colorTarget.extent.height };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
         VkDeviceSize offsets[1] = { 0 };
@@ -1272,28 +1312,29 @@ namespace Deako {
         {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 0, nullptr);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelines["skybox"]);
-            vr->models.skybox.Draw(commandBuffer);
+            vr->scene.skybox.Draw(commandBuffer);
         }
 
-        Model& model = vr->models.scene;
+        for (auto& model : vr->scene.models)
+        {
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model.vertices.buffer, offsets);
 
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model.vertices.buffer, offsets);
+            if (model.indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffer, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        if (model.indices.buffer != VK_NULL_HANDLE)
-            vkCmdBindIndexBuffer(commandBuffer, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vr->boundPipeline = VK_NULL_HANDLE;
 
-        vr->boundPipeline = VK_NULL_HANDLE;
-
-        // opaque primitives first
-        for (auto node : model.nodes)
-            RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE);
-        // alpha masked primitives
-        for (auto node : model.nodes)
-            RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK);
-        // transparent primitives
-        // TODO: Correct depth sorting
-        for (auto node : model.nodes)
-            RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND);
+            // opaque primitives first
+            for (auto node : model.nodes)
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE);
+            // alpha masked primitives
+            for (auto node : model.nodes)
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK);
+            // transparent primitives
+            // TODO: Correct depth sorting
+            for (auto node : model.nodes)
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND);
+        }
 
         vkCmdEndRenderingKHR(commandBuffer);
     }
@@ -1303,7 +1344,7 @@ namespace Deako {
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = vr->drawImage.view;
+        colorAttachment.imageView = vr->swapchain.colorTarget.view;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
         colorAttachment.resolveImageView = vr->swapchain.views[imageIndex];
@@ -1328,7 +1369,7 @@ namespace Deako {
 
         imguiLayer->Begin();
         for (Layer* layer : layerStack)
-            layer->OnImGuiRender();
+            layer->OnImGuiRender((ImTextureID)vr->viewport.textureIDs[imageIndex]);
         imguiLayer->End(commandBuffer);
 
         vkCmdEndRenderingKHR(commandBuffer);
@@ -1337,34 +1378,40 @@ namespace Deako {
 
     void VulkanBase::UpdateUniforms()
     {
-        // scene
-        vr->shaderValuesScene.projection = vr->camera.matrices.perspective;
-        vr->shaderValuesScene.view = vr->camera.matrices.view;
+        if (vr->scene.models.size() > 0)
+        {
+            // scene
+            vr->shaderValuesScene.projection = vr->camera.matrices.perspective;
+            vr->shaderValuesScene.view = vr->camera.matrices.view;
 
-        // // Center and scale model
-        glm::mat4 aabb = vr->models.scene.aaBoundingBox;
-        float scale = (1.0f / std::max(aabb[0][0], std::max(aabb[1][1], aabb[2][2]))) * 0.5f;
-        glm::vec3 translate = -glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
-        translate += -0.5f * glm::vec3(aabb[0][0], aabb[1][1], aabb[2][2]);
+            // models
+            glm::mat4 aabb = vr->scene.models[0].aaBoundingBox;
 
-        vr->shaderValuesScene.model = glm::mat4(1.0f);
-        vr->shaderValuesScene.model[0][0] = 0.1;
-        vr->shaderValuesScene.model[1][1] = 0.1;
-        vr->shaderValuesScene.model[2][2] = 0.1;
+            float scaleX = glm::length(glm::vec3(aabb[0]));
+            float scaleY = glm::length(glm::vec3(aabb[1]));
+            float scaleZ = glm::length(glm::vec3(aabb[2]));
+            float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 5.0f;
 
-        static auto startTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+            glm::vec3 aabbMin = glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
+            glm::vec3 aabbMax = aabbMin + glm::vec3(scaleX, scaleY, scaleZ);
+            glm::vec3 centroid = (aabbMin + aabbMax) / 2.0f; // center of the models aabb
+            glm::vec3 translate = -centroid;
 
-        vr->shaderValuesScene.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            static auto startTime = std::chrono::high_resolution_clock::now();
+            auto currentTime = std::chrono::high_resolution_clock::now();
+            float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        // vr->shaderValuesScene.model = glm::translate(vr->shaderValuesScene.model, translate);
+            // construct model matrix
+            vr->shaderValuesScene.model = glm::translate(glm::mat4(1.0f), translate) *
+                glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                glm::scale(glm::mat4(1.0f), glm::vec3(scaleFactor));
 
-        // shader requires camera position in world space
-        glm::mat4 cv = glm::inverse(vr->camera.matrices.view);
-        vr->shaderValuesScene.camPos = glm::vec3(cv[3]);
+            // shader requires camera position in world space
+            glm::mat4 cv = glm::inverse(vr->camera.matrices.view);
+            vr->shaderValuesScene.camPos = glm::vec3(cv[3]);
+        }
 
-        // skybox
+        // environment - skybox
         vr->shaderValuesSkybox.projection = vr->camera.matrices.perspective;
         vr->shaderValuesSkybox.view = vr->camera.matrices.view;
         vr->shaderValuesSkybox.model = glm::mat4(glm::mat3(vr->camera.matrices.view));
@@ -1396,8 +1443,9 @@ namespace Deako {
         for (auto image : vr->viewport.images)
             VulkanImage::Destroy(image);
 
-        VulkanImage::Destroy(vr->drawImage);
-        VulkanImage::Destroy(vr->depthImage);
+        VulkanImage::Destroy(vr->swapchain.colorTarget);
+        VulkanImage::Destroy(vr->multisampleTarget.color);
+        VulkanImage::Destroy(vr->multisampleTarget.depth);
 
         vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
 
@@ -1419,6 +1467,18 @@ namespace Deako {
     void VulkanBase::ViewportResize(const glm::vec2& viewportSize)
     {
         vr->camera.updateAspectRatio((float)viewportSize.x / (float)viewportSize.y);
+    }
+
+    void VulkanBase::LoadModel(const std::string& relativePath)
+    {
+        // vr->scene.models.resize(vr->swapchain.imageCount);
+        // for (auto& model : vr->scene.models)
+        // {
+        //     VulkanLoad::Scene(model, relativePath);
+        // }
+
+        // CreateMaterialBuffer();
+        // SetUpDescriptors();
     }
 
 }

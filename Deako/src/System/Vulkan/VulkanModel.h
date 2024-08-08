@@ -35,7 +35,7 @@ namespace Deako {
         bool valid{ false };
 
         BoundingBox() {}
-        BoundingBox(glm::vec3 min, glm::vec3 max) {}
+        BoundingBox(glm::vec3 min, glm::vec3 max);
         BoundingBox GetAABB(glm::mat4 m);
     };
 

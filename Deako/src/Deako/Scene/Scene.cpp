@@ -7,6 +7,8 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "System/Vulkan/VulkanBase.h"
+
 namespace Deako {
 
     Scene::Scene()
@@ -17,9 +19,34 @@ namespace Deako {
     {
     }
 
-    void Scene::OnUpdateEditor(Camera& editorCamera, glm::vec2& vSize)
+    void Scene::Prepare()
+    {
+        auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
+        for (auto entity : group)
+        {
+            auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
+
+            VulkanBase::LoadModel(modelComp.relativePath);
+        }
+    }
+
+    void Scene::OnUpdateEditor(Camera& editorCamera)
     {
         Renderer::BeginScene();
+
+        {
+            // auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
+            // for (auto entity : group)
+            // {
+            //     auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
+
+            //     Renderer2D::DrawSprite(modelComp, transformComp.GetTransform());
+
+            //     ForwardEntity(modelComp, transformComp.GetTransform());
+            // }
+
+            VulkanBase::UpdateUniforms();
+        }
 
         Renderer::EndScene();
     }
@@ -52,6 +79,11 @@ namespace Deako {
 
     template<>
     void Scene::OnComponentAdded<TextureComponent>(Entity entity, TextureComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<ModelComponent>(Entity entity, ModelComponent& component)
     {
     }
 

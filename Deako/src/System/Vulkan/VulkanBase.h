@@ -54,24 +54,25 @@ namespace Deako {
         std::unordered_map<std::string, VkPipeline>         pipelines;
         VkPipeline                                          boundPipeline{ VK_NULL_HANDLE };
 
+        VkCommandPool                      singleUseCommandPool;
+
         std::vector<FrameData>             frames;
 
-        AllocatedImage                     drawImage;
-        AllocatedImage                     depthImage;
-        AllocatedImage                     viewportDrawImage;
-        AllocatedImage                     viewportDepthImage;
-
-        VkCommandPool                      singleUseCommandPool;
+        struct MultisampleTarget
+        {
+            AllocatedImage                     color;
+            AllocatedImage                     depth;
+        } multisampleTarget;
 
         struct Swapchain
         {
-
             VkSwapchainKHR                 swapchain{ VK_NULL_HANDLE };
             SwapchainDetails               details;
             VkFormat                       format;
             VkExtent2D                     extent;
             std::vector<VkImage>           images;
             std::vector<VkImageView>       views;
+            AllocatedImage                 colorTarget; // resolves to sc image
             uint32_t                       imageCount;
         } swapchain;
 
@@ -80,7 +81,7 @@ namespace Deako {
             VkSampler                      sampler{ VK_NULL_HANDLE };
             VkFormat                       format;
             std::vector<AllocatedImage>    images;
-            std::vector<void*>             textureIDs;
+            std::vector<VkDescriptorSet>   textureIDs;
         } viewport;
 
         VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
@@ -95,15 +96,15 @@ namespace Deako {
             TextureCubeMap prefilteredCube{ TextureCubeMap::PREFILTERED };
         } textures;
 
-        struct Models
+        struct Scene
         {
-            Model scene;
+            std::vector<Model> models;
             Model skybox;
 
             int32_t animationIndex{ 0 };
             float animationTimer{ 0.0f };
             bool animate{ true };
-        } models;
+        } scene;
 
         struct ShaderValuesMatrices
         {
@@ -174,10 +175,12 @@ namespace Deako {
 
         static Ref<VulkanSettings>& GetSettings() { return vs; }
         static Ref<VulkanResources>& GetResources() { return vr; }
-        static uint32_t GetCurrentFrame() { return vr->currentFrame; }
-        static const std::vector<void*>& GetImGuiViewportTextureIDs() { return vr->viewport.textureIDs; }
 
         static void ViewportResize(const glm::vec2& viewportSize);
+
+        static void UpdateUniforms();
+
+        static void LoadModel(const std::string& relativePath);
 
     private:
         static void CreateInstance(const char* appName);
@@ -198,7 +201,7 @@ namespace Deako {
         static void DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex);
         static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-        static void UpdateUniforms();
+        // static void UpdateUniforms();
         static void UpdateShaderParams();
 
         static void WindowResize();

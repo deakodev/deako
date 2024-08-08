@@ -3,6 +3,7 @@
 #include "Deako.h"
 
 #include <glm/glm.hpp>
+#include <imgui/imgui.h>
 
 namespace Deako {
 
@@ -16,7 +17,7 @@ namespace Deako {
         virtual void OnDetach() override;
         virtual void OnUpdate() override;
         virtual void OnEvent(Event& event) override;
-        virtual void OnImGuiRender() override;
+        virtual void OnImGuiRender(ImTextureID textureID) override;
 
     private:
         Camera m_EditorCamera;
@@ -26,13 +27,8 @@ namespace Deako {
         bool m_ViewportFocused = false;
         bool m_ViewportHovered = false;
 
-        std::vector<void*> m_ImGuiViewportTextureIDs;
-
         Ref<Scene> m_ActiveScene;
-        Entity m_VikingRoomEntityA;
-        Entity m_VikingRoomEntityB;
-
-        // Ref<Texture2D> m_VikingRoomTexture;
+        Entity m_BrokenHelmet;
     };
 
 }
