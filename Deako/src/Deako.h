@@ -15,9 +15,9 @@
 #include "Deako/Renderer/EditorCamera.h"
 #include "Deako/Renderer/AssetManager.h"
 
-#include "Deako/Scene/Scene.h"
-#include "Deako/Scene/Entity.h"
-#include "Deako/Scene/Components.h"
+#include "Deako/Project/Scene.h"
+#include "Deako/Project/Entity.h"
+#include "Deako/Project/Components.h"
 
 #include "System/Vulkan/VulkanBase.h"
 

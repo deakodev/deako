@@ -26,8 +26,7 @@ namespace Deako {
     {
         glm::vec3 translation = { 0.0f, 0.0f, 0.0f };
         glm::vec3 rotation = { 0.0f, 0.0f, 0.0f };
-        float scale = 1.0f;
-        // glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+        glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
 
         TransformComponent() = default;
         TransformComponent(const TransformComponent&) = default;
@@ -53,12 +52,12 @@ namespace Deako {
 
     struct ModelComponent
     {
-        std::string relativePath;
+        std::string path;
 
         ModelComponent() = default;
         ModelComponent(const ModelComponent&) = default;
         ModelComponent(const std::string& relativePath)
-            : relativePath(relativePath) {}
+            : path(relativePath) {}
     };
 
 

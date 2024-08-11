@@ -4,6 +4,9 @@
 #include "Deako/Core/Application.h"
 #include "System/MacOS/MacUtils.h"
 
+#include "Deako/Project/Project.h"
+#include "Deako/Project/Scene.h"
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -517,13 +520,27 @@ namespace Deako {
 
         vr->textures.empty.LoadFromFile("textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
 
-        const std::vector<std::string>& modelPaths = { "models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf" };
+        Ref<Project> activeProject = Project::Open("sandbox/sandbox.proj.deako");
+        DK_CORE_ASSERT(activeProject);
 
-        vr->scene.models.resize(modelPaths.size());
-        for (uint32_t i = 0; i < vr->scene.models.size(); i++)
+        std::filesystem::path firstScene = activeProject->GetFirstScenePath();
+
+        if (!firstScene.empty())
         {
-            VulkanLoad::Scene(vr->scene.models[i], modelPaths[i]);
+            Ref<Scene> activeScene = Scene::Open(firstScene);
+
+            const std::vector<std::string>& modelPaths = activeScene->GetModelPaths();
+
+            vr->scene.models.resize(modelPaths.size());
+            for (uint32_t i = 0; i < vr->scene.models.size(); i++)
+            {
+                VulkanLoad::Scene(vr->scene.models[i], modelPaths[i]);
+            }
+
+            activeScene->Save();
         }
+
+        activeProject->Save();
 
         CreateMaterialBuffer();
 

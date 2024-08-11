@@ -9,13 +9,13 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        m_ActiveScene = CreateRef<Scene>();
+        m_ActiveScene = Scene::GetActiveScene();
 
-        m_BrokenHelmet = m_ActiveScene->CreateEntity("Broken Helmet");
-        m_BrokenHelmet.AddComponent<ModelComponent>("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-        auto& brokenHelmetTransfromComp = m_BrokenHelmet.GetComponent<TransformComponent>();
-        brokenHelmetTransfromComp.translation = { 0.0f, 0.0f, 0.0f };
-        brokenHelmetTransfromComp.scale = 1.0f;
+        // m_BrokenHelmet = m_ActiveScene->CreateEntity("Broken Helmet");
+        // m_BrokenHelmet.AddComponent<ModelComponent>("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
+        // auto& brokenHelmetTransfromComp = m_BrokenHelmet.GetComponent<TransformComponent>();
+        // brokenHelmetTransfromComp.translation = { 0.0f, 0.0f, 0.0f };
+        // brokenHelmetTransfromComp.scale = 1.0f;
 
         m_ActiveScene->Prepare();
     }

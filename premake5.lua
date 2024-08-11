@@ -22,12 +22,14 @@ workspace "Deako"
     IncludeDir["basisu_zstd"] = "Deako/vendor/basisu/zstd"
     IncludeDir["imgui"] = "Deako/vendor/imgui"
     IncludeDir["entt"] = "Deako/vendor/entt/include"
+    IncludeDir["yaml_cpp"] = "Deako/vendor/yaml-cpp/include"
 
     LibDir = {}
     LibDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/lib"
 
     include "Deako/vendor/glfw"
     include "Deako/vendor/imgui"
+    include "Deako/vendor/yaml-cpp"
 
 project "Deako"
     location "Deako"
@@ -83,6 +85,7 @@ project "Deako"
         "%{IncludeDir.basisu_zstd}",
         "%{IncludeDir.imgui}",
         "%{IncludeDir.entt}",
+        "%{IncludeDir.yaml_cpp}",
     }
 
     libdirs
@@ -95,6 +98,7 @@ project "Deako"
         "glfw",
         "vulkan",
         "imgui",
+        "yaml-cpp",
         "Cocoa.framework",
         "IOKit.framework",
         "CoreVideo.framework"
@@ -201,6 +205,7 @@ project "Deako-Editor"
         "%{IncludeDir.basisu_zstd}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.imgui}",
+        "%{IncludeDir.yaml_cpp}",
     }
 
     libdirs
@@ -214,6 +219,7 @@ project "Deako-Editor"
         "glfw",
         "vulkan",
         "imgui",
+        "yaml-cpp",
         "Cocoa.framework",
         "IOKit.framework",
         "CoreVideo.framework"

@@ -19,3 +19,6 @@
 [submodule "Deako/vendor/gli"]
 	path = Deako/vendor/gli
 	url = https://github.com/g-truc/gli.git
+[submodule "Deako/vendor/yaml-cpp"]
+	path = Deako/vendor/yaml-cpp
+	url = https://github.com/deak1zm/yaml-cpp.git

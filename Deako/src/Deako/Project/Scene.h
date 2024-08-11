@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Deako/Renderer/EditorCamera.h"
-// #include "Deako/Core/Timestep.h"
+
+#include "Components.h"
+
 #include <entt.hpp>
 #include <glm/glm.hpp>
 
@@ -9,11 +11,19 @@ namespace Deako {
 
     class Entity;
 
+    struct SceneDetails
+    {
+        std::string name{ "Untitled" };
+        std::filesystem::path path;
+    };
+
     class Scene
     {
     public:
-        Scene();
-        ~Scene();
+        Scene(const std::filesystem::path& path);
+
+        static Ref<Scene> Open(const std::string& filename);
+        bool Save();
 
         void Prepare();
 
@@ -22,19 +32,29 @@ namespace Deako {
         Entity CreateEntity(const std::string& name = std::string());
         void DestroyEntity(Entity entity);
 
+        static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
+        std::vector<std::string> GetModelPaths();
+
+        void SetDetails(SceneDetails details) { m_Details = details; }
+        const SceneDetails& GetDetails() { return m_Details; }
+
+        const entt::registry& GetRegistry() { return m_Registry; }
+
     private:
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
 
     private:
         entt::registry m_Registry;
+        SceneDetails m_Details;
 
         float m_ViewportWidth = 0.0f;
         float m_ViewportHeight = 0.0f;
 
         friend class Entity;
-        // friend class SceneSerializer;
         // friend class SceneHierarchyPanel;
+
+        inline static Ref<Scene> s_ActiveScene;
     };
 
 }

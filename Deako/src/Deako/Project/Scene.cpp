@@ -1,22 +1,40 @@
 #include "Scene.h"
 #include "dkpch.h"
 
-#include "Entity.h"
-#include "Components.h"
 #include "Deako/Renderer/Renderer.h"
-
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "System/Vulkan/VulkanBase.h"
+
+#include "Entity.h"
+#include "Serialize.h"
 
 namespace Deako {
 
-    Scene::Scene()
+    Scene::Scene(const std::filesystem::path& path)
     {
+        m_Details.path = path;
     }
 
-    Scene::~Scene()
+    Ref<Scene> Scene::Open(const std::string& filename)
     {
+        std::filesystem::path path = "Deako-Editor/projects/" + filename;
+
+        Ref<Scene> scene = Deserialize::Scene(path);
+
+        if (scene)
+        {
+            s_ActiveScene = scene;
+            return s_ActiveScene;
+        }
+
+        return nullptr;
+    }
+
+    bool Scene::Save()
+    {
+        if (Serialize::Scene(*this))
+            return true;
+
+        return false;
     }
 
     void Scene::Prepare()
@@ -26,7 +44,7 @@ namespace Deako {
         {
             auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
 
-            VulkanBase::LoadModel(modelComp.relativePath);
+            VulkanBase::LoadModel(modelComp.path);
         }
     }
 
@@ -35,16 +53,6 @@ namespace Deako {
         Renderer::BeginScene();
 
         {
-            // auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
-            // for (auto entity : group)
-            // {
-            //     auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
-
-            //     Renderer2D::DrawSprite(modelComp, transformComp.GetTransform());
-
-            //     ForwardEntity(modelComp, transformComp.GetTransform());
-            // }
-
             VulkanBase::UpdateUniforms();
         }
 
@@ -67,6 +75,20 @@ namespace Deako {
         m_Registry.destroy(entity);
     }
 
+    std::vector<std::string> Scene::GetModelPaths()
+    {
+        auto modalEntities = m_Registry.view<ModelComponent>();
+        std::vector<std::string> modelPaths;
+
+        for (auto& entity : modalEntities)
+        {
+            auto& modelComp = modalEntities.get<ModelComponent>(entity);
+            modelPaths.push_back(modelComp.path);
+        }
+
+        return modelPaths;
+    }
+
     template<>
     void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
     {
@@ -86,5 +108,6 @@ namespace Deako {
     void Scene::OnComponentAdded<ModelComponent>(Entity entity, ModelComponent& component)
     {
     }
+
 
 }
