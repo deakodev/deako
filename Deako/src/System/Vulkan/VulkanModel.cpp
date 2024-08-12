@@ -136,23 +136,15 @@ namespace Deako {
         return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
     }
 
-    void Model::LoadFromFile(std::string filename, float scale)
+    void Model::LoadFromFile(float scale)
     {
-        DK_CORE_INFO("Loading Model <{0}>", filename.c_str());
+        DK_CORE_INFO("Loading Model <{0}>", path.string());
 
-        // essentially filePath = fullPath - filename
-        const std::string fullPath = vs->assetPath + filename;
+        std::filesystem::path fullPath = vs->assetPath + path.string();
+
         bool binary = false;
-
-        size_t extpos = fullPath.rfind('.', fullPath.length());
-        if (extpos != std::string::npos)
-            binary = (fullPath.substr(extpos + 1, fullPath.length() - extpos) == "glb");
-
-        size_t pos = fullPath.find_last_of('/');
-        if (pos == std::string::npos)
-            pos = fullPath.find_last_of('\\');
-
-        filePath = fullPath.substr(0, pos);
+        if (path.extension().string() == ".glb")
+            binary = true;
 
         // prepare to load modal
         tinygltf::Model tinyModel;
@@ -164,8 +156,8 @@ namespace Deako {
         gltfContext.SetImageLoader(LoadImageDataFunc, nullptr);
 
         bool fileLoaded = binary ?
-            gltfContext.LoadBinaryFromFile(&tinyModel, &error, &warning, fullPath.c_str()) :
-            gltfContext.LoadASCIIFromFile(&tinyModel, &error, &warning, fullPath.c_str());
+            gltfContext.LoadBinaryFromFile(&tinyModel, &error, &warning, fullPath.string()) :
+            gltfContext.LoadASCIIFromFile(&tinyModel, &error, &warning, fullPath.string());
 
         LoaderInfo loaderInfo{};
         size_t vertexCount = 0;
@@ -318,7 +310,7 @@ namespace Deako {
             }
 
             Texture2D texture;
-            texture.LoadFromGLTFImage(tinyImage, filePath, textureSampler);
+            texture.LoadFromGLTFImage(tinyImage, path, textureSampler);
             textures.push_back(texture);
         }
     }

@@ -187,7 +187,7 @@ namespace Deako {
         std::vector<Skin*> skins;
         std::vector<std::string> extensions;
 
-        std::string filePath;
+        std::filesystem::path path;
 
         struct Dimensions
         {
@@ -199,7 +199,7 @@ namespace Deako {
         void DrawNode(Node* node, VkCommandBuffer commandBuffer);
         void UpdateAnimation(uint32_t index, float time);
 
-        void LoadFromFile(std::string filename, float scale = 1.0f);
+        void LoadFromFile(float scale = 1.0f);
         void LoadTextureSamplers(tinygltf::Model& tinyModel);
         void LoadTextures(tinygltf::Model& tinyModel);
         void LoadMaterials(tinygltf::Model& tinyModel);

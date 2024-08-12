@@ -42,10 +42,10 @@ namespace Deako {
     class Texture2D : public Texture
     {
     public:
-        void LoadFromFile(std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags =
+        void LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags =
             VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        void LoadFromGLTFImage(tinygltf::Image& gltfimage, std::string path, TextureSampler textureSampler);
+        void LoadFromGLTFImage(tinygltf::Image& gltfimage, std::filesystem::path path, TextureSampler textureSampler);
     };
 
     class TextureCubeMap : public Texture
@@ -55,7 +55,7 @@ namespace Deako {
 
         TextureCubeMap(Target target) : m_Target(target) {}
 
-        void LoadFromFile(std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags =
+        void LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags =
             VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         void GenerateCubeMap();
@@ -64,6 +64,6 @@ namespace Deako {
         Target m_Target;
     };
 
-    void LoadEnvironment(std::string filename);
+    void LoadEnvironment(std::filesystem::path path);
 
 }

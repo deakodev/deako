@@ -39,13 +39,13 @@ namespace Deako {
 
     void Scene::Prepare()
     {
-        auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
-        for (auto entity : group)
-        {
-            auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
+        // auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
+        // for (auto entity : group)
+        // {
+        //     auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
 
-            VulkanBase::LoadModel(modelComp.path);
-        }
+        //     VulkanBase::LoadModel(modelComp.path);
+        // }
     }
 
     void Scene::OnUpdateEditor(Camera& editorCamera)
@@ -75,18 +75,19 @@ namespace Deako {
         m_Registry.destroy(entity);
     }
 
-    std::vector<std::string> Scene::GetModelPaths()
+    std::unordered_map<std::string, Ref<Model>> Scene::GetModels()
     {
-        auto modalEntities = m_Registry.view<ModelComponent>();
-        std::vector<std::string> modelPaths;
+        auto modalEntities = m_Registry.view<TagComponent, ModelComponent>();
+
+        std::unordered_map<std::string, Ref<Model>> models;
 
         for (auto& entity : modalEntities)
         {
-            auto& modelComp = modalEntities.get<ModelComponent>(entity);
-            modelPaths.push_back(modelComp.path);
+            auto [tagComp, modelComp] = modalEntities.get<TagComponent, ModelComponent>(entity);
+            models[tagComp.tag] = modelComp.model;
         }
 
-        return modelPaths;
+        return models;
     }
 
     template<>

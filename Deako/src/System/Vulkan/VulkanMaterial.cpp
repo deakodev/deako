@@ -138,9 +138,11 @@ namespace Deako {
     {
         std::vector<ShaderMaterial> shaderMaterials{};
 
-        for (auto& model : vr->scene.models)
+        for (auto& [tag, model] : vr->models)
         {
-            for (auto& material : model.materials)
+            if (tag == "Skybox") continue;
+
+            for (auto& material : model->materials)
             {
                 ShaderMaterial shaderMaterial{};
 

@@ -2,7 +2,7 @@ Scene:
   Name: Sandbox
   Filename: sandbox.scene.deako
 Entities:
-  - Entity: 123
+  - Entity: 1
     TagComponent:
       Tag: DamagedHelmet
     TransformComponent:
@@ -11,3 +11,12 @@ Entities:
       Scale: [1, 1, 1]
     ModelComponent:
       Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+  - Entity: 2
+    TagComponent:
+      Tag: Skybox
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    ModelComponent:
+      Path: models/Box/glTF-Embedded/Box.gltf

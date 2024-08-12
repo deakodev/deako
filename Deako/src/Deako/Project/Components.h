@@ -1,7 +1,6 @@
 #pragma once
 
-// #include "System/Vulkan/VulkanTexture.h"
-
+#include "System/Vulkan/VulkanModel.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -52,12 +51,10 @@ namespace Deako {
 
     struct ModelComponent
     {
-        std::string path;
+        Ref<Model> model = CreateRef<Model>();
 
         ModelComponent() = default;
         ModelComponent(const ModelComponent&) = default;
-        ModelComponent(const std::string& relativePath)
-            : path(relativePath) {}
     };
 
 

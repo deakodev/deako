@@ -33,7 +33,7 @@ namespace Deako {
         void DestroyEntity(Entity entity);
 
         static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
-        std::vector<std::string> GetModelPaths();
+        std::unordered_map<std::string, Ref<Model>> GetModels();
 
         void SetDetails(SceneDetails details) { m_Details = details; }
         const SceneDetails& GetDetails() { return m_Details; }

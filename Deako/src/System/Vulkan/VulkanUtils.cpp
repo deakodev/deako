@@ -431,28 +431,22 @@ namespace Deako {
 
     namespace VulkanLoad {
 
-        void Scene(Model& model, std::string filename)
+        void Model(Ref<Deako::Model> model)
         {
-            DK_CORE_INFO("Loading Scene <{0}>", filename.c_str());
-
-            // model.Destroy();
+            DK_CORE_INFO("Loading Model <{0}>", model->path.string());
 
             auto tStart = std::chrono::high_resolution_clock::now();
 
-            model.LoadFromFile(filename);
-
-            // We place all materials for the current scene into a shader storage buffer stored on the GPU
-            // This allows us to use arbitrary large material defintions
-            // The fragment shader then get's the index into this material array from a push constant set per primitive
+            model->LoadFromFile();
 
             auto tLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
 
-            DK_CORE_INFO("Loading Scene took {0} ms", tLoad);
+            DK_CORE_INFO("Loading Model took {0} ms", tLoad);
 
-            for (auto& ext : model.extensions)
+            for (auto& ext : model->extensions)
             {   // check and list unsupported extensions
                 if (std::find(supportedGLTFExts.begin(), supportedGLTFExts.end(), ext) == supportedGLTFExts.end())
-                    DK_CORE_WARN("Unsupported extension {0}. Scene may not display as intended.", ext);
+                    DK_CORE_WARN("Unsupported extension {0}. Model may not display as intended.", ext);
             }
         }
 

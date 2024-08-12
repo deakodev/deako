@@ -95,9 +95,7 @@ namespace Deako {
 
         VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
-        vr->scene.skybox.Destroy();
-
-        for (auto& model : vr->scene.models) model.Destroy();
+        for (auto& [tag, model] : vr->models) model->Destroy();
 
         vr->textures.lutBrdf.Destroy();
         vr->textures.irradianceCube.Destroy();
@@ -518,7 +516,7 @@ namespace Deako {
     {
         MacUtils::ReadDirectory(vs->assetPath + "environments", "ktx", vr->environments, false);
 
-        vr->textures.empty.LoadFromFile("textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
+        vr->textures.empty.LoadFromFile(vs->assetPath + "textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
 
         Ref<Project> activeProject = Project::Open("sandbox/sandbox.proj.deako");
         DK_CORE_ASSERT(activeProject);
@@ -529,12 +527,11 @@ namespace Deako {
         {
             Ref<Scene> activeScene = Scene::Open(firstScene);
 
-            const std::vector<std::string>& modelPaths = activeScene->GetModelPaths();
+            vr->models = activeScene->GetModels();
 
-            vr->scene.models.resize(modelPaths.size());
-            for (uint32_t i = 0; i < vr->scene.models.size(); i++)
+            for (auto& [tag, model] : vr->models)
             {
-                VulkanLoad::Scene(vr->scene.models[i], modelPaths[i]);
+                VulkanLoad::Model(model);
             }
 
             activeScene->Save();
@@ -544,7 +541,7 @@ namespace Deako {
 
         CreateMaterialBuffer();
 
-        vr->scene.skybox.LoadFromFile("models/Box/glTF-Embedded/Box.gltf");
+        // vr->scene.skybox.LoadFromFile("models/Box/glTF-Embedded/Box.gltf");
 
         LoadEnvironment("environments/papermill.ktx");
 
@@ -584,26 +581,15 @@ namespace Deako {
         // environment samplers (radiance, irradiance, brdf lut)
         imageSamplerCount += 3;
 
-        for (auto& model : vr->scene.models)
+        for (auto& [tag, model] : vr->models)
         {
-            for (auto& material : model.materials)
+            for (auto& material : model->materials)
             {
                 imageSamplerCount += 5;
                 materialCount++;
             }
 
-            for (auto node : model.linearNodes)
-                if (node->mesh) meshCount++;
-        }
-
-        {
-            for (auto& material : vr->scene.skybox.materials)
-            {
-                imageSamplerCount += 5;
-                materialCount++;
-            }
-
-            for (auto node : vr->scene.skybox.linearNodes)
+            for (auto node : model->linearNodes)
                 if (node->mesh) meshCount++;
         }
 
@@ -704,9 +690,11 @@ namespace Deako {
             VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
 
             // per-material descriptor sets
-            for (auto& model : vr->scene.models)
+            for (auto& [tag, model] : vr->models)
             {
-                for (auto& material : model.materials)
+                if (tag == "Skybox") continue; // skip the skybox model, handled at the end
+
+                for (auto& material : model->materials)
                 {
                     VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty.GetDescriptor();
 
@@ -766,9 +754,9 @@ namespace Deako {
                 layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
                 VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.node));
 
-                for (auto& model : vr->scene.models)
+                for (auto& [tag, model] : vr->models)
                 {
-                    for (auto& node : model.nodes) // per-node descriptor set
+                    for (auto& node : model->nodes) // per-node descriptor set
                         node->SetDescriptorSet();
                 }
             }
@@ -1329,27 +1317,29 @@ namespace Deako {
         {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 0, nullptr);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelines["skybox"]);
-            vr->scene.skybox.Draw(commandBuffer);
+            vr->models["Skybox"]->Draw(commandBuffer);
         }
 
-        for (auto& model : vr->scene.models)
+        for (auto& [tag, model] : vr->models)
         {
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model.vertices.buffer, offsets);
+            if (tag == "Skybox") continue; // skip the skybox model, handled above
 
-            if (model.indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffer, model.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, offsets);
+
+            if (model->indices.buffer != VK_NULL_HANDLE)
+                vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
             vr->boundPipeline = VK_NULL_HANDLE;
 
             // opaque primitives first
-            for (auto node : model.nodes)
+            for (auto node : model->nodes)
                 RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE);
             // alpha masked primitives
-            for (auto node : model.nodes)
+            for (auto node : model->nodes)
                 RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK);
             // transparent primitives
             // TODO: Correct depth sorting
-            for (auto node : model.nodes)
+            for (auto node : model->nodes)
                 RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND);
         }
 
@@ -1395,14 +1385,14 @@ namespace Deako {
 
     void VulkanBase::UpdateUniforms()
     {
-        if (vr->scene.models.size() > 0)
+        if (vr->models.size() > 0)
         {
             // scene
             vr->shaderValuesScene.projection = vr->camera.matrices.perspective;
             vr->shaderValuesScene.view = vr->camera.matrices.view;
 
             // models
-            glm::mat4 aabb = vr->scene.models[0].aaBoundingBox;
+            glm::mat4 aabb = vr->models["DamagedHelmet"]->aaBoundingBox;
 
             float scaleX = glm::length(glm::vec3(aabb[0]));
             float scaleY = glm::length(glm::vec3(aabb[1]));

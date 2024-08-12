@@ -153,7 +153,7 @@ namespace Deako {
                 if (modelCompYaml)
                 {
                     auto& modelComp = entity.AddComponent<ModelComponent>();
-                    modelComp.path = modelCompYaml["Path"].as<std::string>();
+                    modelComp.model->path = modelCompYaml["Path"].as<std::string>();
                 }
 
                 DK_CORE_TRACE("Deserializied entity with ID = {0}, name = {1}", uuid, name);
@@ -198,7 +198,7 @@ namespace Deako {
             out << YAML::BeginMap; // ModelComponent
 
             auto& modelComp = entity.GetComponent<ModelComponent>();
-            out << YAML::Key << "Path" << YAML::Value << modelComp.path;
+            out << YAML::Key << "Path" << YAML::Value << modelComp.model->path;
 
             out << YAML::EndMap; // ModelComponent
         }

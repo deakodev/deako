@@ -96,11 +96,11 @@ namespace Deako {
             TextureCubeMap prefilteredCube{ TextureCubeMap::PREFILTERED };
         } textures;
 
+
+        std::unordered_map<std::string, Ref<Model>> models;
+
         struct Scene
         {
-            std::vector<Model> models;
-            Model skybox;
-
             int32_t animationIndex{ 0 };
             float animationTimer{ 0.0f };
             bool animate{ true };

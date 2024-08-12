@@ -10,9 +10,9 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-    void LoadEnvironment(std::string filename)
+    void LoadEnvironment(std::filesystem::path path)
     {
-        DK_CORE_INFO("Loading Environment <{0}>", filename.c_str());
+        DK_CORE_INFO("Loading Environment <{0}>", path.filename().string());
 
         if (vr->textures.environmentCube.GetImage().image)
         {
@@ -21,7 +21,7 @@ namespace Deako {
             vr->textures.prefilteredCube.Destroy();
         }
 
-        vr->textures.environmentCube.LoadFromFile(filename, VK_FORMAT_R16G16B16A16_SFLOAT);
+        vr->textures.environmentCube.LoadFromFile(path, VK_FORMAT_R16G16B16A16_SFLOAT);
         vr->textures.irradianceCube.GenerateCubeMap();
         vr->textures.prefilteredCube.GenerateCubeMap();
     }
@@ -39,12 +39,11 @@ namespace Deako {
         VulkanImage::Destroy(m_Image);
     }
 
-    void Texture2D::LoadFromFile(std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
+    void Texture2D::LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
     {
-        DK_CORE_INFO("Loading Texture2D <{0}>", filename.c_str());
+        DK_CORE_INFO("Loading Texture2D <{0}>", path.filename().string());
 
-        const std::string path = vs->assetPath + filename;
-        gli::texture2d texture(gli::load(path.c_str()));
+        gli::texture2d texture(gli::load(path.string()));
         DK_CORE_ASSERT(!texture.empty(), "Unable to load texture from file!");
 
         uint32_t width = static_cast<uint32_t>(texture[0].extent().x);
@@ -124,7 +123,7 @@ namespace Deako {
     }
 
     // loads image for texture. Supports jpg, png, embedded and external files as well as external KTX2 files with basis universal texture compression
-    void Texture2D::LoadFromGLTFImage(tinygltf::Image& gltfimage, std::string path, TextureSampler textureSampler)
+    void Texture2D::LoadFromGLTFImage(tinygltf::Image& gltfimage, std::filesystem::path path, TextureSampler textureSampler)
     {
         bool isKtx2 = false; // KTX2 files need to be handled explicitly
         if (gltfimage.uri.find_last_of(".") != std::string::npos)
@@ -138,10 +137,10 @@ namespace Deako {
         if (isKtx2)
         {  // image is KTX2 using basis universal compression, needs to be loaded from disk and will be transcoded to a native GPU format
             basist::ktx2_transcoder ktxTranscoder;
-            const std::string filename = path + "\\" + gltfimage.uri;
-            std::ifstream ifs(filename, std::ios::binary | std::ios::in | std::ios::ate);
+
+            std::ifstream ifs(path.string(), std::ios::binary | std::ios::in | std::ios::ate);
             if (!ifs.is_open())
-                throw std::runtime_error("Could not load requested image file: " + filename);
+                throw std::runtime_error("Could not load requested image file: " + path.string());
 
             uint32_t inputDataSize = static_cast<uint32_t>(ifs.tellg());
             char* inputData = new char[inputDataSize];
@@ -151,7 +150,7 @@ namespace Deako {
 
             bool success = ktxTranscoder.init(inputData, inputDataSize);
             if (!success)
-                throw std::runtime_error("Could not initialize ktx2 transcoder for image file: " + filename);
+                throw std::runtime_error("Could not initialize ktx2 transcoder for image file: " + path.string());
 
             // select target format based on device features (use uncompressed if none supported)
             auto targetFormat = basist::transcoder_texture_format::cTFRGBA32;
@@ -238,7 +237,7 @@ namespace Deako {
 
             success = ktxTranscoder.start_transcoding();
             if (!success)
-                throw std::runtime_error("Could not start transcoding for image file " + filename);
+                throw std::runtime_error("Could not start transcoding for image file " + path.string());
 
             // transcode all mip levels into the staging buffer
             for (uint32_t i = 0; i < m_MipLevels; i++)
@@ -247,7 +246,7 @@ namespace Deako {
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
                 uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
                 if (!ktxTranscoder.transcode_image_level(i, 0, 0, bufferPtr, numBlocksOrPixels, targetFormat, 0)) {
-                    throw std::runtime_error("Could not transcode the requested image file " + filename);
+                    throw std::runtime_error("Could not transcode the requested image file " + path.string());
                 }
                 bufferPtr += outputSize;
             }
@@ -443,12 +442,13 @@ namespace Deako {
         UpdateDescriptor();
     }
 
-    void TextureCubeMap::LoadFromFile(std::string filename, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
+    void TextureCubeMap::LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
     {
-        DK_CORE_INFO("Loading TextureCube <{0}>", filename.c_str());
+        DK_CORE_INFO("Loading TextureCube <{0}>", path.filename().string());
 
-        const std::string path = vs->assetPath + filename;
-        gli::texture_cube textureCube(gli::load(path.c_str()));
+        std::filesystem::path fullPath = vs->assetPath + path.string();
+
+        gli::texture_cube textureCube(gli::load(fullPath.c_str()));
         DK_CORE_ASSERT(!textureCube.empty(), "Unable to load texture cube from file!");
 
         uint32_t width = static_cast<uint32_t>(textureCube.extent().x);
@@ -993,7 +993,7 @@ namespace Deako {
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
 
-                vr->scene.skybox.Draw(commandBuffer);
+                vr->models["Skybox"]->Draw(commandBuffer);
 
                 vkCmdEndRenderPass(commandBuffer);
 

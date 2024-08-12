@@ -93,7 +93,7 @@ namespace Deako {
 
     namespace VulkanLoad {
 
-        void Scene(Model& model, std::string filename);
+        void Model(Ref<Deako::Model> model);
 
     } // end namespace VulkanLoad
 ///////////////////////////////////////////////////////////////////////
