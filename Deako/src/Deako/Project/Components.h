@@ -51,6 +51,8 @@ namespace Deako {
 
     struct ModelComponent
     {
+        enum Usage { NONE = 0, PROP = 1, ENVIRONMENT = 2 };
+        Usage usage{ NONE };
         Ref<Model> model = CreateRef<Model>();
 
         ModelComponent() = default;

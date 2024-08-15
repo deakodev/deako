@@ -11,7 +11,18 @@ Entities:
       Scale: [1, 1, 1]
     ModelComponent:
       Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+      Usage: 1
   - Entity: 2
+    TagComponent:
+      Tag: DamagedHelmet2
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    ModelComponent:
+      Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+      Usage: 1
+  - Entity: 3
     TagComponent:
       Tag: Skybox
     TransformComponent:
@@ -20,3 +31,4 @@ Entities:
       Scale: [1, 1, 1]
     ModelComponent:
       Path: models/Box/glTF-Embedded/Box.gltf
+      Usage: 2

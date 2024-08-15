@@ -216,6 +216,6 @@ namespace Deako {
         void Destroy();
     };
 
-    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode);
+    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, uint32_t dynamicOffset);
 
 }

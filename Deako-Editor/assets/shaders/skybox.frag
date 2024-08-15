@@ -1,20 +1,14 @@
-/* Copyright (c) 2018-2024, Sascha Willems
- *
- * SPDX-License-Identifier: MIT
- *
- */
-
 #version 450
 #extension GL_GOOGLE_include_directive : require
 
 layout (location = 0) in vec3 inUVW;
 layout (location = 0) out vec4 outColor;
 
-layout (set = 0, binding = 1) uniform UBOParams {
+layout (binding = 1) uniform UniformParams {
 	vec4 _pad0;
 	float exposure;
 	float gamma;
-} uboParams;
+} uParams;
 
 layout (binding = 2) uniform samplerCube samplerEnv;
 

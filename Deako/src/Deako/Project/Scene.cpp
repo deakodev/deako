@@ -2,7 +2,6 @@
 #include "dkpch.h"
 
 #include "Deako/Renderer/Renderer.h"
-#include "System/Vulkan/VulkanBase.h"
 
 #include "Entity.h"
 #include "Serialize.h"
@@ -39,22 +38,11 @@ namespace Deako {
 
     void Scene::Prepare()
     {
-        // auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
-        // for (auto entity : group)
-        // {
-        //     auto [transformComp, modelComp] = group.get<TransformComponent, ModelComponent>(entity);
-
-        //     VulkanBase::LoadModel(modelComp.path);
-        // }
     }
 
     void Scene::OnUpdateEditor(Camera& editorCamera)
     {
         Renderer::BeginScene();
-
-        {
-            VulkanBase::UpdateUniforms();
-        }
 
         Renderer::EndScene();
     }

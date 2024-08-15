@@ -97,7 +97,8 @@ namespace Deako {
         } textures;
 
 
-        std::unordered_map<std::string, Ref<Model>> models;
+        std::unordered_map<std::string, Ref<Model>> propModels;
+        std::unordered_map<std::string, Ref<Model>> environmentModels;
 
         struct Scene
         {
@@ -106,13 +107,28 @@ namespace Deako {
             bool animate{ true };
         } scene;
 
-        struct ShaderValuesMatrices
+        struct UniformSet
+        {
+            UniformBuffer dynamic;
+            UniformBuffer shared;
+            UniformBuffer params;
+        };
+
+        std::vector<UniformSet>            uniforms;
+
+        struct UniformDataDynamic // per-object
+        {
+            glm::mat4* model{ nullptr };
+        } uniformDataDynamic;
+
+        size_t dynamicUniformAlignment{ 0 };
+
+        struct UniformDataShared // per-scene
         {
             glm::mat4 projection{ 1.0f };
-            glm::mat4 model{ 1.0f };
             glm::mat4 view{ 1.0f };
             glm::vec3 camPos{ 0.0f };
-        } shaderValuesScene, shaderValuesSkybox;
+        } uniformDataShared;
 
         struct ShaderValuesParams
         {
@@ -131,13 +147,6 @@ namespace Deako {
             glm::vec3 rotation = glm::vec3(75.0f, -40.0f, 0.0f);
         } lightSource;
 
-        struct UniformSet
-        {
-            UniformBuffer scene;
-            UniformBuffer skybox;
-            UniformBuffer params;
-        };
-
         struct DescriptorSetLayouts
         {
             VkDescriptorSetLayout scene{ VK_NULL_HANDLE };
@@ -152,14 +161,14 @@ namespace Deako {
             VkDescriptorSet skybox;
         };
 
-        std::map<std::string, std::string> environments;
+        std::vector<DescriptorSets>        descriptorSets;
+        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
+
+        // std::map<std::string, std::string> environments;
         AllocatedBuffer                    shaderMaterialBuffer;
         VkDescriptorBufferInfo             shaderMaterialDescriptorInfo{ VK_NULL_HANDLE };
         VkDescriptorSet                    shaderMaterialDescriptorSet{ VK_NULL_HANDLE };
 
-        std::vector<UniformSet>            uniforms;
-        std::vector<DescriptorSets>        descriptorSets;
-        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
 
         Camera                             camera;
     };
@@ -179,8 +188,6 @@ namespace Deako {
         static void ViewportResize(const glm::vec2& viewportSize);
 
         static void UpdateUniforms();
-
-        static void LoadModel(const std::string& relativePath);
 
     private:
         static void CreateInstance(const char* appName);

@@ -88,14 +88,15 @@ namespace Deako {
 
         for (auto& uniform : vr->uniforms)
         {
-            VulkanBuffer::Destroy(uniform.scene.buffer);
-            VulkanBuffer::Destroy(uniform.skybox.buffer);
+            VulkanBuffer::Destroy(uniform.dynamic.buffer);
+            VulkanBuffer::Destroy(uniform.shared.buffer);
             VulkanBuffer::Destroy(uniform.params.buffer);
         }
 
         VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
-        for (auto& [tag, model] : vr->models) model->Destroy();
+        for (auto& [tag, model] : vr->propModels) model->Destroy();
+        for (auto& [tag, model] : vr->environmentModels) model->Destroy();
 
         vr->textures.lutBrdf.Destroy();
         vr->textures.irradianceCube.Destroy();
@@ -514,7 +515,7 @@ namespace Deako {
 
     void VulkanBase::SetUpAssets()
     {
-        MacUtils::ReadDirectory(vs->assetPath + "environments", "ktx", vr->environments, false);
+        // MacUtils::ReadDirectory(vs->assetPath + "environments", "ktx", vr->environments, false);
 
         vr->textures.empty.LoadFromFile(vs->assetPath + "textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
 
@@ -527,9 +528,33 @@ namespace Deako {
         {
             Ref<Scene> activeScene = Scene::Open(firstScene);
 
-            vr->models = activeScene->GetModels();
+            const Scene::Registry& registry = activeScene->GetRegistry();
 
-            for (auto& [tag, model] : vr->models)
+            auto modalEntities = registry.view<TagComponent, ModelComponent>();
+            for (auto& entity : modalEntities)
+            {
+                auto [tagComp, modelComp] = modalEntities.get<TagComponent, ModelComponent>(entity);
+
+                if (modelComp.usage == ModelComponent::Usage::PROP)
+                {
+                    vr->propModels[tagComp.tag] = modelComp.model;
+                }
+                else if (modelComp.usage == ModelComponent::Usage::ENVIRONMENT)
+                {
+                    vr->environmentModels[tagComp.tag] = modelComp.model;
+                }
+                else if (modelComp.usage == ModelComponent::Usage::NONE)
+                {
+                    DK_CORE_WARN("{0} model not assigned usage!", tagComp.tag);
+                }
+            }
+
+            for (auto& [tag, model] : vr->propModels)
+            {
+                VulkanLoad::Model(model);
+            }
+
+            for (auto& [tag, model] : vr->environmentModels)
             {
                 VulkanLoad::Model(model);
             }
@@ -541,8 +566,6 @@ namespace Deako {
 
         CreateMaterialBuffer();
 
-        // vr->scene.skybox.LoadFromFile("models/Box/glTF-Embedded/Box.gltf");
-
         LoadEnvironment("environments/papermill.ktx");
 
         GenerateBRDFLookUpTable();
@@ -550,25 +573,98 @@ namespace Deako {
 
     void VulkanBase::SetUpUniforms()
     {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(vr->physicalDevice, &deviceProperties);
+
+        // determine required alignment based on min device offset alignment
+        size_t minUniformAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
+        vr->dynamicUniformAlignment = sizeof(glm::mat4);
+
+        if (minUniformAlignment > 0)
+            vr->dynamicUniformAlignment = (vr->dynamicUniformAlignment + minUniformAlignment - 1) & ~(minUniformAlignment - 1);
+
+        size_t dynamicBufferSize = vr->propModels.size() * vr->dynamicUniformAlignment;
+
+        vr->uniformDataDynamic.model = (glm::mat4*)VulkanMemory::AlignedAlloc(dynamicBufferSize, vr->dynamicUniformAlignment);
+        DK_CORE_ASSERT(vr->uniformDataDynamic.model);
+
         VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
         vr->uniforms.resize(vr->swapchain.imageCount);
         for (auto& uniform : vr->uniforms)
         {
-            uniform.scene.buffer = VulkanBuffer::Create(sizeof(vr->shaderValuesScene), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.scene.descriptor = { uniform.scene.buffer.buffer, 0, sizeof(vr->shaderValuesScene) };
-            VkCR(vkMapMemory(vr->device, uniform.scene.buffer.memory, 0, sizeof(vr->shaderValuesScene), 0, &uniform.scene.buffer.mapped));
+            // dynamic uniform buffer object with model matrix
+            uniform.dynamic.buffer = VulkanBuffer::Create(dynamicBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+            uniform.dynamic.descriptor = { uniform.dynamic.buffer.buffer, 0, vr->dynamicUniformAlignment };
+            VkCR(vkMapMemory(vr->device, uniform.dynamic.buffer.memory, 0, dynamicBufferSize, 0, &uniform.dynamic.buffer.mapped));
 
-            uniform.skybox.buffer = VulkanBuffer::Create(sizeof(vr->shaderValuesSkybox), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.skybox.descriptor = { uniform.skybox.buffer.buffer, 0, sizeof(vr->shaderValuesSkybox) };
-            VkCR(vkMapMemory(vr->device, uniform.skybox.buffer.memory, 0, sizeof(vr->shaderValuesSkybox), 0, &uniform.skybox.buffer.mapped));
+            // shared uniform buffer object with projection and view matrix
+            uniform.shared.buffer = VulkanBuffer::Create(sizeof(vr->uniformDataShared), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.shared.descriptor = { uniform.shared.buffer.buffer, 0, sizeof(vr->uniformDataShared) };
+            VkCR(vkMapMemory(vr->device, uniform.shared.buffer.memory, 0, sizeof(vr->uniformDataShared), 0, &uniform.shared.buffer.mapped));
 
+            // shared uniform buffer object with light params
             uniform.params.buffer = VulkanBuffer::Create(sizeof(vr->shaderValuesParams), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
             uniform.params.descriptor = { uniform.params.buffer.buffer, 0, sizeof(vr->shaderValuesParams) };
             VkCR(vkMapMemory(vr->device, uniform.params.buffer.memory, 0, sizeof(vr->shaderValuesParams), 0, &uniform.params.buffer.mapped));
         }
 
         UpdateUniforms();
+    }
+
+    void VulkanBase::UpdateUniforms()
+    {
+        // shared scene
+        vr->uniformDataShared.projection = vr->camera.matrices.perspective;
+        vr->uniformDataShared.view = vr->camera.matrices.view;
+
+        glm::mat4 cv = glm::inverse(vr->camera.matrices.view);
+        vr->uniformDataShared.camPos = glm::vec3(cv[3]);
+
+        // models
+        uint32_t index = 0;
+        for (auto& [tag, model] : vr->propModels)
+        {
+            // aligned offset
+            glm::mat4* modelMatrix = (glm::mat4*)(((uint64_t)vr->uniformDataDynamic.model + (index * vr->dynamicUniformAlignment)));
+
+            glm::mat4 aabb = vr->propModels[tag]->aaBoundingBox;
+
+            float scaleX = glm::length(glm::vec3(aabb[0]));
+            float scaleY = glm::length(glm::vec3(aabb[1]));
+            float scaleZ = glm::length(glm::vec3(aabb[2]));
+            float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 2.0f;
+
+            glm::vec3 aabbMin = glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
+            glm::vec3 aabbMax = aabbMin + glm::vec3(scaleX, scaleY, scaleZ);
+            glm::vec3 centroid = (aabbMin + aabbMax) / 2.0f; // center of the models aabb
+            glm::vec3 translate = -centroid;
+
+            glm::vec3 sideBySideTranslate = glm::vec3((index * 2.0f), 0.0f, 0.0f);
+
+            static auto startTime = std::chrono::high_resolution_clock::now();
+            auto currentTime = std::chrono::high_resolution_clock::now();
+            float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+            // construct model matrix
+            *modelMatrix = glm::translate(glm::mat4(1.0f), translate + sideBySideTranslate) *
+                glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                glm::scale(glm::mat4(1.0f), glm::vec3(scaleFactor));
+
+            index++;
+        }
+
+        VulkanResources::UniformSet uniformSet = vr->uniforms[vr->currentFrame];
+        memcpy(uniformSet.dynamic.buffer.mapped, vr->uniformDataDynamic.model, vr->dynamicUniformAlignment * vr->propModels.size());
+        memcpy(uniformSet.shared.buffer.mapped, &vr->uniformDataShared, sizeof(vr->uniformDataShared));
+        memcpy(uniformSet.params.buffer.mapped, &vr->shaderValuesParams, sizeof(vr->shaderValuesParams));
+
+        // flush dynamic uniform to make changes visible to the host
+        VkMappedMemoryRange memoryRange{};
+        memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        memoryRange.memory = uniformSet.dynamic.buffer.memory;
+        memoryRange.size = vr->dynamicUniformAlignment * vr->propModels.size();
+        vkFlushMappedMemoryRanges(vr->device, 1, &memoryRange);
     }
 
     void VulkanBase::SetUpDescriptors()
@@ -581,7 +677,7 @@ namespace Deako {
         // environment samplers (radiance, irradiance, brdf lut)
         imageSamplerCount += 3;
 
-        for (auto& [tag, model] : vr->models)
+        for (auto& [tag, model] : vr->propModels)
         {
             for (auto& material : model->materials)
             {
@@ -595,6 +691,7 @@ namespace Deako {
 
         std::vector<VkDescriptorPoolSize> poolSizes = {
             { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (4 + meshCount) * vr->swapchain.imageCount },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, (4 + meshCount) * vr->swapchain.imageCount },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, imageSamplerCount * vr->swapchain.imageCount },
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 } // One SSBO for the shader material buffer
         };
@@ -603,7 +700,7 @@ namespace Deako {
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
         poolInfo.pPoolSizes = poolSizes.data();
-        poolInfo.maxSets = (2 + materialCount + meshCount) * vr->swapchain.imageCount;
+        poolInfo.maxSets = (3 + materialCount + meshCount) * vr->swapchain.imageCount;
         VkCR(vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->descriptorPool));
 
         /* DESCRIPTOR SETS */
@@ -616,6 +713,7 @@ namespace Deako {
                 { 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
                 { 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
                 { 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr },
+                { 5, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_VERTEX_BIT, nullptr },
             };
 
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
@@ -633,14 +731,14 @@ namespace Deako {
                 allocInfo.descriptorSetCount = 1;
                 VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &vr->descriptorSets[i].scene));
 
-                std::array<VkWriteDescriptorSet, 5> write{};
+                std::array<VkWriteDescriptorSet, 6> write{};
 
                 write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 write[0].descriptorCount = 1;
                 write[0].dstSet = vr->descriptorSets[i].scene;
                 write[0].dstBinding = 0;
-                write[0].pBufferInfo = &vr->uniforms[i].scene.descriptor;
+                write[0].pBufferInfo = &vr->uniforms[i].shared.descriptor;
 
                 write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -670,6 +768,14 @@ namespace Deako {
                 write[4].dstBinding = 4;
                 write[4].pImageInfo = &vr->textures.lutBrdf.GetDescriptor();
 
+                write[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                write[5].descriptorCount = 1;
+                write[5].dstSet = vr->descriptorSets[i].scene;
+                write[5].dstBinding = 5;
+                write[5].pBufferInfo = &vr->uniforms[i].dynamic.descriptor;
+
+
                 vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, NULL);
             }
         }
@@ -690,10 +796,8 @@ namespace Deako {
             VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
 
             // per-material descriptor sets
-            for (auto& [tag, model] : vr->models)
+            for (auto& [tag, model] : vr->propModels)
             {
-                if (tag == "Skybox") continue; // skip the skybox model, handled at the end
-
                 for (auto& material : model->materials)
                 {
                     VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty.GetDescriptor();
@@ -754,7 +858,7 @@ namespace Deako {
                 layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
                 VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.node));
 
-                for (auto& [tag, model] : vr->models)
+                for (auto& [tag, model] : vr->propModels)
                 {
                     for (auto& node : model->nodes) // per-node descriptor set
                         node->SetDescriptorSet();
@@ -789,39 +893,40 @@ namespace Deako {
             }
         }
 
-        // skybox (fixed set)
-        for (auto i = 0; i < vr->uniforms.size(); i++)
-        {
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = vr->descriptorPool;
-            allocInfo.pSetLayouts = &vr->descriptorSetLayouts.scene;
-            allocInfo.descriptorSetCount = 1;
-            VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &vr->descriptorSets[i].skybox));
+        {   // skybox (fixed set)
+            for (auto i = 0; i < vr->uniforms.size(); i++)
+            {
+                VkDescriptorSetAllocateInfo allocInfo{};
+                allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+                allocInfo.descriptorPool = vr->descriptorPool;
+                allocInfo.pSetLayouts = &vr->descriptorSetLayouts.scene;
+                allocInfo.descriptorSetCount = 1;
+                VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &vr->descriptorSets[i].skybox));
 
-            std::array<VkWriteDescriptorSet, 3> write{};
-            write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write[0].descriptorCount = 1;
-            write[0].dstSet = vr->descriptorSets[i].skybox;
-            write[0].dstBinding = 0;
-            write[0].pBufferInfo = &vr->uniforms[i].skybox.descriptor;
+                std::array<VkWriteDescriptorSet, 3> write{};
+                write[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                write[0].descriptorCount = 1;
+                write[0].dstSet = vr->descriptorSets[i].skybox;
+                write[0].dstBinding = 0;
+                write[0].pBufferInfo = &vr->uniforms[i].shared.descriptor;
 
-            write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write[1].descriptorCount = 1;
-            write[1].dstSet = vr->descriptorSets[i].skybox;
-            write[1].dstBinding = 1;
-            write[1].pBufferInfo = &vr->uniforms[i].params.descriptor;
+                write[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                write[1].descriptorCount = 1;
+                write[1].dstSet = vr->descriptorSets[i].skybox;
+                write[1].dstBinding = 1;
+                write[1].pBufferInfo = &vr->uniforms[i].params.descriptor;
 
-            write[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            write[2].descriptorCount = 1;
-            write[2].dstSet = vr->descriptorSets[i].skybox;
-            write[2].dstBinding = 2;
-            write[2].pImageInfo = &vr->textures.prefilteredCube.GetDescriptor();
+                write[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write[2].descriptorCount = 1;
+                write[2].dstSet = vr->descriptorSets[i].skybox;
+                write[2].dstBinding = 2;
+                write[2].pImageInfo = &vr->textures.prefilteredCube.GetDescriptor();
 
-            vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, nullptr);
+                vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, nullptr);
+            }
         }
     }
 
@@ -888,12 +993,11 @@ namespace Deako {
         dynamic.pDynamicStates = dynamicEnables.data();
         dynamic.dynamicStateCount = static_cast<uint32_t>(dynamicEnables.size());
 
-        // pipeline layout
-        const std::vector<VkDescriptorSetLayout> setLayouts = {
-            vr->descriptorSetLayouts.scene,
-            vr->descriptorSetLayouts.material,
-            vr->descriptorSetLayouts.node,
-            vr->descriptorSetLayouts.materialBuffer
+        std::vector<VkDescriptorSetLayout> setLayouts = {
+                vr->descriptorSetLayouts.scene,
+                vr->descriptorSetLayouts.material,
+                vr->descriptorSetLayouts.node,
+                vr->descriptorSetLayouts.materialBuffer,
         };
 
         VkPushConstantRange pushConstantRange{};
@@ -1172,12 +1276,7 @@ namespace Deako {
 
         VkCR(vkEndCommandBuffer(frame.commandBuffer));
 
-        // UpdateUniforms();
-
-        VulkanResources::UniformSet uniformSet = vr->uniforms[vr->currentFrame];
-        memcpy(uniformSet.scene.buffer.mapped, &vr->shaderValuesScene, sizeof(vr->shaderValuesScene));
-        memcpy(uniformSet.params.buffer.mapped, &vr->shaderValuesParams, sizeof(vr->shaderValuesParams));
-        memcpy(uniformSet.skybox.buffer.mapped, &vr->shaderValuesSkybox, sizeof(vr->shaderValuesSkybox));
+        UpdateUniforms();
 
         const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -1311,19 +1410,20 @@ namespace Deako {
         scissor.extent = { colorTarget.extent.width,  colorTarget.extent.height };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        VkDeviceSize offsets[1] = { 0 };
+        uint32_t dynamicOffset = 0;
 
         if (vs->displayBackground)
         {
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 1, &dynamicOffset);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelines["skybox"]);
-            vr->models["Skybox"]->Draw(commandBuffer);
+            vr->environmentModels["Skybox"]->Draw(commandBuffer);
         }
 
-        for (auto& [tag, model] : vr->models)
-        {
-            if (tag == "Skybox") continue; // skip the skybox model, handled above
+        VkDeviceSize offsets[1] = { 0 };
 
+        uint32_t index = 0;
+        for (auto& [tag, model] : vr->propModels)
+        {
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, offsets);
 
             if (model->indices.buffer != VK_NULL_HANDLE)
@@ -1331,16 +1431,21 @@ namespace Deako {
 
             vr->boundPipeline = VK_NULL_HANDLE;
 
+            // one dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
+            dynamicOffset = index * static_cast<uint32_t>(vr->dynamicUniformAlignment);
+
             // opaque primitives first
             for (auto node : model->nodes)
-                RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE);
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE, dynamicOffset);
             // alpha masked primitives
             for (auto node : model->nodes)
-                RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK);
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK, dynamicOffset);
             // transparent primitives
             // TODO: Correct depth sorting
             for (auto node : model->nodes)
-                RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND);
+                RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND, dynamicOffset);
+
+            index++;
         }
 
         vkCmdEndRenderingKHR(commandBuffer);
@@ -1380,48 +1485,6 @@ namespace Deako {
         imguiLayer->End(commandBuffer);
 
         vkCmdEndRenderingKHR(commandBuffer);
-    }
-
-
-    void VulkanBase::UpdateUniforms()
-    {
-        if (vr->models.size() > 0)
-        {
-            // scene
-            vr->shaderValuesScene.projection = vr->camera.matrices.perspective;
-            vr->shaderValuesScene.view = vr->camera.matrices.view;
-
-            // models
-            glm::mat4 aabb = vr->models["DamagedHelmet"]->aaBoundingBox;
-
-            float scaleX = glm::length(glm::vec3(aabb[0]));
-            float scaleY = glm::length(glm::vec3(aabb[1]));
-            float scaleZ = glm::length(glm::vec3(aabb[2]));
-            float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 5.0f;
-
-            glm::vec3 aabbMin = glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
-            glm::vec3 aabbMax = aabbMin + glm::vec3(scaleX, scaleY, scaleZ);
-            glm::vec3 centroid = (aabbMin + aabbMax) / 2.0f; // center of the models aabb
-            glm::vec3 translate = -centroid;
-
-            static auto startTime = std::chrono::high_resolution_clock::now();
-            auto currentTime = std::chrono::high_resolution_clock::now();
-            float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-            // construct model matrix
-            vr->shaderValuesScene.model = glm::translate(glm::mat4(1.0f), translate) *
-                glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                glm::scale(glm::mat4(1.0f), glm::vec3(scaleFactor));
-
-            // shader requires camera position in world space
-            glm::mat4 cv = glm::inverse(vr->camera.matrices.view);
-            vr->shaderValuesScene.camPos = glm::vec3(cv[3]);
-        }
-
-        // environment - skybox
-        vr->shaderValuesSkybox.projection = vr->camera.matrices.perspective;
-        vr->shaderValuesSkybox.view = vr->camera.matrices.view;
-        vr->shaderValuesSkybox.model = glm::mat4(glm::mat3(vr->camera.matrices.view));
     }
 
     void VulkanBase::UpdateShaderParams()
@@ -1474,18 +1537,6 @@ namespace Deako {
     void VulkanBase::ViewportResize(const glm::vec2& viewportSize)
     {
         vr->camera.updateAspectRatio((float)viewportSize.x / (float)viewportSize.y);
-    }
-
-    void VulkanBase::LoadModel(const std::string& relativePath)
-    {
-        // vr->scene.models.resize(vr->swapchain.imageCount);
-        // for (auto& model : vr->scene.models)
-        // {
-        //     VulkanLoad::Scene(model, relativePath);
-        // }
-
-        // CreateMaterialBuffer();
-        // SetUpDescriptors();
     }
 
 }

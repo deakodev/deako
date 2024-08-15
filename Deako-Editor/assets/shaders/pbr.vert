@@ -14,13 +14,17 @@ layout (location = 4) in uvec4 inJoint0;
 layout (location = 5) in vec4 inWeight0;
 layout (location = 6) in vec4 inColor0;
 
-layout (set = 0, binding = 0) uniform UBO 
+layout (set = 0, binding = 0) uniform UniformDataShared
 {
 	mat4 projection;
-	mat4 model;
 	mat4 view;
 	vec3 camPos;
-} ubo;
+} uShared;
+
+layout (set = 0, binding = 5) uniform UniformDataDynamic
+{
+	mat4 model;
+} uDynamic;
 
 #define MAX_NUM_JOINTS 128
 
@@ -49,15 +53,15 @@ void main()
 			inWeight0.z * node.jointMatrix[inJoint0.z] +
 			inWeight0.w * node.jointMatrix[inJoint0.w];
 
-		locPos = ubo.model * node.matrix * skinMat * vec4(inPos, 1.0);
-		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix * skinMat))) * inNormal);
+		locPos = uDynamic.model * node.matrix * skinMat * vec4(inPos, 1.0);
+		outNormal = normalize(transpose(inverse(mat3(uDynamic.model * node.matrix * skinMat))) * inNormal);
 	} else {
-		locPos = ubo.model * node.matrix * vec4(inPos, 1.0);
-		outNormal = normalize(transpose(inverse(mat3(ubo.model * node.matrix))) * inNormal);
+		locPos = uDynamic.model * node.matrix * vec4(inPos, 1.0);
+		outNormal = normalize(transpose(inverse(mat3(uDynamic.model * node.matrix))) * inNormal);
 	}
 	locPos.y = -locPos.y;
 	outWorldPos = locPos.xyz / locPos.w;
 	outUV0 = inUV0;
 	outUV1 = inUV1;
-	gl_Position =  ubo.projection * ubo.view * vec4(outWorldPos, 1.0);
+	gl_Position =  uShared.projection * uShared.view * vec4(outWorldPos, 1.0);
 }

@@ -9,6 +9,17 @@ Entities:
       Scale: [1, 1, 1]
     ModelComponent:
       Path: models/Box/glTF-Embedded/Box.gltf
+      Usage: 2
+  - Entity: 1234567890
+    TagComponent:
+      Tag: DamagedHelmet2
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    ModelComponent:
+      Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+      Usage: 1
   - Entity: 1234567890
     TagComponent:
       Tag: DamagedHelmet
@@ -18,3 +29,4 @@ Entities:
       Scale: [1, 1, 1]
     ModelComponent:
       Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+      Usage: 1

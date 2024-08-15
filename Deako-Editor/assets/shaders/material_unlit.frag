@@ -15,14 +15,15 @@ layout (location = 4) in vec4 inColor0;
 
 // Scene bindings
 
-layout (set = 0, binding = 0) uniform UBO {
+layout (set = 0, binding = 0) uniform UniformDataShared 
+{
 	mat4 projection;
-	mat4 model;
 	mat4 view;
 	vec3 camPos;
-} ubo;
+} uShared;
 
-layout (set = 0, binding = 1) uniform UBOParams {
+layout (set = 0, binding = 1) uniform UniformParams 
+{
 	vec4 lightDir;
 	float exposure;
 	float gamma;
@@ -30,7 +31,7 @@ layout (set = 0, binding = 1) uniform UBOParams {
 	float scaleIBLAmbient;
 	float debugViewInputs;
 	float debugViewEquation;
-} uboParams;
+} uParams;
 
 layout (set = 0, binding = 2) uniform samplerCube samplerIrradiance;
 layout (set = 0, binding = 3) uniform samplerCube prefilteredMap;

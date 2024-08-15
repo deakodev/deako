@@ -22,6 +22,8 @@ namespace Deako {
     public:
         Scene(const std::filesystem::path& path);
 
+        using Registry = entt::registry;
+
         static Ref<Scene> Open(const std::string& filename);
         bool Save();
 
@@ -38,14 +40,14 @@ namespace Deako {
         void SetDetails(SceneDetails details) { m_Details = details; }
         const SceneDetails& GetDetails() { return m_Details; }
 
-        const entt::registry& GetRegistry() { return m_Registry; }
+        const Registry& GetRegistry() { return m_Registry; }
 
     private:
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
 
     private:
-        entt::registry m_Registry;
+        Registry m_Registry;
         SceneDetails m_Details;
 
         float m_ViewportWidth = 0.0f;

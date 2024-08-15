@@ -12,7 +12,7 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode)
+    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, uint32_t dynamicOffset)
     {
         if (node->mesh)
         {   // Render mesh primitives
@@ -46,7 +46,7 @@ namespace Deako {
                         node->mesh->uniform.descriptorSet,
                         vr->shaderMaterialDescriptorSet
                     };
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, NULL);
+                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
 
                     // pass material index for this primitive and vb address using a push constant, shader uses this to index into the material buffer
                     vkCmdPushConstants(commandBuffer, vr->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &primitive->material.index);
@@ -61,7 +61,7 @@ namespace Deako {
         }
 
         for (auto child : node->children)
-            RenderNode(child, commandBuffer, alphaMode);
+            RenderNode(child, commandBuffer, alphaMode, dynamicOffset);
     }
 
     void Model::DrawNode(Node* node, VkCommandBuffer commandBuffer)
