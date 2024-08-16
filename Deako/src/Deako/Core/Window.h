@@ -2,7 +2,7 @@
 
 #include "dkpch.h"
 #include "Deako/Core/Base.h"
-#include "Deako/Events/Event.h"
+#include "Deako/Event/Event.h"
 
 namespace Deako {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-// #include "System/Vulkan/VulkanBuffer.h"
+// #include "Deako/Renderer/Vulkan/VulkanBuffer.h"
 
 #include <glm/glm.hpp>
 
@@ -12,13 +12,7 @@ namespace Deako {
 
     struct RendererData
     {
-        // uint32_t batchVerticesCount;
-        // uint32_t batchIndicesCount;
 
-        // std::vector<InstanceData> modelInstanceData;
-        // Ref<InstanceBuffer> modelInstanceBuffer;
-        // Ref<VertexBuffer> modelVertexBuffer;
-        // Ref<IndexBuffer> modelIndexBuffer;
     };
 
     class Renderer
@@ -31,12 +25,6 @@ namespace Deako {
         static void BeginScene(const glm::mat4& viewProjection);
         static void EndScene();
         static void NextBatch();
-
-        // static void PrepareModelInstance(const glm::vec3& position, const glm::vec3& rotation, float scale, uint32_t textureIndex);
-
-        // static const Ref<VertexBuffer>& GetModelVertexBuffer() { return s_Data.modelVertexBuffer; }
-        // static const Ref<IndexBuffer>& GetModelIndexBuffer() { return s_Data.modelIndexBuffer; }
-        // static const Ref<InstanceBuffer>& GetModelInstanceBuffer() { return s_Data.modelInstanceBuffer; }
 
     private:
         static void Flush();

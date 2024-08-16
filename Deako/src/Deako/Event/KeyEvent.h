@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Deako/Events/Event.h"
-#include "Deako/Events/KeyCodes.h"
+#include "Deako/Event/Event.h"
+#include "Deako/Event/KeyCodes.h"
 
 namespace Deako {
 

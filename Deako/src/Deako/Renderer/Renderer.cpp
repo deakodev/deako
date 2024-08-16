@@ -1,11 +1,9 @@
 #include "Renderer.h"
 #include "dkpch.h"
 
-#include "System/Vulkan/VulkanBase.h"
+#include "Deako/Renderer/Vulkan/VulkanBase.h"
 
 namespace Deako {
-
-    uint16_t INSTANCE_COUNT = 0;
 
     RendererData Renderer::s_Data;
 

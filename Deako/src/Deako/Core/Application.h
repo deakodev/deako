@@ -4,8 +4,8 @@
 #include "Deako/Core/Window.h"
 #include "Deako/Core/LayerStack.h"
 
-#include "Deako/Events/Event.h"
-#include "Deako/Events/WindowEvent.h"
+#include "Deako/Event/Event.h"
+#include "Deako/Event/WindowEvent.h"
 #include "Deako/ImGui/ImGuiLayer.h"
 
 int main(int argc, char** argv);

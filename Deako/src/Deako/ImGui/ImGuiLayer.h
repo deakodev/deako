@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Deako/Core/Layer.h"
-#include "Deako/Events/KeyEvent.h"
-#include "Deako/Events/MouseEvent.h"
+#include "Deako/Event/KeyEvent.h"
+#include "Deako/Event/MouseEvent.h"
 
-// #include "System/Vulkan/VulkanBase.h"
+// #include "Deako/Renderer/Vulkan/VulkanBase.h"
 
 #include <vulkan/vulkan.h>
 

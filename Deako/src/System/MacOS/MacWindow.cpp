@@ -1,11 +1,11 @@
 #include "MacWindow.h"
 #include "dkpch.h"
 
-#include "Deako/Events/WindowEvent.h"
-#include "Deako/Events/MouseEvent.h"
-#include "Deako/Events/KeyEvent.h"
+#include "Deako/Event/WindowEvent.h"
+#include "Deako/Event/MouseEvent.h"
+#include "Deako/Event/KeyEvent.h"
 
-// #include "System/Vulkan/VulkanBase.h"
+// #include "Deako/Renderer/Vulkan/VulkanBase.h"
 
 #include <vulkan/vulkan.h>
 

@@ -5,7 +5,7 @@
 #include "System/MacOS/MacUtils.h"
 
 #include "Deako/Project/Project.h"
-#include "Deako/Project/Scene.h"
+#include "Deako/Scene/Scene.h"
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -559,10 +559,10 @@ namespace Deako {
                 VulkanLoad::Model(model);
             }
 
-            activeScene->Save();
+            // activeScene->Save();
         }
 
-        activeProject->Save();
+        // activeProject->Save();
 
         CreateMaterialBuffer();
 

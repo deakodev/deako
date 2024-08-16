@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dkpch.h"
-#include "Deako/Events/Event.h"
+#include "Deako/Event/Event.h"
 
 namespace Deako {
 

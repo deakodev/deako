@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Deako/Core/Base.h"
-#include "Deako/Events/Event.h"
+#include "Deako/Event/Event.h"
 
 #include <imgui.h>
 

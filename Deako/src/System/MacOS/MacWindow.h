@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Deako/Core/Window.h"
-#include "Deako/Events/Event.h"
+#include "Deako/Event/Event.h"
 
 #include <GLFW/glfw3.h>
 

@@ -1,7 +1,7 @@
 #include "Application.h"
 #include "dkpch.h"
 
-#include "Deako/Events/WindowEvent.h"
+#include "Deako/Event/WindowEvent.h"
 #include "Deako/Renderer/Renderer.h"
 
 namespace Deako

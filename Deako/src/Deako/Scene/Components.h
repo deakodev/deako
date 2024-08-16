@@ -1,6 +1,6 @@
 #pragma once
 
-#include "System/Vulkan/VulkanModel.h"
+#include "Deako/Renderer/Vulkan/VulkanModel.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
