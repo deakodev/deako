@@ -2,6 +2,7 @@
 
 #include "VulkanTypes.h"
 #include "VulkanTexture.h"
+#include "Deako/Asset/Asset.h"
 
 #include <vulkan/vulkan.h>
 #define GLM_FORCE_RADIANS
@@ -33,7 +34,7 @@ namespace Deako {
         float emissiveStrength;
     };
 
-    struct Material
+    struct Material : public Asset
     {
         enum AlphaMode { ALPHAMODE_OPAQUE, ALPHAMODE_MASK, ALPHAMODE_BLEND };
         AlphaMode alphaMode{ ALPHAMODE_OPAQUE };
@@ -50,11 +51,11 @@ namespace Deako {
         float emissiveStrength{ 1.0f };
         VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
 
-        Texture2D* baseColorTexture;
-        Texture2D* metallicRoughnessTexture;
-        Texture2D* normalTexture;
-        Texture2D* occlusionTexture;
-        Texture2D* emissiveTexture;
+        Ref<Texture2D> baseColorTexture;
+        Ref<Texture2D> metallicRoughnessTexture;
+        Ref<Texture2D> normalTexture;
+        Ref<Texture2D> occlusionTexture;
+        Ref<Texture2D> emissiveTexture;
 
         struct TexCoordSets
         {
@@ -68,8 +69,8 @@ namespace Deako {
 
         struct Extension
         {
-            Texture2D* specularGlossinessTexture;
-            Texture2D* diffuseTexture;
+            Ref<Texture2D> specularGlossinessTexture;
+            Ref<Texture2D> diffuseTexture;
             glm::vec4 diffuseFactor{ glm::vec4(1.0f) };
             glm::vec3 specularFactor{ glm::vec3(0.0f) };
         } extension;
@@ -81,7 +82,10 @@ namespace Deako {
         } pbrWorkflows;
 
         Material() {}
-        Material(tinygltf::Material& mat, std::vector<Texture2D>& textures);
+        Material(tinygltf::Material& mat, std::vector<Ref<Texture2D>>& textures);
+
+        static AssetType GetStaticType() { return AssetType::Material; }
+        virtual AssetType GetType() const override { return GetStaticType(); }
     };
 
     void CreateMaterialBuffer();

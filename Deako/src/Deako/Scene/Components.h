@@ -41,12 +41,12 @@ namespace Deako {
 
     struct TextureComponent
     {
-        // Ref<Texture> texture;
+        AssetHandle texture;
 
-        // TextureComponent() = default;
-        // TextureComponent(const TextureComponent&) = default;
-        // TextureComponent(const Ref<Texture>& texture)
-        //     : texture(texture) {}
+        TextureComponent() = default;
+        TextureComponent(const TextureComponent&) = default;
+        TextureComponent(AssetHandle texture)
+            : texture(texture) {}
     };
 
     struct ModelComponent

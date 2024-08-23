@@ -1,0 +1,34 @@
+AssetRegistry:
+  - Handle: 3321611327633481581
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 3453370926546967924
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 3804121329707625772
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 4412809472369287337
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 4822034886265235828
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 5240783931466424764
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 7402924575749347785
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 10351970906720720264
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 12585814335826232407
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 13227745553296856396
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 16462480624137074925
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VulkanTypes.h"
+#include "Deako/Asset/Asset.h"
 
 #include <vulkan/vulkan.h>
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -20,48 +21,64 @@ namespace Deako {
         void SetWrapModes(int32_t wrapS, int32_t wrapT);
     };
 
-    class Texture
+    struct TextureDetails
     {
-    public:
+        VkFormat format;
+        VkImageUsageFlags usage;
+        VkImageLayout layout;
+
+        uint32_t width{ 0 };
+        uint32_t height{ 0 };
+        uint32_t mipLevels{ 1 };
+
+        std::vector<uint32_t> mipLevelWidths;
+        std::vector<uint32_t> mipLevelHeights;
+        std::vector<uint32_t> mipLevelOffsets;
+    };
+
+    struct Texture : public Asset
+    {
+        TextureDetails details;
+
+        AllocatedImage image;
+        VkSampler sampler;
+        VkDescriptorImageInfo descriptor;
+        uint32_t mipLevels; // TODO: remove
+
+        Texture() {}
+        Texture(TextureDetails details);
+
         void UpdateDescriptor();
         void Destroy();
-
-        AllocatedImage& GetImage() { return m_Image; }
-        VkSampler& GetSampler() { return m_Sampler; }
-        VkDescriptorImageInfo& GetDescriptor() { return m_Descriptor; }
-
-    protected:
-        AllocatedImage m_Image;
-        VkSampler m_Sampler;
-        VkImageLayout m_ImageLayout;
-        VkDescriptorImageInfo m_Descriptor;
-        uint32_t m_MipLevels;
-        uint32_t m_LayerCount;
     };
 
-    class Texture2D : public Texture
+    struct Texture2D : public Texture
     {
-    public:
-        void LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags =
-            VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        Texture2D() {}
+        Texture2D(const TextureDetails& details, Buffer buffer = Buffer());
 
         void LoadFromGLTFImage(tinygltf::Image& gltfimage, std::filesystem::path path, TextureSampler textureSampler);
+
+        static AssetType GetStaticType() { return AssetType::Texture2D; }
+        virtual AssetType GetType() const override { return GetStaticType(); }
     };
 
-    class TextureCubeMap : public Texture
+    struct TextureCubeMap : public Texture
     {
-    public:
-        enum Target { NONE = 0, IRRADIANCE = 1, PREFILTERED = 2 };
+        enum Target { NONE = 0, IRRADIANCE = 1, PREFILTERED = 2 } target;
 
-        TextureCubeMap(Target target) : m_Target(target) {}
+        TextureCubeMap(const TextureDetails& details, Buffer buffer = Buffer());
+
+        TextureCubeMap(Target target) : target(target) {}
 
         void LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags =
-            VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         void GenerateCubeMap();
 
-    private:
-        Target m_Target;
+        static AssetType GetStaticType() { return AssetType::TextureCubeMap; }
+        virtual AssetType GetType() const override { return GetStaticType(); }
+
     };
 
     void LoadEnvironment(std::filesystem::path path);

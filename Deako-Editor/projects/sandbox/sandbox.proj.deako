@@ -1,4 +1,4 @@
 Project:
   Name: SandboxProject
-  Filename: sandbox.proj.deako
-  FirstScene: sandbox/scenes/sandbox.scene.deako
+  AssetDirectory: sandbox/assets
+  AssetRegistryPath: asset.registry.deako

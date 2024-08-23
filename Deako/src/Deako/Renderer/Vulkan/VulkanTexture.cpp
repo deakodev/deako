@@ -12,87 +12,86 @@ namespace Deako {
 
     void LoadEnvironment(std::filesystem::path path)
     {
-        DK_CORE_INFO("Loading Environment <{0}>", path.filename().string());
+        // DK_CORE_INFO("Loading Environment <{0}>", path.filename().string());
 
-        if (vr->textures.environmentCube.GetImage().image)
-        {
-            vr->textures.environmentCube.Destroy();
-            vr->textures.irradianceCube.Destroy();
-            vr->textures.prefilteredCube.Destroy();
-        }
+        // if (vr->textures.environmentCube.image.image)
+        // {
+        //     vr->textures.environmentCube.Destroy();
+        //     vr->textures.irradianceCube.Destroy();
+        //     vr->textures.prefilteredCube.Destroy();
+        // }
 
-        vr->textures.environmentCube.LoadFromFile(path, VK_FORMAT_R16G16B16A16_SFLOAT);
-        vr->textures.irradianceCube.GenerateCubeMap();
-        vr->textures.prefilteredCube.GenerateCubeMap();
+        // vr->textures.environmentCube.LoadFromFile(path, VK_FORMAT_R16G16B16A16_SFLOAT);
+
+
+        // vr->textures.irradianceCube.GenerateCubeMap();
+        // vr->textures.prefilteredCube.GenerateCubeMap();
+    }
+
+    Texture::Texture(TextureDetails details)
+        : details(details)
+    {
     }
 
     void Texture::UpdateDescriptor()
     {
-        m_Descriptor.sampler = m_Sampler;
-        m_Descriptor.imageView = m_Image.view;
-        m_Descriptor.imageLayout = m_ImageLayout;
+        descriptor.sampler = sampler;
+        descriptor.imageView = image.view;
+        descriptor.imageLayout = details.layout;
     }
 
     void Texture::Destroy()
     {
-        if (m_Sampler) vkDestroySampler(vr->device, m_Sampler, nullptr);
-        VulkanImage::Destroy(m_Image);
+        if (sampler) vkDestroySampler(vr->device, sampler, nullptr);
+        VulkanImage::Destroy(image);
     }
 
-    void Texture2D::LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
+    Texture2D::Texture2D(const TextureDetails& details, Buffer buffer)
+        : Texture(details)
     {
-        DK_CORE_INFO("Loading Texture2D <{0}>", path.filename().string());
-
-        gli::texture2d texture(gli::load(path.string()));
-        DK_CORE_ASSERT(!texture.empty(), "Unable to load texture from file!");
-
-        uint32_t width = static_cast<uint32_t>(texture[0].extent().x);
-        uint32_t height = static_cast<uint32_t>(texture[0].extent().y);
-        m_ImageLayout = imageLayout;
-        m_MipLevels = static_cast<uint32_t>(texture.levels());
+        if (!buffer)
+            DK_CORE_ERROR("Texture buffer empty. Unable to create Texture2D!");
 
         // create host-visible staging buffer that contains the raw image data
-        AllocatedBuffer staging =
-            VulkanBuffer::Create(texture.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        AllocatedBuffer staging = VulkanBuffer::Create(buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         // copy texture data into staging buffer
         VkCR(vkMapMemory(vr->device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
-        memcpy(staging.mapped, texture.data(), texture.size());
+        memcpy(staging.mapped, buffer.data, buffer.size);
         vkUnmapMemory(vr->device, staging.memory);
 
         // create optimal tiled target image
-        m_Image =
-            VulkanImage::Create({ width, height, 1 }, format, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags | VK_IMAGE_USAGE_TRANSFER_DST_BIT, m_MipLevels);
+        image =
+            VulkanImage::Create({ details.width, details.height, 1 }, details.format, VK_SAMPLE_COUNT_1_BIT,
+                details.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT, details.mipLevels);
 
         // setup buffer copy regions for each mip level
         std::vector<VkBufferImageCopy> copyRegions;
-        uint32_t offset = 0;
-
-        for (uint32_t i = 0; i < m_MipLevels; i++)
+        for (uint32_t i = 0; i < details.mipLevels; i++)
         {
             VkBufferImageCopy copyRegion = {};
             copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             copyRegion.imageSubresource.mipLevel = i;
             copyRegion.imageSubresource.baseArrayLayer = 0;
             copyRegion.imageSubresource.layerCount = 1;
-            copyRegion.imageExtent.width = static_cast<uint32_t>(texture[i].extent().x);
-            copyRegion.imageExtent.height = static_cast<uint32_t>(texture[i].extent().y);
+            copyRegion.imageExtent.width = details.mipLevelWidths[i];
+            copyRegion.imageExtent.height = details.mipLevelHeights[i];
             copyRegion.imageExtent.depth = 1;
-            copyRegion.bufferOffset = offset;
+            copyRegion.bufferOffset = details.mipLevelOffsets[i];
 
             copyRegions.push_back(copyRegion);
-            offset += static_cast<uint32_t>(texture[i].size());
         }
 
         VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-        VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VulkanImage::Transition(commandBuffer, image.image, details.format, details.mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         // copy mip levels from staging buffer
-        vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        vkCmdCopyBufferToImage(commandBuffer, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
 
-        VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_ImageLayout);
+        VulkanImage::Transition(commandBuffer, image.image, details.format, details.mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, details.layout);
 
         VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
@@ -113,11 +112,11 @@ namespace Deako {
         samplerInfo.mipLodBias = 0.0f;
         samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
         samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = static_cast<float>(m_MipLevels);
+        samplerInfo.maxLod = static_cast<float>(details.mipLevels);
         samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &m_Sampler));
+        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &sampler));
 
         UpdateDescriptor();
     }
@@ -132,7 +131,7 @@ namespace Deako {
                 isKtx2 = true;
         }
 
-        m_Image.format = VK_FORMAT_R8G8B8A8_UNORM;
+        image.format = VK_FORMAT_R8G8B8A8_UNORM;
 
         if (isKtx2)
         {  // image is KTX2 using basis universal compression, needs to be loaded from disk and will be transcoded to a native GPU format
@@ -170,14 +169,14 @@ namespace Deako {
                 if (FormatSupported(VK_FORMAT_BC7_UNORM_BLOCK))
                 {
                     targetFormat = basist::transcoder_texture_format::cTFBC7_RGBA;
-                    m_Image.format = VK_FORMAT_BC7_UNORM_BLOCK;
+                    image.format = VK_FORMAT_BC7_UNORM_BLOCK;
                 }
                 else
                 {
                     if (FormatSupported(VK_FORMAT_BC3_SRGB_BLOCK))
                     {
                         targetFormat = basist::transcoder_texture_format::cTFBC3_RGBA;
-                        m_Image.format = VK_FORMAT_BC3_SRGB_BLOCK;
+                        image.format = VK_FORMAT_BC3_SRGB_BLOCK;
                     }
                 }
             }
@@ -187,7 +186,7 @@ namespace Deako {
                 if (FormatSupported(VK_FORMAT_ASTC_4x4_SRGB_BLOCK))
                 {
                     targetFormat = basist::transcoder_texture_format::cTFASTC_4x4_RGBA;
-                    m_Image.format = VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
+                    image.format = VK_FORMAT_ASTC_4x4_SRGB_BLOCK;
                 }
             }
 
@@ -197,7 +196,7 @@ namespace Deako {
                 if (FormatSupported(VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK))
                 {
                     targetFormat = basist::transcoder_texture_format::cTFETC2_RGBA;
-                    m_Image.format = VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
+                    image.format = VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
                 }
             }
             // TODO: PowerVR texture compression support needs to be checked via an extension (VK_IMG_FORMAT_PVRTC_EXTENSION_NAME)
@@ -205,22 +204,22 @@ namespace Deako {
             const bool targetFormatIsUncompressed = basist::basis_transcoder_format_is_uncompressed(targetFormat);
 
             std::vector<basist::ktx2_image_level_info> levelInfos(ktxTranscoder.get_levels());
-            m_MipLevels = ktxTranscoder.get_levels();
+            mipLevels = ktxTranscoder.get_levels();
 
             // query image level information that we need later on for several calculations
             // we only support 2D images (no cube maps or layered images)
-            for (uint32_t i = 0; i < m_MipLevels; i++)
+            for (uint32_t i = 0; i < mipLevels; i++)
                 ktxTranscoder.get_image_level_info(levelInfos[i], i, 0, 0);
 
             uint32_t width = levelInfos[0].m_orig_width;;
             uint32_t height = levelInfos[0].m_orig_height;
-            m_Image.extent = { width, height, 1 };
+            image.extent = { width, height, 1 };
 
             // create one staging buffer large enough to hold all uncompressed image levels
             const uint32_t bytesPerBlockOrPixel = basist::basis_get_bytes_per_block_or_pixel(targetFormat);
             uint32_t numBlocksOrPixels = 0;
             VkDeviceSize totalBufferSize = 0;
-            for (uint32_t i = 0; i < m_MipLevels; i++)
+            for (uint32_t i = 0; i < mipLevels; i++)
             {   // size calculations differ for compressed/uncompressed formats
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
                 totalBufferSize += numBlocksOrPixels * bytesPerBlockOrPixel;
@@ -240,7 +239,7 @@ namespace Deako {
                 throw std::runtime_error("Could not start transcoding for image file " + path.string());
 
             // transcode all mip levels into the staging buffer
-            for (uint32_t i = 0; i < m_MipLevels; i++)
+            for (uint32_t i = 0; i < mipLevels; i++)
             {
                 // Size calculations differ for compressed/uncompressed formats
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
@@ -254,16 +253,16 @@ namespace Deako {
             memcpy(staging.mapped, buffer, totalBufferSize);
 
             // create optimal tiled target image
-            m_Image =
-                VulkanImage::Create(m_Image.extent, m_Image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_MipLevels);
+            image =
+                VulkanImage::Create(image.extent, image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, mipLevels);
 
             VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             // transcode and copy all image levels
             VkDeviceSize bufferOffset = 0;
-            for (uint32_t i = 0; i < m_MipLevels; i++)
+            for (uint32_t i = 0; i < mipLevels; i++)
             {   // size calculations differ for compressed/uncompressed formats
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
                 uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
@@ -278,12 +277,12 @@ namespace Deako {
                 copyRegion.imageExtent.depth = 1;
                 copyRegion.bufferOffset = bufferOffset;
 
-                vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+                vkCmdCopyBufferToImage(commandBuffer, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
                 bufferOffset += outputSize;
             }
 
-            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
             VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
@@ -322,11 +321,11 @@ namespace Deako {
 
             uint32_t width = gltfimage.width;
             uint32_t height = static_cast<uint32_t>(gltfimage.height);
-            m_Image.extent = { width, height, 1 };
-            m_MipLevels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1.0);
+            image.extent = { width, height, 1 };
+            mipLevels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1.0);
 
             VkFormatProperties formatProperties;
-            vkGetPhysicalDeviceFormatProperties(vr->physicalDevice, m_Image.format, &formatProperties);
+            vkGetPhysicalDeviceFormatProperties(vr->physicalDevice, image.format, &formatProperties);
             DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT);
             DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT);
 
@@ -341,23 +340,23 @@ namespace Deako {
             if (deleteBuffer) delete[] buffer;
 
             // create optimal tiled target image
-            m_Image =
-                VulkanImage::Create(m_Image.extent, m_Image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_MipLevels);
+            image =
+                VulkanImage::Create(image.extent, image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, mipLevels);
 
             VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             VkBufferImageCopy copyRegion = {};
             copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             copyRegion.imageSubresource.mipLevel = 0;
             copyRegion.imageSubresource.baseArrayLayer = 0;
             copyRegion.imageSubresource.layerCount = 1;
-            copyRegion.imageExtent = m_Image.extent;
+            copyRegion.imageExtent = image.extent;
 
-            vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+            vkCmdCopyBufferToImage(commandBuffer, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-            VulkanImage::Transition(commandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
             VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
@@ -366,20 +365,20 @@ namespace Deako {
             // generate the mip chain (glTF uses jpg and png, so we need to create this manually)
             VkCommandBuffer blitCommandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
-            for (uint32_t i = 1; i < m_MipLevels; i++)
+            for (uint32_t i = 1; i < mipLevels; i++)
             {
                 VkImageBlit imageBlit = {};
                 imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 imageBlit.srcSubresource.layerCount = 1;
                 imageBlit.srcSubresource.mipLevel = i - 1;
-                imageBlit.srcOffsets[1].x = int32_t(m_Image.extent.width >> (i - 1));
-                imageBlit.srcOffsets[1].y = int32_t(m_Image.extent.height >> (i - 1));
+                imageBlit.srcOffsets[1].x = int32_t(image.extent.width >> (i - 1));
+                imageBlit.srcOffsets[1].y = int32_t(image.extent.height >> (i - 1));
                 imageBlit.srcOffsets[1].z = 1;
                 imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 imageBlit.dstSubresource.layerCount = 1;
                 imageBlit.dstSubresource.mipLevel = i;
-                imageBlit.dstOffsets[1].x = int32_t(m_Image.extent.width >> i);
-                imageBlit.dstOffsets[1].y = int32_t(m_Image.extent.height >> i);
+                imageBlit.dstOffsets[1].x = int32_t(image.extent.width >> i);
+                imageBlit.dstOffsets[1].y = int32_t(image.extent.height >> i);
                 imageBlit.dstOffsets[1].z = 1;
 
                 VkImageSubresourceRange mipSubRange = {};
@@ -395,12 +394,12 @@ namespace Deako {
                     imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                     imageBarrier.srcAccessMask = 0;
                     imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                    imageBarrier.image = m_Image.image;
+                    imageBarrier.image = image.image;
                     imageBarrier.subresourceRange = mipSubRange;
                     vkCmdPipelineBarrier(blitCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
                 }
 
-                vkCmdBlitImage(blitCommandBuffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+                vkCmdBlitImage(blitCommandBuffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
                 {
                     VkImageMemoryBarrier imageBarrier = {};
@@ -409,18 +408,18 @@ namespace Deako {
                     imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
                     imageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                     imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                    imageBarrier.image = m_Image.image;
+                    imageBarrier.image = image.image;
                     imageBarrier.subresourceRange = mipSubRange;
                     vkCmdPipelineBarrier(blitCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
                 }
             }
 
-            VulkanImage::Transition(blitCommandBuffer, m_Image.image, m_Image.format, m_MipLevels, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VulkanImage::Transition(blitCommandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, blitCommandBuffer);
         }
 
-        m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        details.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkSamplerCreateInfo samplerInfo = {};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -434,86 +433,74 @@ namespace Deako {
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         samplerInfo.maxAnisotropy = 1.0;
         samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.maxLod = (float)m_MipLevels;
+        samplerInfo.maxLod = (float)mipLevels;
         samplerInfo.maxAnisotropy = 8.0f;
         samplerInfo.anisotropyEnable = VK_TRUE;
-        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &m_Sampler));
+        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &sampler));
 
         UpdateDescriptor();
     }
 
-    void TextureCubeMap::LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
+    TextureCubeMap::TextureCubeMap(const TextureDetails& details, Buffer buffer)
+        : Texture(details)
     {
-        DK_CORE_INFO("Loading TextureCube <{0}>", path.filename().string());
-
-        std::filesystem::path fullPath = vs->assetPath + path.string();
-
-        gli::texture_cube textureCube(gli::load(fullPath.c_str()));
-        DK_CORE_ASSERT(!textureCube.empty(), "Unable to load texture cube from file!");
-
-        uint32_t width = static_cast<uint32_t>(textureCube.extent().x);
-        uint32_t height = static_cast<uint32_t>(textureCube.extent().y);
-        m_Image.extent = { width, height, 1 };
-        m_Image.format = format;
-        m_ImageLayout = imageLayout;
-        m_MipLevels = static_cast<uint32_t>(textureCube.levels());
+        if (!buffer)
+            DK_CORE_ERROR("Texture buffer empty. Unable to create TextureCubeMap!");
 
         // create host-visible staging buffer that contains the raw image data
         AllocatedBuffer staging =
-            VulkanBuffer::Create(textureCube.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            VulkanBuffer::Create(buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         // copy texture data into staging buffer
         VkCR(vkMapMemory(vr->device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
-        memcpy(staging.mapped, textureCube.data(), textureCube.size());
+        memcpy(staging.mapped, buffer.data, buffer.size);
         vkUnmapMemory(vr->device, staging.memory);
 
         // create optimal tiled target image
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.format = m_Image.format;
-        imageInfo.mipLevels = m_MipLevels;
+        imageInfo.format = details.format;
+        imageInfo.mipLevels = details.mipLevels;
         imageInfo.arrayLayers = 6;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.extent = m_Image.extent;
-        imageInfo.usage = imageUsageFlags | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageInfo.extent = { details.width, details.height, 1 };
+        imageInfo.usage = details.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-        VkCR(vkCreateImage(vr->device, &imageInfo, nullptr, &m_Image.image));
+        VkCR(vkCreateImage(vr->device, &imageInfo, nullptr, &image.image));
 
         VkMemoryRequirements memReqs;
-        vkGetImageMemoryRequirements(vr->device, m_Image.image, &memReqs);
+        vkGetImageMemoryRequirements(vr->device, image.image, &memReqs);
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memReqs.size;
         allocInfo.memoryTypeIndex = VulkanDevice::GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        VkCR(vkAllocateMemory(vr->device, &allocInfo, nullptr, &m_Image.memory));
-        VkCR(vkBindImageMemory(vr->device, m_Image.image, m_Image.memory, 0));
+        VkCR(vkAllocateMemory(vr->device, &allocInfo, nullptr, &image.memory));
+        VkCR(vkBindImageMemory(vr->device, image.image, image.memory, 0));
 
         // setup buffer copy regions for each mip level
         std::vector<VkBufferImageCopy> copyRegions;
-        uint32_t offset = 0;
-
         for (uint32_t face = 0; face < 6; face++)
         {
-            for (uint32_t level = 0; level < m_MipLevels; level++)
+            for (uint32_t level = 0; level < details.mipLevels; level++)
             {
+                uint32_t index = face * mipLevels + level;
+
                 VkBufferImageCopy copyRegion = {};
                 copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 copyRegion.imageSubresource.mipLevel = level;
                 copyRegion.imageSubresource.baseArrayLayer = face;
                 copyRegion.imageSubresource.layerCount = 1;
-                copyRegion.imageExtent.width = static_cast<uint32_t>(textureCube[face][level].extent().x);
-                copyRegion.imageExtent.height = static_cast<uint32_t>(textureCube[face][level].extent().y);
+                copyRegion.imageExtent.width = details.mipLevelWidths[index];
+                copyRegion.imageExtent.height = details.mipLevelHeights[index];
                 copyRegion.imageExtent.depth = 1;
-                copyRegion.bufferOffset = offset;
+                copyRegion.bufferOffset = details.mipLevelOffsets[index];
 
                 copyRegions.push_back(copyRegion);
-                // increase offset into staging buffer for next level / face
-                offset += textureCube[face][level].size();
             }
         }
 
@@ -522,7 +509,7 @@ namespace Deako {
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         subresourceRange.baseMipLevel = 0;
-        subresourceRange.levelCount = m_MipLevels;
+        subresourceRange.levelCount = details.mipLevels;
         subresourceRange.layerCount = 6;
 
         {
@@ -532,23 +519,23 @@ namespace Deako {
             imageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             imageBarrier.srcAccessMask = 0;
             imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageBarrier.image = m_Image.image;
+            imageBarrier.image = image.image;
             imageBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         }
 
         // copy mip levels from staging buffer
-        vkCmdCopyBufferToImage(commandBuffer, staging.buffer, m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        vkCmdCopyBufferToImage(commandBuffer, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
 
         {
             VkImageMemoryBarrier imageBarrier{};
             imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             imageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageBarrier.newLayout = m_ImageLayout;
+            imageBarrier.newLayout = details.layout;
             imageBarrier.srcAccessMask = 0;
             imageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageBarrier.image = m_Image.image;
+            imageBarrier.image = image.image;
             imageBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         }
@@ -561,13 +548,13 @@ namespace Deako {
         VkImageViewCreateInfo imageViewInfo{};
         imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        imageViewInfo.format = format;
+        imageViewInfo.format = details.format;
         imageViewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
         imageViewInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
         imageViewInfo.subresourceRange.layerCount = 6;
-        imageViewInfo.subresourceRange.levelCount = m_MipLevels;
-        imageViewInfo.image = m_Image.image;
-        VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &m_Image.view));
+        imageViewInfo.subresourceRange.levelCount = details.mipLevels;
+        imageViewInfo.image = image.image;
+        VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &image.view));
 
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(vr->physicalDevice, &deviceProperties);
@@ -584,11 +571,11 @@ namespace Deako {
         samplerInfo.mipLodBias = 0.0f;
         samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
         samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = static_cast<float>(m_MipLevels);
+        samplerInfo.maxLod = static_cast<float>(details.mipLevels);
         samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &m_Sampler));
+        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &sampler));
 
         UpdateDescriptor();
     }
@@ -601,7 +588,7 @@ namespace Deako {
         VkFormat format;
         uint32_t dim;
 
-        switch (m_Target)
+        switch (target)
         {
         case IRRADIANCE:
             format = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -625,30 +612,30 @@ namespace Deako {
             imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
             imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            VkCR(vkCreateImage(vr->device, &imageInfo, nullptr, &m_Image.image));
+            VkCR(vkCreateImage(vr->device, &imageInfo, nullptr, &image.image));
 
             VkMemoryRequirements memReqs;
-            vkGetImageMemoryRequirements(vr->device, m_Image.image, &memReqs);
+            vkGetImageMemoryRequirements(vr->device, image.image, &memReqs);
 
             VkMemoryAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             allocInfo.allocationSize = memReqs.size;
             allocInfo.memoryTypeIndex = VulkanDevice::GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VkCR(vkAllocateMemory(vr->device, &allocInfo, nullptr, &m_Image.memory));
-            VkCR(vkBindImageMemory(vr->device, m_Image.image, m_Image.memory, 0));
+            VkCR(vkAllocateMemory(vr->device, &allocInfo, nullptr, &image.memory));
+            VkCR(vkBindImageMemory(vr->device, image.image, image.memory, 0));
 
             // image-view
             VkImageViewCreateInfo imageViewInfo = {};
             imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-            imageViewInfo.image = m_Image.image;
+            imageViewInfo.image = image.image;
             imageViewInfo.format = format;
             imageViewInfo.subresourceRange = {};
             imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             imageViewInfo.subresourceRange.levelCount = numMips;
             imageViewInfo.subresourceRange.layerCount = 6;
-            VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &m_Image.view));
+            VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &image.view));
             // sampler
             VkSamplerCreateInfo samplerInfo{};
             samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -662,7 +649,7 @@ namespace Deako {
             samplerInfo.maxLod = static_cast<float>(numMips);
             samplerInfo.maxAnisotropy = 1.0f;
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &m_Sampler));
+            VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &sampler));
         }
 
         // color attachment
@@ -775,7 +762,7 @@ namespace Deako {
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.dstSet = descriptorSet;
         writeDescriptorSet.dstBinding = 0;
-        writeDescriptorSet.pImageInfo = &vr->textures.environmentCube.GetDescriptor();
+        writeDescriptorSet.pImageInfo = &vr->textures.environmentCube->descriptor;
         vkUpdateDescriptorSets(vr->device, 1, &writeDescriptorSet, 0, nullptr);
 
         struct PushBlockIrradiance
@@ -797,7 +784,7 @@ namespace Deako {
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        switch (m_Target)
+        switch (target)
         {
         case IRRADIANCE:
             pushConstantRange.size = sizeof(PushBlockIrradiance); break;
@@ -880,7 +867,7 @@ namespace Deako {
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[1].pName = "main";
 
-        switch (m_Target)
+        switch (target)
         {
         case IRRADIANCE:
             shaderStages[1].module = VulkanShader::CreateShaderModule("shaders/bin/irradiancecube.frag.spv"); break;
@@ -951,7 +938,7 @@ namespace Deako {
 
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            imageMemoryBarrier.image = m_Image.image;
+            imageMemoryBarrier.image = image.image;
             imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             imageMemoryBarrier.srcAccessMask = 0;
@@ -977,7 +964,7 @@ namespace Deako {
                 vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
                 // pass parameters for current pass using a push constant block
-                switch (m_Target)
+                switch (target)
                 {
                 case IRRADIANCE:
                     pushBlockIrradiance.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
@@ -1022,7 +1009,7 @@ namespace Deako {
                 copyRegion.extent.depth = 1;
 
                 vkCmdCopyImage(commandBuffer, offscreen.image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    m_Image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+                    image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
                 VulkanImage::Transition(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -1034,7 +1021,7 @@ namespace Deako {
             VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            imageMemoryBarrier.image = m_Image.image;
+            imageMemoryBarrier.image = image.image;
             imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -1052,11 +1039,11 @@ namespace Deako {
         vkDestroyPipeline(vr->device, pipeline, nullptr);
         vkDestroyPipelineLayout(vr->device, pipelineLayout, nullptr);
 
-        m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        details.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         UpdateDescriptor();
 
-        if (m_Target == PREFILTERED)
+        if (target == PREFILTERED)
         {
             vr->shaderValuesParams.prefilteredCubeMipLevels = static_cast<float>(numMips);
         }

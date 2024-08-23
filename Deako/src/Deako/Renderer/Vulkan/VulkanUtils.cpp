@@ -2,6 +2,7 @@
 #include "dkpch.h"
 
 #include "Deako/Core/Application.h"
+#include "Deako/Renderer/RendererTypes.h"
 
 #include "VulkanBase.h"
 
@@ -341,6 +342,45 @@ namespace Deako {
             vkCmdPipelineBarrier2KHR(commandBuffer, &dependInfo);
         }
 
+        VkFormat ConvertToVulkanFormat(ImageFormat format)
+        {
+            switch (format)
+            {
+            case ImageFormat::DK_R8G8B8A8_UNORM:
+                return VK_FORMAT_R8G8B8A8_UNORM;
+            case ImageFormat::DK_R16G16B16A16_SFLOAT:
+                return VK_FORMAT_R16G16B16A16_SFLOAT;
+            default:
+                DK_CORE_ASSERT(false, "Unsupported image format!");
+                return VK_FORMAT_UNDEFINED;
+            }
+        }
+
+        VkImageUsageFlags ConvertToVulkanUsage(ImageUsage usage)
+        {
+            switch (usage)
+            {
+            case ImageUsage::DK_SAMPLED_BIT:
+                return VK_IMAGE_USAGE_SAMPLED_BIT;
+            default:
+                DK_CORE_ASSERT(false, "Unsupported image usage!");
+                return VK_IMAGE_USAGE_SAMPLED_BIT;
+            }
+        }
+
+        VkImageLayout ConvertToVulkanLayout(ImageLayout layout)
+        {
+            switch (layout)
+            {
+            case ImageLayout::DK_SHADER_READ_ONLY_OPTIMAL:
+                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            default:
+                DK_CORE_ASSERT(false, "Unsupported image layout!");
+                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            }
+        }
+
+
     } // end namespace VulkanImage
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
@@ -541,11 +581,12 @@ namespace Deako {
         const VkFormat format = VK_FORMAT_R16G16_SFLOAT;
         const uint32_t dim = 512;
 
-        AllocatedImage& lutBrdfImage = vr->textures.lutBrdf.GetImage();
-        VkSampler& lutBrdfSampler = vr->textures.lutBrdf.GetSampler();
-        VkDescriptorImageInfo& lutBrdfDescriptor = vr->textures.lutBrdf.GetDescriptor();
+        vr->textures.lutBrdf = CreateRef<Texture2D>();
 
-        lutBrdfImage =
+        VkSampler& lutBrdfSampler = vr->textures.lutBrdf->sampler;
+        VkDescriptorImageInfo& lutBrdfDescriptor = vr->textures.lutBrdf->descriptor;
+
+        vr->textures.lutBrdf->image =
             VulkanImage::Create({ dim, dim, 1 }, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 
         // sampler
@@ -615,7 +656,7 @@ namespace Deako {
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments = &lutBrdfImage.view;
+        framebufferInfo.pAttachments = &vr->textures.lutBrdf->image.view;
         framebufferInfo.width = dim;
         framebufferInfo.height = dim;
         framebufferInfo.layers = 1;
@@ -761,7 +802,7 @@ namespace Deako {
         vkDestroyFramebuffer(vr->device, framebuffer, nullptr);
         vkDestroyDescriptorSetLayout(vr->device, descriptorSetLayout, nullptr);
 
-        lutBrdfDescriptor.imageView = lutBrdfImage.view;
+        lutBrdfDescriptor.imageView = vr->textures.lutBrdf->image.view;
         lutBrdfDescriptor.sampler = lutBrdfSampler;
         lutBrdfDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 

@@ -165,25 +165,25 @@ project "Deako-Editor"
      prebuildcommands 
      {
         -- filtercube vert
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/filtercube.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/filtercube.vert.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/filtercube.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/filtercube.vert.spv",
         -- irradiancecube frag
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/irradiancecube.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/irradiancecube.frag.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/irradiancecube.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/irradiancecube.frag.spv",
         -- prefilterenvmap frag
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/prefilterenvmap.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/prefilterenvmap.frag.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/prefilterenvmap.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/prefilterenvmap.frag.spv",
         -- skybox vert
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/skybox.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/skybox.vert.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/skybox.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/skybox.vert.spv",
         -- skybox frag
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/skybox.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/skybox.frag.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/skybox.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/skybox.frag.spv",
         -- pbr vert
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/pbr.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/pbr.vert.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/pbr.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/pbr.vert.spv",
         -- material_pbr frag
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/material_pbr.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/material_pbr.frag.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/material_pbr.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/material_pbr.frag.spv",
         -- material_unlit frag
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/material_unlit.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/material_unlit.frag.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/material_unlit.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/material_unlit.frag.spv",
         -- genbrdflut vert
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/genbrdflut.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/genbrdflut.vert.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/genbrdflut.vert -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/genbrdflut.vert.spv",
         -- genbrdflut frag
-        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/genbrdflut.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/assets/shaders/bin/genbrdflut.frag.spv",
+        "/Users/deakzach/Desktop/Deako/Deako/vendor/vulkan/1.3.280.1/macOS/bin/glslc /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/genbrdflut.frag -o /Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders/bin/genbrdflut.frag.spv",
     }
 
     files

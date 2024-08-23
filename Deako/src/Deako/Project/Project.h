@@ -1,32 +1,56 @@
 #pragma once
 
+#include "Deako/Asset/AssetPoolBase.h"
+
 namespace Deako {
 
     struct ProjectDetails
     {
         std::string name{ "Untitled" };
-        std::filesystem::path path;
-        std::filesystem::path firstScene;
+
+        std::filesystem::path assetDirectory;
+        std::filesystem::path assetRegistryPath; // relative to assetDirectory
     };
 
     class Project
     {
     public:
-        Project(const std::filesystem::path& path);
-
         static Ref<Project> Open(const std::string& filename);
         bool Save();
 
-        const std::filesystem::path& GetFirstScenePath() { return m_Details.firstScene; }
+        static Ref<Project> GetActive() { return s_ActiveProject; }
+
+        static std::filesystem::path GetProjectDirectory()
+        {
+            DK_CORE_ASSERT(s_ActiveProject);
+            return s_ProjectDirectory;
+        }
+
+        static std::filesystem::path GetAssetDirectory()
+        {
+            DK_CORE_ASSERT(s_ActiveProject);
+            return GetProjectDirectory() / s_ActiveProject->m_Details.assetDirectory;
+        }
+
+        static std::filesystem::path GetAssetRegistryPath()
+        {
+            DK_CORE_ASSERT(s_ActiveProject);
+            return GetAssetDirectory() / s_ActiveProject->m_Details.assetRegistryPath;
+        }
+
 
         void SetDetails(const ProjectDetails& details) { m_Details = details; }
         const ProjectDetails& GetDetails() { return m_Details; }
 
+        Ref<AssetPoolBase> GetAssetPool() { return m_AssetPool; }
+        Ref<EditorAssetPool> GetEditorAssetPool() { return std::static_pointer_cast<EditorAssetPool>(m_AssetPool); }
+        Ref<RuntimeAssetPool> GetRuntimeAssetPool() { return std::static_pointer_cast<RuntimeAssetPool>(m_AssetPool); }
+
     private:
         ProjectDetails m_Details;
-
+        Ref<AssetPoolBase> m_AssetPool;
+        inline static std::filesystem::path s_ProjectDirectory{ "Deako-Editor/projects/" };
         inline static Ref<Project> s_ActiveProject;
     };
-
 
 }

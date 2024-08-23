@@ -30,7 +30,7 @@ namespace Deako {
         VkSampleCountFlagBits              sampleCount{ VK_SAMPLE_COUNT_4_BIT };
         uint32_t                           frameOverlap = 2;
 
-        std::string                        assetPath{ "Deako-Editor/assets/" };
+        std::string                        assetPath{ "Deako-Editor/projects/sandbox/assets/" };
     };
 
     struct VulkanResources
@@ -89,11 +89,11 @@ namespace Deako {
         // assets
         struct Textures
         {
-            Texture2D empty;
-            Texture2D lutBrdf;
-            TextureCubeMap environmentCube{ TextureCubeMap::NONE };
-            TextureCubeMap irradianceCube{ TextureCubeMap::IRRADIANCE };
-            TextureCubeMap prefilteredCube{ TextureCubeMap::PREFILTERED };
+            Ref<Texture2D> empty;
+            Ref<Texture2D> lutBrdf;
+            Ref<TextureCubeMap> environmentCube{ CreateRef<TextureCubeMap>(TextureCubeMap::NONE) };
+            Ref<TextureCubeMap> irradianceCube{ CreateRef<TextureCubeMap>(TextureCubeMap::IRRADIANCE) };
+            Ref<TextureCubeMap> prefilteredCube{ CreateRef<TextureCubeMap>(TextureCubeMap::PREFILTERED) };
         } textures;
 
 

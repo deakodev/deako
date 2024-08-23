@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Deako/Renderer/EditorCamera.h"
+#include "Deako/Asset/Asset.h"
 
 #include "Components.h"
 
@@ -17,7 +18,7 @@ namespace Deako {
         std::filesystem::path path;
     };
 
-    class Scene
+    class Scene : public Asset
     {
     public:
         Scene(const std::filesystem::path& path);
@@ -34,6 +35,7 @@ namespace Deako {
         Entity CreateEntity(const std::string& name = std::string());
         void DestroyEntity(Entity entity);
 
+        static void SetActiveScene(Ref<Scene> scene) { s_ActiveScene = scene; }
         static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
         std::unordered_map<std::string, Ref<Model>> GetModels();
 
@@ -41,6 +43,9 @@ namespace Deako {
         const SceneDetails& GetDetails() { return m_Details; }
 
         const Registry& GetRegistry() { return m_Registry; }
+
+        static AssetType GetStaticType() { return AssetType::Scene; }
+        virtual AssetType GetType() const override { return GetStaticType(); }
 
     private:
         template<typename T>

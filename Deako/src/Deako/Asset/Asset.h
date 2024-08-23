@@ -1,0 +1,40 @@
+#pragma once 
+
+#include "UUID.h"
+
+namespace Deako {
+
+    using AssetHandle = UUID;
+
+    enum class AssetType : uint16_t
+    {
+        None = 0,
+        Texture2D,
+        TextureCubeMap,
+        Material,
+        Prefab,
+        Model,
+        Scene,
+    };
+
+    const std::string& AssetTypeToString(AssetType type);
+    AssetType AssetTypeFromString(const std::string& type);
+
+    struct AssetMetadata
+    {
+        AssetType type = AssetType::None;
+        std::filesystem::path path;
+
+        operator bool() const { return type != AssetType::None; }
+    };
+
+    class Asset
+    {
+    public:
+        virtual AssetType GetType() const = 0;
+
+        AssetHandle m_Handle; // handle generated automatically
+    };
+
+
+}

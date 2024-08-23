@@ -8,19 +8,19 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-    Material::Material(tinygltf::Material& mat, std::vector<Texture2D>& textures)
+    Material::Material(tinygltf::Material& mat, std::vector<Ref<Texture2D>>& textures)
     {
         doubleSided = mat.doubleSided;
 
         if (mat.values.find("baseColorTexture") != mat.values.end())
         {
-            baseColorTexture = &textures[mat.values["baseColorTexture"].TextureIndex()];
+            baseColorTexture = textures[mat.values["baseColorTexture"].TextureIndex()];
             texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
         }
 
         if (mat.values.find("metallicRoughnessTexture") != mat.values.end())
         {
-            metallicRoughnessTexture = &textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
+            metallicRoughnessTexture = textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
             texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
         }
 
@@ -41,19 +41,19 @@ namespace Deako {
 
         if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end())
         {
-            normalTexture = &textures[mat.additionalValues["normalTexture"].TextureIndex()];
+            normalTexture = textures[mat.additionalValues["normalTexture"].TextureIndex()];
             texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
         }
 
         if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end())
         {
-            emissiveTexture = &textures[mat.additionalValues["emissiveTexture"].TextureIndex()];
+            emissiveTexture = textures[mat.additionalValues["emissiveTexture"].TextureIndex()];
             texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
         }
 
         if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end())
         {
-            occlusionTexture = &textures[mat.additionalValues["occlusionTexture"].TextureIndex()];
+            occlusionTexture = textures[mat.additionalValues["occlusionTexture"].TextureIndex()];
             texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
         }
 
@@ -87,7 +87,7 @@ namespace Deako {
             if (ext->second.Has("specularGlossinessTexture"))
             {
                 auto index = ext->second.Get("specularGlossinessTexture").Get("index");
-                extension.specularGlossinessTexture = &textures[index.Get<int>()];
+                extension.specularGlossinessTexture = textures[index.Get<int>()];
                 auto texCoordSet = ext->second.Get("specularGlossinessTexture").Get("texCoord");
                 texCoordSets.specularGlossiness = texCoordSet.Get<int>();
                 pbrWorkflows.specularGlossiness = true;
@@ -96,7 +96,7 @@ namespace Deako {
             if (ext->second.Has("diffuseTexture"))
             {
                 auto index = ext->second.Get("diffuseTexture").Get("index");
-                extension.diffuseTexture = &textures[index.Get<int>()];
+                extension.diffuseTexture = textures[index.Get<int>()];
             }
             if (ext->second.Has("diffuseFactor"))
             {

@@ -3,6 +3,8 @@
 #include "VulkanTypes.h"
 #include "VulkanModel.h"
 
+#include "Deako/Renderer/RendererTypes.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -59,7 +61,11 @@ namespace Deako {
 
         void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout);
 
-        void Copy(VkCommandBuffer commandBuffer, VkImage source, VkImage destination, VkExtent2D copyRegionExtent);
+        VkFormat ConvertToVulkanFormat(ImageFormat format);
+
+        VkImageUsageFlags ConvertToVulkanUsage(ImageUsage usage);
+
+        VkImageLayout ConvertToVulkanLayout(ImageLayout layout);
 
     } // end namespace VulkanImage
 ///////////////////////////////////////////////////////////////////////

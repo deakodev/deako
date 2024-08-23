@@ -309,8 +309,8 @@ namespace Deako {
                 textureSampler = textureSamplers[tinyTex.sampler];
             }
 
-            Texture2D texture;
-            texture.LoadFromGLTFImage(tinyImage, path, textureSampler);
+            Ref<Texture2D> texture = CreateRef<Texture2D>();
+            texture->LoadFromGLTFImage(tinyImage, path, textureSampler);
             textures.push_back(texture);
         }
     }
@@ -923,7 +923,7 @@ namespace Deako {
         if (indices.buffer != VK_NULL_HANDLE)
             VulkanBuffer::Destroy(indices);
 
-        for (auto texture : textures) texture.Destroy();
+        for (auto texture : textures) texture->Destroy();
         for (auto node : nodes) delete node;
         for (auto skin : skins) delete skin;
 

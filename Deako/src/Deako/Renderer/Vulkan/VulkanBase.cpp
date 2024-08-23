@@ -2,8 +2,7 @@
 #include "dkpch.h"
 
 #include "Deako/Core/Application.h"
-#include "System/MacOS/MacUtils.h"
-
+#include "Deako/Asset/AssetPoolWrapper.h"
 #include "Deako/Project/Project.h"
 #include "Deako/Scene/Scene.h"
 
@@ -98,11 +97,11 @@ namespace Deako {
         for (auto& [tag, model] : vr->propModels) model->Destroy();
         for (auto& [tag, model] : vr->environmentModels) model->Destroy();
 
-        vr->textures.lutBrdf.Destroy();
-        vr->textures.irradianceCube.Destroy();
-        vr->textures.prefilteredCube.Destroy();
-        vr->textures.environmentCube.Destroy();
-        vr->textures.empty.Destroy();
+        vr->textures.lutBrdf->Destroy();
+        vr->textures.irradianceCube->Destroy();
+        vr->textures.prefilteredCube->Destroy();
+        vr->textures.environmentCube->Destroy();
+        vr->textures.empty->Destroy();
 
         for (auto& frame : vr->frames)
         {
@@ -501,6 +500,7 @@ namespace Deako {
         VkCR(vkCreateCommandPool(vr->device, &commandPoolInfo, nullptr, &vr->singleUseCommandPool));
     }
 
+
     void VulkanBase::SetUpSyncObjects()
     {
         VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
@@ -515,58 +515,50 @@ namespace Deako {
 
     void VulkanBase::SetUpAssets()
     {
-        // MacUtils::ReadDirectory(vs->assetPath + "environments", "ktx", vr->environments, false);
+        Ref<Project> project = Project::Open("sandbox/sandbox.proj.deako");
 
-        vr->textures.empty.LoadFromFile(vs->assetPath + "textures/empty.ktx", VK_FORMAT_R8G8B8A8_UNORM);
+        vr->textures.empty = AssetPool::ImportAsset<Texture2D>("textures/empty.ktx");
 
-        Ref<Project> activeProject = Project::Open("sandbox/sandbox.proj.deako");
-        DK_CORE_ASSERT(activeProject);
+        Ref<Scene> scene = AssetPool::ImportAsset<Scene>("scenes/sandbox.scene.deako");
 
-        std::filesystem::path firstScene = activeProject->GetFirstScenePath();
+        Scene::SetActiveScene(scene);
 
-        if (!firstScene.empty())
+        const Scene::Registry& registry = scene->GetRegistry();
+
+        auto modalEntities = registry.view<TagComponent, ModelComponent>();
+        for (auto& entity : modalEntities)
         {
-            Ref<Scene> activeScene = Scene::Open(firstScene);
+            auto [tagComp, modelComp] = modalEntities.get<TagComponent, ModelComponent>(entity);
 
-            const Scene::Registry& registry = activeScene->GetRegistry();
-
-            auto modalEntities = registry.view<TagComponent, ModelComponent>();
-            for (auto& entity : modalEntities)
+            if (modelComp.usage == ModelComponent::Usage::PROP)
             {
-                auto [tagComp, modelComp] = modalEntities.get<TagComponent, ModelComponent>(entity);
-
-                if (modelComp.usage == ModelComponent::Usage::PROP)
-                {
-                    vr->propModels[tagComp.tag] = modelComp.model;
-                }
-                else if (modelComp.usage == ModelComponent::Usage::ENVIRONMENT)
-                {
-                    vr->environmentModels[tagComp.tag] = modelComp.model;
-                }
-                else if (modelComp.usage == ModelComponent::Usage::NONE)
-                {
-                    DK_CORE_WARN("{0} model not assigned usage!", tagComp.tag);
-                }
+                vr->propModels[tagComp.tag] = modelComp.model;
             }
-
-            for (auto& [tag, model] : vr->propModels)
+            else if (modelComp.usage == ModelComponent::Usage::ENVIRONMENT)
             {
-                VulkanLoad::Model(model);
+                vr->environmentModels[tagComp.tag] = modelComp.model;
             }
-
-            for (auto& [tag, model] : vr->environmentModels)
+            else if (modelComp.usage == ModelComponent::Usage::NONE)
             {
-                VulkanLoad::Model(model);
+                DK_CORE_WARN("{0} model not assigned usage!", tagComp.tag);
             }
-
-            // activeScene->Save();
         }
 
-        // activeProject->Save();
+        for (auto& [tag, model] : vr->propModels)
+        {
+            VulkanLoad::Model(model);
+        }
+
+        for (auto& [tag, model] : vr->environmentModels)
+        {
+            VulkanLoad::Model(model);
+        }
 
         CreateMaterialBuffer();
 
-        LoadEnvironment("environments/papermill.ktx");
+        vr->textures.environmentCube = AssetPool::ImportAsset<TextureCubeMap>("environments/papermill.ktx");
+        vr->textures.irradianceCube->GenerateCubeMap();
+        vr->textures.prefilteredCube->GenerateCubeMap();
 
         GenerateBRDFLookUpTable();
     }
@@ -752,21 +744,21 @@ namespace Deako {
                 write[2].descriptorCount = 1;
                 write[2].dstSet = vr->descriptorSets[i].scene;
                 write[2].dstBinding = 2;
-                write[2].pImageInfo = &vr->textures.irradianceCube.GetDescriptor();
+                write[2].pImageInfo = &vr->textures.irradianceCube->descriptor;
 
                 write[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write[3].descriptorCount = 1;
                 write[3].dstSet = vr->descriptorSets[i].scene;
                 write[3].dstBinding = 3;
-                write[3].pImageInfo = &vr->textures.prefilteredCube.GetDescriptor();
+                write[3].pImageInfo = &vr->textures.prefilteredCube->descriptor;
 
                 write[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write[4].descriptorCount = 1;
                 write[4].dstSet = vr->descriptorSets[i].scene;
                 write[4].dstBinding = 4;
-                write[4].pImageInfo = &vr->textures.lutBrdf.GetDescriptor();
+                write[4].pImageInfo = &vr->textures.lutBrdf->descriptor;
 
                 write[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[5].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
@@ -800,7 +792,7 @@ namespace Deako {
             {
                 for (auto& material : model->materials)
                 {
-                    VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty.GetDescriptor();
+                    VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty->descriptor;
 
                     VkDescriptorSetAllocateInfo allocInfo{};
                     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -812,24 +804,24 @@ namespace Deako {
                     std::vector<VkDescriptorImageInfo> imageDescriptors = {
                         emptyTextureDescriptor,
                         emptyTextureDescriptor,
-                        material.normalTexture ? material.normalTexture->GetDescriptor() : emptyTextureDescriptor,
-                        material.occlusionTexture ? material.occlusionTexture->GetDescriptor() : emptyTextureDescriptor,
-                        material.emissiveTexture ? material.emissiveTexture->GetDescriptor() : emptyTextureDescriptor
+                        material.normalTexture ? material.normalTexture->descriptor : emptyTextureDescriptor,
+                        material.occlusionTexture ? material.occlusionTexture->descriptor : emptyTextureDescriptor,
+                        material.emissiveTexture ? material.emissiveTexture->descriptor : emptyTextureDescriptor
                     };
 
                     if (material.pbrWorkflows.metallicRoughness)
                     {
                         if (material.baseColorTexture)
-                            imageDescriptors[0] = material.baseColorTexture->GetDescriptor();
+                            imageDescriptors[0] = material.baseColorTexture->descriptor;
                         if (material.metallicRoughnessTexture)
-                            imageDescriptors[1] = material.metallicRoughnessTexture->GetDescriptor();
+                            imageDescriptors[1] = material.metallicRoughnessTexture->descriptor;
                     }
                     else if (material.pbrWorkflows.specularGlossiness)
                     {
                         if (material.extension.diffuseTexture)
-                            imageDescriptors[0] = material.extension.diffuseTexture->GetDescriptor();
+                            imageDescriptors[0] = material.extension.diffuseTexture->descriptor;
                         if (material.extension.specularGlossinessTexture)
-                            imageDescriptors[1] = material.extension.specularGlossinessTexture->GetDescriptor();
+                            imageDescriptors[1] = material.extension.specularGlossinessTexture->descriptor;
                     }
 
                     std::array<VkWriteDescriptorSet, 5> write{};
@@ -923,7 +915,7 @@ namespace Deako {
                 write[2].descriptorCount = 1;
                 write[2].dstSet = vr->descriptorSets[i].skybox;
                 write[2].dstBinding = 2;
-                write[2].pImageInfo = &vr->textures.prefilteredCube.GetDescriptor();
+                write[2].pImageInfo = &vr->textures.prefilteredCube->descriptor;
 
                 vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, nullptr);
             }

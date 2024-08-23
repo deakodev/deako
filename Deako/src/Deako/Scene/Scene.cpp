@@ -2,9 +2,9 @@
 #include "dkpch.h"
 
 #include "Deako/Renderer/Renderer.h"
+#include "Deako/Project/Serialize.h"
 
 #include "Entity.h"
-#include "Serialize.h"
 
 namespace Deako {
 

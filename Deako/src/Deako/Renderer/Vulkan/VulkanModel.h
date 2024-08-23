@@ -3,6 +3,7 @@
 #include "VulkanTypes.h"
 #include "VulkanTexture.h"
 #include "VulkanMaterial.h"
+#include "Deako/Asset/Asset.h"
 
 #include <vulkan/vulkan.h>
 
@@ -151,7 +152,7 @@ namespace Deako {
         std::vector<Node*> joints;
     };
 
-    struct Model
+    struct Model : public Asset
     {
         struct Vertex
         {
@@ -180,7 +181,7 @@ namespace Deako {
         std::vector<Node*> nodes;
         std::vector<Node*> linearNodes;
 
-        std::vector<Texture2D> textures;
+        std::vector<Ref<Texture2D>> textures;
         std::vector<TextureSampler> textureSamplers;
         std::vector<Material> materials;
         std::vector<Animation> animations;
@@ -214,6 +215,9 @@ namespace Deako {
         void CalculateBoundingBox(Node* node, Node* parent);
 
         void Destroy();
+
+        static AssetType GetStaticType() { return AssetType::Model; }
+        virtual AssetType GetType() const override { return GetStaticType(); }
     };
 
     void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, uint32_t dynamicOffset);

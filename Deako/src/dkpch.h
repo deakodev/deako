@@ -21,3 +21,4 @@
 #include <deque>
 
 #include "Deako/Core/Log.h"
+#include "Deako/Core/Buffer.h"
