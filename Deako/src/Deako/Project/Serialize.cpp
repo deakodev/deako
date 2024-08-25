@@ -70,7 +70,7 @@ namespace Deako {
             (projectNode["AssetRegistryPath"]) ? projectNode["AssetRegistryPath"].as<std::string>() : "",
             });
 
-        DK_CORE_TRACE("Deserializing project '{0}'", projectNode["Name"].as<std::string>());
+        DK_CORE_TRACE("Deserialized Project '{0}'", projectNode["Name"].as<std::string>());
 
         return project;
     }
@@ -132,17 +132,10 @@ namespace Deako {
             metadata.type = AssetTypeFromString(node["Type"].as<std::string>());
         }
 
-        DK_CORE_TRACE("Deserializing asset registry");
+        DK_CORE_TRACE("Deserialized AssetRegistry");
 
         return assetRegistry;
     }
-
-
-
-
-
-
-
 
     bool Serialize::Scene(Deako::Scene& scene)
     {
@@ -194,7 +187,7 @@ namespace Deako {
             sceneNode["Filename"].as<std::string>()
             });
 
-        DK_CORE_TRACE("Deserializing scene '{0}'", sceneNode["Name"].as<std::string>());
+        DK_CORE_TRACE("Deserialized Scene '{0}'", sceneNode["Name"].as<std::string>());
 
         auto yamlEntities = data["Entities"];
         if (yamlEntities)
@@ -225,7 +218,7 @@ namespace Deako {
                 if (modelCompYaml)
                 {
                     auto& modelComp = entity.AddComponent<ModelComponent>();
-                    modelComp.model->path = modelCompYaml["Path"].as<std::string>();
+                    // modelComp.model->path = modelCompYaml["Path"].as<std::string>();
                     modelComp.usage = static_cast<ModelComponent::Usage>(modelCompYaml["Usage"].as<uint32_t>());
                 }
 
@@ -236,7 +229,7 @@ namespace Deako {
                     textureComp.texture = textureCompYaml["TextureHandle"].as<uint64_t>();
                 }
 
-                DK_CORE_TRACE("Deserializied entity with ID = {0}, name = {1}", uuid, name);
+                DK_CORE_TRACE("Deserializied Entity '{0}' [{1}]", name, uuid);
             }
         }
 
@@ -278,7 +271,7 @@ namespace Deako {
             out << YAML::BeginMap; // ModelComponent
 
             auto& modelComp = entity.GetComponent<ModelComponent>();
-            out << YAML::Key << "Path" << YAML::Value << modelComp.model->path;
+            // out << YAML::Key << "Path" << YAML::Value << modelComp.model->path;
             out << YAML::Key << "Usage" << YAML::Value << modelComp.usage;
 
             out << YAML::EndMap; // ModelComponent

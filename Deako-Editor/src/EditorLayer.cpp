@@ -11,13 +11,7 @@ namespace Deako {
     {
         m_ActiveScene = Scene::GetActiveScene();
 
-        // m_BrokenHelmet = m_ActiveScene->CreateEntity("Broken Helmet");
-        // m_BrokenHelmet.AddComponent<ModelComponent>("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-        // auto& brokenHelmetTransfromComp = m_BrokenHelmet.GetComponent<TransformComponent>();
-        // brokenHelmetTransfromComp.translation = { 0.0f, 0.0f, 0.0f };
-        // brokenHelmetTransfromComp.scale = 1.0f;
-
-        m_ActiveScene->Prepare();
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
 
     void EditorLayer::OnDetach()
@@ -27,11 +21,7 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        if (m_ViewportResize)
-        {
-            VulkanBase::ViewportResize(m_ViewportSize);
-            m_ViewportResize = false;
-        }
+        m_ViewportPanel.OnUpdate();
 
         m_ActiveScene->OnUpdateEditor(m_EditorCamera);
     }
@@ -103,30 +93,13 @@ namespace Deako {
             ImGui::EndMenuBar();
         }
 
+        //// SCENE HIERARCHY ////
+        m_SceneHierarchyPanel.OnImGuiRender();
+
         //// VIEWPORT ////
-        bool viewportOpen = true;
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
-        ImGui::Begin("Viewport");
-
-        m_ViewportFocused = ImGui::IsWindowFocused();
-        m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
-
-        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-
-        if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
-            m_ViewportResize = true;
-
-        m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
-
-        ImGui::Image(textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
+        m_ViewportPanel.OnImGuiRender(textureID);
 
         ImGui::End();
-        ImGui::PopStyleVar();
-
-        ImGui::End();
-
-        ImGui::ShowDemoWindow();
     }
 
     void EditorLayer::OnEvent(Event& event)

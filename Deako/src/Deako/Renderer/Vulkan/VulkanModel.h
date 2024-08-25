@@ -13,11 +13,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include <tiny_gltf.h>
-#define BASISU_HAVE_STD_TRIVIALLY_COPYABLE
-#include <basisu_transcoder.h>
-
 namespace Deako {
 
     #define MAX_NUM_JOINTS 128u
@@ -165,18 +160,17 @@ namespace Deako {
             glm::vec4 color;
         };
 
-        struct LoaderInfo
+        struct LoaderData
         {
-            uint32_t* indexBuffer;
-            Vertex* vertexBuffer;
-            size_t indexPos = 0;
-            size_t vertexPos = 0;
-        };
+            Buffer buffer;
+            uint32_t count = 0;
+            uint32_t position = 0;
+        } vertexData, indexData;
 
         AllocatedBuffer vertices;
         AllocatedBuffer indices;
 
-        glm::mat4 aaBoundingBox;
+        std::filesystem::path path;
 
         std::vector<Node*> nodes;
         std::vector<Node*> linearNodes;
@@ -188,33 +182,26 @@ namespace Deako {
         std::vector<Skin*> skins;
         std::vector<std::string> extensions;
 
-        std::filesystem::path path;
-
         struct Dimensions
         {
             glm::vec3 min = glm::vec3(FLT_MAX);
             glm::vec3 max = glm::vec3(-FLT_MAX);
         } dimensions;
 
+        glm::mat4 aaBoundingBox;
+
+        Model() = default;
+        void Destroy();
+
         void Draw(VkCommandBuffer commandBuffer);
         void DrawNode(Node* node, VkCommandBuffer commandBuffer);
         void UpdateAnimation(uint32_t index, float time);
 
-        void LoadFromFile(float scale = 1.0f);
-        void LoadTextureSamplers(tinygltf::Model& tinyModel);
-        void LoadTextures(tinygltf::Model& tinyModel);
-        void LoadMaterials(tinygltf::Model& tinyModel);
-        void LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, LoaderInfo& loaderInfo, float globalscale);
-        void LoadAnimations(tinygltf::Model& tinyModel);
-        void LoadSkins(tinygltf::Model& tinyModel);
+        void SetVertices();
+        void SetIndices();
 
-        void GetNodeProps(const tinygltf::Node& tinyNode, const tinygltf::Model& tinyModel, size_t& vertexCount, size_t& indexCount);
-        Node* NodeFromIndex(uint32_t index);
-        Node* FindNode(Node* parent, uint32_t index);
-        void GetSceneDimensions();
+        void DetermineDimensions();
         void CalculateBoundingBox(Node* node, Node* parent);
-
-        void Destroy();
 
         static AssetType GetStaticType() { return AssetType::Model; }
         virtual AssetType GetType() const override { return GetStaticType(); }

@@ -109,9 +109,9 @@ namespace Deako {
 
     namespace VulkanShader {
 
-        std::vector<char> ReadShaderFile(const std::string& filename);
+        std::vector<char> ReadShaderFile(const std::filesystem::path& path);
 
-        VkShaderModule CreateShaderModule(const std::string& filename);
+        VkShaderModule CreateShaderModule(std::filesystem::path path);
 
     } // end namespace VulkanShader
 ///////////////////////////////////////////////////////////////////////

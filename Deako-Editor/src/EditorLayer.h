@@ -2,6 +2,9 @@
 
 #include "Deako.h"
 
+#include "Panels/ViewportPanel.h"
+#include "Panels/SceneHierarchyPanel.h"
+
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
 
@@ -22,13 +25,10 @@ namespace Deako {
     private:
         Camera m_EditorCamera;
 
-        glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
-        bool m_ViewportResize = false;
-        bool m_ViewportFocused = false;
-        bool m_ViewportHovered = false;
+        ViewportPanel m_ViewportPanel;
+        SceneHierarchyPanel m_SceneHierarchyPanel;
 
         Ref<Scene> m_ActiveScene;
-        Entity m_BrokenHelmet;
     };
 
 }

@@ -467,38 +467,9 @@ namespace Deako {
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
 
-
-
-    namespace VulkanLoad {
-
-        void Model(Ref<Deako::Model> model)
-        {
-            DK_CORE_INFO("Loading Model <{0}>", model->path.string());
-
-            auto tStart = std::chrono::high_resolution_clock::now();
-
-            model->LoadFromFile();
-
-            auto tLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
-
-            DK_CORE_INFO("Loading Model took {0} ms", tLoad);
-
-            for (auto& ext : model->extensions)
-            {   // check and list unsupported extensions
-                if (std::find(supportedGLTFExts.begin(), supportedGLTFExts.end(), ext) == supportedGLTFExts.end())
-                    DK_CORE_WARN("Unsupported extension {0}. Model may not display as intended.", ext);
-            }
-        }
-
-    } // end namespace VulkanLoad
-///////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////
-
-
-
     namespace VulkanShader {
 
-        std::vector<char> ReadShaderFile(const std::string& path)
+        std::vector<char> ReadShaderFile(const std::filesystem::path& path)
         {
             // Start reading at the end of the file (ate) to determine file size and read as binary file (binary)
             std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -516,12 +487,12 @@ namespace Deako {
             return buffer;
         }
 
-        VkShaderModule CreateShaderModule(const std::string& filename)
+        VkShaderModule CreateShaderModule(std::filesystem::path path)
         {
-            DK_CORE_INFO("Reading Shader <{0}>", filename.c_str());
-            const std::string path = vs->assetPath + filename;
+            DK_CORE_INFO("Reading Shader <{0}>", path.filename().string());
+            std::filesystem::path fullPath = vs->assetPath / path;
 
-            auto shaderCode = ReadShaderFile(path);
+            auto shaderCode = ReadShaderFile(fullPath);
 
             VkShaderModuleCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -576,8 +547,6 @@ namespace Deako {
 
     void GenerateBRDFLookUpTable()
     {
-        auto tStart = std::chrono::high_resolution_clock::now();
-
         const VkFormat format = VK_FORMAT_R16G16_SFLOAT;
         const uint32_t dim = 512;
 
@@ -805,10 +774,6 @@ namespace Deako {
         lutBrdfDescriptor.imageView = vr->textures.lutBrdf->image.view;
         lutBrdfDescriptor.sampler = lutBrdfSampler;
         lutBrdfDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        auto tEnd = std::chrono::high_resolution_clock::now();
-        auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-        DK_CORE_INFO("Generating BRDF LUT took {0} ms", tDiff);
     }
 
 

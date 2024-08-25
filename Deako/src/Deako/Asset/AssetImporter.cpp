@@ -2,6 +2,7 @@
 #include "dkpch.h"
 
 #include "TextureImporter.h"
+#include "ModelImporter.h"
 #include "SceneImporter.h"
 
 namespace Deako {
@@ -10,6 +11,7 @@ namespace Deako {
     static std::map <AssetType, AssetImportFunction> s_AssetImportFunctions = {
         { AssetType::Texture2D, TextureImporter::ImportTexture2D },
         { AssetType::TextureCubeMap, TextureImporter::ImportTextureCubeMap },
+        { AssetType::Model, ModelImporter::ImportModel },
         { AssetType::Scene, SceneImporter::ImportScene }
     };
 

@@ -3,7 +3,6 @@
 
 #include "Deako/Renderer/RendererTypes.h"
 #include "Deako/Renderer/Vulkan/VulkanUtils.h"
-#include "Deako/Renderer/Vulkan/VulkanTexture.h"
 
 #include <gli/gli.hpp>
 #include <stb_image.h>
@@ -73,7 +72,7 @@ namespace Deako {
 
     Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(AssetHandle handle, const AssetMetadata& metadata)
     {
-        DK_CORE_INFO("Loading TextureCube <{0}>", metadata.path.filename().string());
+        DK_CORE_INFO("Importing TextureCube <{0}>", metadata.path.filename().string());
 
         uint32_t width{ 0 }, height{ 0 }, mipLevels{ 1 };
         std::vector<uint32_t> mipLevelWidths, mipLevelHeights, mipLevelOffsets;

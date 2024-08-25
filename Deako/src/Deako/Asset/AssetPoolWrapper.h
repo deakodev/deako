@@ -20,6 +20,12 @@ namespace Deako {
         }
 
         template <typename T>
+        static void DestroyAsset(AssetHandle handle)
+        {
+            Project::GetActive()->GetEditorAssetPool()->DestroyAsset(handle);
+        }
+
+        template <typename T>
         static Ref<T> ImportAsset(const std::string& path)
         {
             AssetType type;
@@ -28,6 +34,8 @@ namespace Deako {
                 type = AssetType::Texture2D;
             else if constexpr (std::is_same_v<T, TextureCubeMap>)
                 type = AssetType::TextureCubeMap;
+            else if constexpr (std::is_same_v<T, Model>)
+                type = AssetType::Model;
             else if constexpr (std::is_same_v<T, Scene>)
                 type = AssetType::Scene;
 

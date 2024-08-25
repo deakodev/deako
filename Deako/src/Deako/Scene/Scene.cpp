@@ -36,10 +36,6 @@ namespace Deako {
         return false;
     }
 
-    void Scene::Prepare()
-    {
-    }
-
     void Scene::OnUpdateEditor(Camera& editorCamera)
     {
         Renderer::BeginScene();
@@ -61,21 +57,6 @@ namespace Deako {
     void Scene::DestroyEntity(Entity entity)
     {
         m_Registry.destroy(entity);
-    }
-
-    std::unordered_map<std::string, Ref<Model>> Scene::GetModels()
-    {
-        auto modalEntities = m_Registry.view<TagComponent, ModelComponent>();
-
-        std::unordered_map<std::string, Ref<Model>> models;
-
-        for (auto& entity : modalEntities)
-        {
-            auto [tagComp, modelComp] = modalEntities.get<TagComponent, ModelComponent>(entity);
-            models[tagComp.tag] = modelComp.model;
-        }
-
-        return models;
     }
 
     template<>

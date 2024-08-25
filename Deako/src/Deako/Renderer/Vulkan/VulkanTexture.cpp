@@ -5,6 +5,9 @@
 
 #include <gli/gli.hpp>
 
+#define BASISU_HAVE_STD_TRIVIALLY_COPYABLE
+#include <basisu_transcoder.h>
+
 namespace Deako {
 
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
@@ -583,8 +586,6 @@ namespace Deako {
 
     void TextureCubeMap::GenerateCubeMap()
     {
-        auto tStart = std::chrono::high_resolution_clock::now();
-
         VkFormat format;
         uint32_t dim;
 
@@ -1047,10 +1048,6 @@ namespace Deako {
         {
             vr->shaderValuesParams.prefilteredCubeMipLevels = static_cast<float>(numMips);
         }
-
-        auto tEnd = std::chrono::high_resolution_clock::now();
-        auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-        DK_CORE_INFO("Generating cube map with {0} mip levels took {1} ms", numMips, tDiff);
     }
 
     void TextureSampler::SetFilterModes(int32_t min, int32_t mag)

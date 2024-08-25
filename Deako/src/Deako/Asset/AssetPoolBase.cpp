@@ -45,6 +45,30 @@ namespace Deako {
         return asset;
     }
 
+    void EditorAssetPool::DestroyAsset(AssetHandle handle)
+    {
+        const AssetMetadata& metadata = GetMetadata(handle);
+
+        auto loadedIt = m_LoadedAssets.find(handle);
+        if (loadedIt != m_LoadedAssets.end())
+        {
+            Ref<Asset> asset = loadedIt->second;
+
+            if (metadata.type == AssetType::Model)
+            {
+                auto model = std::dynamic_pointer_cast<Model>(asset);
+                model->Destroy();
+            }
+            m_LoadedAssets.erase(loadedIt);
+        }
+
+        auto registryIt = m_AssetRegistry.find(handle);
+        if (registryIt != m_AssetRegistry.end())
+        {
+            m_AssetRegistry.erase(registryIt);
+        }
+    }
+
     Ref<Asset> EditorAssetPool::ImportAsset(const AssetType& type, const std::filesystem::path& path)
     {
         AssetHandle handle; // generates handle

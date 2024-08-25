@@ -1,34 +1,373 @@
 AssetRegistry:
-  - Handle: 3321611327633481581
-    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
-    Type: Scene
-  - Handle: 3453370926546967924
-    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
-    Type: Scene
-  - Handle: 3804121329707625772
+  - Handle: 41292109372872120
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 78157088067770437
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 238861985680522860
     Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
     Type: TextureCubeMap
-  - Handle: 4412809472369287337
+  - Handle: 894766599558059246
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 1205863549715678631
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 1331786723681723309
     Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
     Type: Scene
-  - Handle: 4822034886265235828
+  - Handle: 1621151709650784911
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 1735706472921549458
     Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
     Type: Texture2D
-  - Handle: 5240783931466424764
-    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
-    Type: Texture2D
-  - Handle: 7402924575749347785
-    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
-    Type: Texture2D
-  - Handle: 10351970906720720264
+  - Handle: 1858871660354007498
     Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
     Type: TextureCubeMap
-  - Handle: 12585814335826232407
+  - Handle: 1960620260780689716
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 1995386591746377354
     Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
     Type: Scene
-  - Handle: 13227745553296856396
+  - Handle: 2211875639552427135
     Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
     Type: Texture2D
-  - Handle: 16462480624137074925
+  - Handle: 2438582872911606238
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 2503552062734163437
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 2658094532880814696
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 2666584329196982256
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 2713428574367632986
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 2994545658021324495
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 3165671498291402251
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 3500482848685372197
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 3521994170964468985
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 3876491840178694662
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 3973711524148512280
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 4293226164790205429
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 4500175341261803362
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 4550634610901272503
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 4871574291917414105
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 4993126776017694681
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 5629766957326834857
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 5764157997063359062
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 5911297240577945419
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 5982147751071984249
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 6082084999869736457
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 6157951820673882799
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 6225909200628518424
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 6237431095186776356
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 6255304906041746362
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 6277583919091991652
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 6313048168823947863
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 6322180953105524544
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 6445535879836268084
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 6612594249548416510
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 6677658692356405388
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 6808840123007585736
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 7009254367754074309
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 7040314680192588517
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 7048972362911438395
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 7062164002117866671
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 7085384814410908983
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 7112316693864308453
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 7747362142434631887
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 7786082842065881323
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 7992735133807154565
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 8073487366517356106
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 8087607296173560544
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 8146017053896730185
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 8463175381687023211
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 8483280836041345042
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 8529877802513454779
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 8883105753633048484
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 9196799782858795795
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 9225977880891540679
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 9393975429461031206
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 9585994753297787948
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 9661702596449849192
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 9666181703808952993
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 9709355256767689293
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 9804399253102142202
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 10026284772829346295
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 10400720068252470764
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 10471077360927953238
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 10650715506670247055
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 10936608946803665862
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 11104355664145961121
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 11113184784674612044
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 11637368954142758918
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 11987745976599892869
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 12030674859038565949
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 12078056192467579029
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 12825431573648915208
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 12949595109113844896
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 12958976755060165376
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 12973665781293408081
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 13220858977457630587
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 13289900011026028154
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 13889330757920244689
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 13971769389345621644
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 14065320824900357735
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 14163033570856666585
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 14202562548538273487
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 14252027422918350613
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 14427104454673597868
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 14521138034068881520
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 14556159898971922444
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 14797496498443364104
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 14883334667841743427
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 14927058780752147803
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 14953722470325992505
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 15958801314137819167
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 16076737522559446716
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 16082161301415206579
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 16270694549826962393
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 16507400810321122320
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 16507954812490243540
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 16568150101170320695
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 16618261043236017982
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 16744574652633571650
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 16773963240265270158
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 16820170020547010241
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 16843108046746903500
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 17123707655265273031
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 17199429625297488126
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 17222943172135497232
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 17234488628636738450
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 17266486797908657897
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 17268470145482284788
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 17790282696212416025
+    Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
+    Type: TextureCubeMap
+  - Handle: 17868506612760657914
+    Path: Deako-Editor/projects/sandbox/assets/textures/empty.ktx
+    Type: Texture2D
+  - Handle: 18002610961957914674
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 18056864392434127101
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 18290943355577232108
+    Path: Deako-Editor/projects/sandbox/assets/models/Box/glTF-Embedded/Box.gltf
+    Type: Model
+  - Handle: 18394113955200210941
+    Path: Deako-Editor/projects/sandbox/assets/models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
+    Type: Model
+  - Handle: 18413774933091934090
+    Path: Deako-Editor/projects/sandbox/assets/scenes/sandbox.scene.deako
+    Type: Scene
+  - Handle: 18438311011747650467
     Path: Deako-Editor/projects/sandbox/assets/environments/papermill.ktx
     Type: TextureCubeMap

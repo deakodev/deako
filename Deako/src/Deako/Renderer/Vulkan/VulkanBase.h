@@ -30,7 +30,7 @@ namespace Deako {
         VkSampleCountFlagBits              sampleCount{ VK_SAMPLE_COUNT_4_BIT };
         uint32_t                           frameOverlap = 2;
 
-        std::string                        assetPath{ "Deako-Editor/projects/sandbox/assets/" };
+        std::filesystem::path               assetPath{ "Deako-Editor/projects/sandbox/assets/" };
     };
 
     struct VulkanResources
@@ -202,7 +202,7 @@ namespace Deako {
         static void SetUpPipelines();
         static void SetUpImGui();
 
-        static void AddPipelineSet(const std::string prefix, const std::string vertexShader, const std::string fragmentShader);
+        static void AddPipelineSet(const std::string prefix, std::filesystem::path vertexShader, std::filesystem::path fragmentShader);
 
         static void DrawFrame();
         static void DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex);

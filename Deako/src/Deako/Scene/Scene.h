@@ -28,8 +28,6 @@ namespace Deako {
         static Ref<Scene> Open(const std::string& filename);
         bool Save();
 
-        void Prepare();
-
         void OnUpdateEditor(Camera& editorCamera);
 
         Entity CreateEntity(const std::string& name = std::string());
@@ -37,7 +35,6 @@ namespace Deako {
 
         static void SetActiveScene(Ref<Scene> scene) { s_ActiveScene = scene; }
         static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
-        std::unordered_map<std::string, Ref<Model>> GetModels();
 
         void SetDetails(SceneDetails details) { m_Details = details; }
         const SceneDetails& GetDetails() { return m_Details; }
@@ -59,7 +56,7 @@ namespace Deako {
         float m_ViewportHeight = 0.0f;
 
         friend class Entity;
-        // friend class SceneHierarchyPanel;
+        friend class SceneHierarchyPanel;
 
         inline static Ref<Scene> s_ActiveScene;
     };

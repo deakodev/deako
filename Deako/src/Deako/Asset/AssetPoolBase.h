@@ -11,9 +11,11 @@ namespace Deako {
     {
     public:
         virtual Ref<Asset> GetAsset(AssetHandle handle) const = 0;
+        virtual void DestroyAsset(AssetHandle handle) = 0;
 
         virtual bool IsAssetHandleValid(AssetHandle handle) const = 0;
         virtual bool IsAssetLoaded(AssetHandle handle) const = 0;
+
     };
 
     class EditorAssetPool : public AssetPoolBase
@@ -23,6 +25,7 @@ namespace Deako {
             : m_AssetRegistry(*registry) {}
 
         virtual Ref<Asset> GetAsset(AssetHandle handle) const override;
+        virtual void DestroyAsset(AssetHandle handle) override;
 
         virtual bool IsAssetHandleValid(AssetHandle handle) const override;
         virtual bool IsAssetLoaded(AssetHandle handle) const override;

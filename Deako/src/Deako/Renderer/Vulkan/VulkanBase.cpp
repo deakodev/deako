@@ -94,8 +94,14 @@ namespace Deako {
 
         VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
-        for (auto& [tag, model] : vr->propModels) model->Destroy();
-        for (auto& [tag, model] : vr->environmentModels) model->Destroy();
+        for (auto& [tag, model] : vr->propModels)
+        {
+            if (model) AssetPool::DestroyAsset<Model>(model->m_Handle);
+        }
+        for (auto& [tag, model] : vr->environmentModels)
+        {
+            if (model) AssetPool::DestroyAsset<Model>(model->m_Handle);
+        }
 
         vr->textures.lutBrdf->Destroy();
         vr->textures.irradianceCube->Destroy();
@@ -525,6 +531,9 @@ namespace Deako {
 
         const Scene::Registry& registry = scene->GetRegistry();
 
+        Ref<Model> helmet = AssetPool::ImportAsset<Model>("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
+        Ref<Model> box = AssetPool::ImportAsset<Model>("models/Box/glTF-Embedded/Box.gltf");
+
         auto modalEntities = registry.view<TagComponent, ModelComponent>();
         for (auto& entity : modalEntities)
         {
@@ -532,26 +541,16 @@ namespace Deako {
 
             if (modelComp.usage == ModelComponent::Usage::PROP)
             {
-                vr->propModels[tagComp.tag] = modelComp.model;
+                vr->propModels[tagComp.tag] = helmet;
             }
             else if (modelComp.usage == ModelComponent::Usage::ENVIRONMENT)
             {
-                vr->environmentModels[tagComp.tag] = modelComp.model;
+                vr->environmentModels[tagComp.tag] = box;
             }
             else if (modelComp.usage == ModelComponent::Usage::NONE)
             {
                 DK_CORE_WARN("{0} model not assigned usage!", tagComp.tag);
             }
-        }
-
-        for (auto& [tag, model] : vr->propModels)
-        {
-            VulkanLoad::Model(model);
-        }
-
-        for (auto& [tag, model] : vr->environmentModels)
-        {
-            VulkanLoad::Model(model);
         }
 
         CreateMaterialBuffer();
@@ -933,7 +932,7 @@ namespace Deako {
         AddPipelineSet("unlit", "shaders/bin/pbr.vert.spv", "shaders/bin/material_unlit.frag.spv");
     }
 
-    void VulkanBase::AddPipelineSet(const std::string prefix, const std::string vertexShader, const std::string fragmentShader)
+    void VulkanBase::AddPipelineSet(const std::string prefix, std::filesystem::path vertexShader, std::filesystem::path fragmentShader)
     {
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
