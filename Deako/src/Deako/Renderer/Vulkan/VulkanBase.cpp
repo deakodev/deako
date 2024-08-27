@@ -3,6 +3,7 @@
 
 #include "Deako/Core/Application.h"
 #include "Deako/Asset/AssetPoolWrapper.h"
+#include "Deako/Asset/GLTFImporter.h"
 #include "Deako/Project/Project.h"
 #include "Deako/Scene/Scene.h"
 
@@ -531,8 +532,8 @@ namespace Deako {
 
         const Scene::Registry& registry = scene->GetRegistry();
 
-        Ref<Model> helmet = AssetPool::ImportAsset<Model>("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-        Ref<Model> box = AssetPool::ImportAsset<Model>("models/Box/glTF-Embedded/Box.gltf");
+        Ref<Model> helmet = AssetPool::ImportGLTF("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
+        Ref<Model> box = AssetPool::ImportGLTF("models/Box/glTF-Embedded/Box.gltf");
 
         auto modalEntities = registry.view<TagComponent, ModelComponent>();
         for (auto& entity : modalEntities)
@@ -798,29 +799,29 @@ namespace Deako {
                     allocInfo.descriptorPool = vr->descriptorPool;
                     allocInfo.pSetLayouts = &vr->descriptorSetLayouts.material;
                     allocInfo.descriptorSetCount = 1;
-                    VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &material.descriptorSet));
+                    VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &material->descriptorSet));
 
                     std::vector<VkDescriptorImageInfo> imageDescriptors = {
                         emptyTextureDescriptor,
                         emptyTextureDescriptor,
-                        material.normalTexture ? material.normalTexture->descriptor : emptyTextureDescriptor,
-                        material.occlusionTexture ? material.occlusionTexture->descriptor : emptyTextureDescriptor,
-                        material.emissiveTexture ? material.emissiveTexture->descriptor : emptyTextureDescriptor
+                        material->normalTexture ? material->normalTexture->descriptor : emptyTextureDescriptor,
+                        material->occlusionTexture ? material->occlusionTexture->descriptor : emptyTextureDescriptor,
+                        material->emissiveTexture ? material->emissiveTexture->descriptor : emptyTextureDescriptor
                     };
 
-                    if (material.pbrWorkflows.metallicRoughness)
+                    if (material->pbrWorkflows.metallicRoughness)
                     {
-                        if (material.baseColorTexture)
-                            imageDescriptors[0] = material.baseColorTexture->descriptor;
-                        if (material.metallicRoughnessTexture)
-                            imageDescriptors[1] = material.metallicRoughnessTexture->descriptor;
+                        if (material->baseColorTexture)
+                            imageDescriptors[0] = material->baseColorTexture->descriptor;
+                        if (material->metallicRoughnessTexture)
+                            imageDescriptors[1] = material->metallicRoughnessTexture->descriptor;
                     }
-                    else if (material.pbrWorkflows.specularGlossiness)
+                    else if (material->pbrWorkflows.specularGlossiness)
                     {
-                        if (material.extension.diffuseTexture)
-                            imageDescriptors[0] = material.extension.diffuseTexture->descriptor;
-                        if (material.extension.specularGlossinessTexture)
-                            imageDescriptors[1] = material.extension.specularGlossinessTexture->descriptor;
+                        if (material->extension.diffuseTexture)
+                            imageDescriptors[0] = material->extension.diffuseTexture->descriptor;
+                        if (material->extension.specularGlossinessTexture)
+                            imageDescriptors[1] = material->extension.specularGlossinessTexture->descriptor;
                     }
 
                     std::array<VkWriteDescriptorSet, 5> write{};
@@ -829,7 +830,7 @@ namespace Deako {
                         write[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                         write[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                         write[i].descriptorCount = 1;
-                        write[i].dstSet = material.descriptorSet;
+                        write[i].dstSet = material->descriptorSet;
                         write[i].dstBinding = static_cast<uint32_t>(i);
                         write[i].pImageInfo = &imageDescriptors[i];
                     }

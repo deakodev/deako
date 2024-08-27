@@ -175,9 +175,7 @@ namespace Deako {
         std::vector<Node*> nodes;
         std::vector<Node*> linearNodes;
 
-        std::vector<Ref<Texture2D>> textures;
-        std::vector<TextureSampler> textureSamplers;
-        std::vector<Material> materials;
+        std::vector<Ref<Material>> materials;
         std::vector<Animation> animations;
         std::vector<Skin*> skins;
         std::vector<std::string> extensions;
@@ -197,6 +195,7 @@ namespace Deako {
         void DrawNode(Node* node, VkCommandBuffer commandBuffer);
         void UpdateAnimation(uint32_t index, float time);
 
+        void SetMaterials(const std::vector<Ref<Material>>& materials);
         void SetVertices();
         void SetIndices();
 

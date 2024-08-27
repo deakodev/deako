@@ -8,170 +8,70 @@
 
 namespace Deako {
 
-    // custom loading ktx textures function used with tinyglTF
-    bool LoadImageDataFunc(tinygltf::Image* image, const int imageIndex, std::string* error, std::string* warning, int req_width, int req_height, const unsigned char* bytes, int size, void* userData)
+    Ref<Model> ModelImporter::ImportModel(const AssetMetadata& metadata)
     {
-        if (image->uri.find_last_of(".") != std::string::npos)
-        {    // ktx files will be handled by our own code
-            if (image->uri.substr(image->uri.find_last_of(".") + 1) == "ktx2")
-                return true;
-        }
+        DK_CORE_INFO("Importing Model");
 
-        return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
-    }
 
-    Ref<Model> ModelImporter::ImportModel(AssetHandle handle, const AssetMetadata& metadata)
-    {
-        DK_CORE_INFO("Importing Model <{0}>", metadata.path.filename().string());
-
-        auto tStart = std::chrono::high_resolution_clock::now();
-
-        bool binary = false;
-        if (metadata.path.extension().string() == ".glb") binary = true;
-
-        tinygltf::Model tinyModel;
-        tinygltf::TinyGLTF gltfContext;
-
-        std::string error;
-        std::string warning;
-
-        gltfContext.SetImageLoader(LoadImageDataFunc, nullptr);
-
-        bool fileLoaded = binary ?
-            gltfContext.LoadBinaryFromFile(&tinyModel, &error, &warning, metadata.path.string()) :
-            gltfContext.LoadASCIIFromFile(&tinyModel, &error, &warning, metadata.path.string());
-
-        Ref<Model> model = CreateRef<Model>();
-        model->path = metadata.path.string();
-
-        if (fileLoaded)
-        {
-            model->extensions = tinyModel.extensionsUsed;
-            for (auto& extension : model->extensions)
-            {   // if model uses basis universal compressed textures, we need to transcode them
-                // So we need to initialize that transcoder once
-                if (extension == "KHR_texture_basisu")
-                {
-                    DK_CORE_INFO("Model uses KHR_texture_basisu, initializing basisu transcoder");
-                    basist::basisu_transcoder_init();
-                }
-            }
-
-            LoadTextureSamplers(tinyModel, model);
-            LoadTextures(tinyModel, model);
-            LoadMaterials(tinyModel, model);
-
-            const tinygltf::Scene& tinyScene = tinyModel.scenes[tinyModel.defaultScene > -1 ? tinyModel.defaultScene : 0];
-
-            // get vertex and index buffer sizes up-front
-            for (size_t i = 0; i < tinyScene.nodes.size(); i++)
-                GetNodeProps(tinyModel.nodes[tinyScene.nodes[i]], tinyModel, model);
-
-            model->vertexData.buffer.Allocate(sizeof(Model::Vertex) * model->vertexData.count);
-            model->indexData.buffer.Allocate(sizeof(uint32_t) * model->indexData.count);
-
-            DK_CORE_ASSERT(model->vertexData.buffer.size > 0);
-
-            // TODO: scene handling with no default scene
-            for (size_t i = 0; i < tinyScene.nodes.size(); i++)
-            {
-                const tinygltf::Node tinyNode = tinyModel.nodes[tinyScene.nodes[i]];
-                LoadNode(nullptr, tinyNode, tinyScene.nodes[i], tinyModel, model, 1.0f);
-            }
-
-            if (tinyModel.animations.size() > 0)
-                LoadAnimations(tinyModel, model);
-
-            LoadSkins(tinyModel, model);
-
-            for (auto linearNode : model->linearNodes)
-            {   // assign skins
-                if (linearNode->skinIndex > -1) linearNode->skin = model->skins[linearNode->skinIndex];
-                // initial pose
-                if (linearNode->mesh) linearNode->Update();
-            }
-
-            // vulkan side
-            model->SetVertices();
-            model->SetIndices();
-            model->DetermineDimensions();
-
-            model->vertexData.buffer.Release();
-            model->indexData.buffer.Release();
-        }
-        else
-        {
-            DK_CORE_ERROR("Could not load gltf file: {0}", error); return nullptr;
-        }
-
-        for (auto& ext : model->extensions)
-        {   // check and list unsupported extensions
-            if (std::find(supportedGLTFExts.begin(), supportedGLTFExts.end(), ext) == supportedGLTFExts.end())
-                DK_CORE_WARN("Unsupported extension {0}. Model may not display as intended.", ext);
-        }
-
-        auto tLoad = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - tStart).count();
-        DK_CORE_INFO("Model import took {0} ms", tLoad);
-
-        return model;
+        return nullptr;
     }
 
     void ModelImporter::LoadTextureSamplers(tinygltf::Model& tinyModel, Ref<Model> model)
     {
-        for (tinygltf::Sampler tinySampler : tinyModel.samplers)
-        {
-            TextureSampler sampler{};
-            sampler.SetFilterModes(tinySampler.minFilter, tinySampler.magFilter);
-            sampler.SetWrapModes(tinySampler.wrapS, tinySampler.wrapT);
-            sampler.addressModeW = sampler.addressModeV;
+        // for (tinygltf::Sampler tinySampler : tinyModel.samplers)
+        // {
+        //     TextureSampler sampler{};
+        //     sampler.SetFilterModes(tinySampler.minFilter, tinySampler.magFilter);
+        //     sampler.SetWrapModes(tinySampler.wrapS, tinySampler.wrapT);
+        //     sampler.addressModeW = sampler.addressModeV;
 
-            model->textureSamplers.push_back(sampler);
-        }
+        //     model->textureSamplers.push_back(sampler);
+        // }
     }
 
     void ModelImporter::LoadTextures(tinygltf::Model& tinyModel, Ref<Model> model)
     {
-        for (tinygltf::Texture& tinyTex : tinyModel.textures)
-        {
-            int source = tinyTex.source;
-            if (tinyTex.extensions.find("KHR_texture_basisu") != tinyTex.extensions.end())
-            {    // if a texture uses KHR_texture_basisu, get source index from extension structure
-                auto ext = tinyTex.extensions.find("KHR_texture_basisu");
-                auto value = ext->second.Get("source");
-                source = value.Get<int>();
-            }
+        // for (tinygltf::Texture& tinyTex : tinyModel.textures)
+        // {
+        //     int source = tinyTex.source;
+        //     if (tinyTex.extensions.find("KHR_texture_basisu") != tinyTex.extensions.end())
+        //     {    // if a texture uses KHR_texture_basisu, get source index from extension structure
+        //         auto ext = tinyTex.extensions.find("KHR_texture_basisu");
+        //         auto value = ext->second.Get("source");
+        //         source = value.Get<int>();
+        //     }
 
-            tinygltf::Image tinyImage = tinyModel.images[source];
-            TextureSampler textureSampler;
-            if (tinyTex.sampler == -1)
-            {    // no sampler specified, use a default one
-                textureSampler.magFilter = VK_FILTER_LINEAR;
-                textureSampler.minFilter = VK_FILTER_LINEAR;
-                textureSampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-                textureSampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-                textureSampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-            }
-            else
-            {
-                textureSampler = model->textureSamplers[tinyTex.sampler];
-            }
+        //     tinygltf::Image tinyImage = tinyModel.images[source];
+        //     TextureSampler textureSampler;
+        //     if (tinyTex.sampler == -1)
+        //     {    // no sampler specified, use a default one
+        //         textureSampler.magFilter = VK_FILTER_LINEAR;
+        //         textureSampler.minFilter = VK_FILTER_LINEAR;
+        //         textureSampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        //         textureSampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        //         textureSampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        //     }
+        //     else
+        //     {
+        //         textureSampler = model->textureSamplers[tinyTex.sampler];
+        //     }
 
-            Ref<Texture2D> texture = CreateRef<Texture2D>();
-            texture->LoadFromGLTFImage(tinyImage, model->path, textureSampler);
-            model->textures.push_back(texture);
-        }
+        //     Ref<Texture2D> texture = CreateRef<Texture2D>();
+        //     texture->LoadFromGLTFImage(tinyImage, model->path, textureSampler);
+        //     model->textures.push_back(texture);
+        // }
     }
 
     void ModelImporter::LoadMaterials(tinygltf::Model& tinyModel, Ref<Model> model)
     {
-        for (tinygltf::Material& tinyMaterial : tinyModel.materials)
-        {
-            Material material{ tinyMaterial, model->textures };
-            material.index = static_cast<uint32_t>(model->materials.size());
-            model->materials.push_back(material);
-        }
-        // push a default material at the end of the list for meshes with no material assigned
-        model->materials.push_back(Material());
+        // for (tinygltf::Material& tinyMaterial : tinyModel.materials)
+        // {
+        //     Material material{ tinyMaterial, model->textures };
+        //     material.index = static_cast<uint32_t>(model->materials.size());
+        //     model->materials.push_back(material);
+        // }
+        // // push a default material at the end of the list for meshes with no material assigned
+        // model->materials.push_back(Material());
     }
 
     void ModelImporter::LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale)
@@ -480,7 +380,7 @@ namespace Deako {
                     }
                 }
 
-                Primitive* primitive = new Primitive(indexStart, model->indexData.count, model->vertexData.count, tinyPrimitive.material > -1 ? model->materials[tinyPrimitive.material] : model->materials.back());
+                Primitive* primitive = new Primitive(indexStart, model->indexData.count, model->vertexData.count, tinyPrimitive.material > -1 ? *model->materials[tinyPrimitive.material] : *model->materials.back());
 
                 primitive->SetBoundingBox(posMin, posMax);
 

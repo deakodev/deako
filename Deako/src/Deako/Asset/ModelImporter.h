@@ -9,9 +9,8 @@ namespace Deako {
     class ModelImporter
     {
     public:
-        static Ref<Model> ImportModel(AssetHandle handle, const AssetMetadata& metadata);
+        static Ref<Model> ImportModel(const AssetMetadata& metadata);
 
-    private:
         static void LoadTextureSamplers(tinygltf::Model& tinyModel, Ref<Model> model);
         static void LoadTextures(tinygltf::Model& tinyModel, Ref<Model> model);
         static void LoadMaterials(tinygltf::Model& tinyModel, Ref<Model> model);

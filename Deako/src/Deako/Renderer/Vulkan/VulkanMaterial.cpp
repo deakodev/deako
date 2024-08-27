@@ -8,58 +8,58 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-    Material::Material(tinygltf::Material& mat, std::vector<Ref<Texture2D>>& textures)
+    Material::Material(tinygltf::Material& tinyMaterial, std::vector<Ref<Texture2D>>& textures)
     {
-        doubleSided = mat.doubleSided;
+        doubleSided = tinyMaterial.doubleSided;
 
-        if (mat.values.find("baseColorTexture") != mat.values.end())
+        if (tinyMaterial.values.find("baseColorTexture") != tinyMaterial.values.end())
         {
-            baseColorTexture = textures[mat.values["baseColorTexture"].TextureIndex()];
-            texCoordSets.baseColor = mat.values["baseColorTexture"].TextureTexCoord();
+            baseColorTexture = textures[tinyMaterial.values["baseColorTexture"].TextureIndex()];
+            texCoordSets.baseColor = tinyMaterial.values["baseColorTexture"].TextureTexCoord();
         }
 
-        if (mat.values.find("metallicRoughnessTexture") != mat.values.end())
+        if (tinyMaterial.values.find("metallicRoughnessTexture") != tinyMaterial.values.end())
         {
-            metallicRoughnessTexture = textures[mat.values["metallicRoughnessTexture"].TextureIndex()];
-            texCoordSets.metallicRoughness = mat.values["metallicRoughnessTexture"].TextureTexCoord();
+            metallicRoughnessTexture = textures[tinyMaterial.values["metallicRoughnessTexture"].TextureIndex()];
+            texCoordSets.metallicRoughness = tinyMaterial.values["metallicRoughnessTexture"].TextureTexCoord();
         }
 
-        if (mat.values.find("roughnessFactor") != mat.values.end())
+        if (tinyMaterial.values.find("roughnessFactor") != tinyMaterial.values.end())
         {
-            roughnessFactor = static_cast<float>(mat.values["roughnessFactor"].Factor());
+            roughnessFactor = static_cast<float>(tinyMaterial.values["roughnessFactor"].Factor());
         }
 
-        if (mat.values.find("metallicFactor") != mat.values.end())
+        if (tinyMaterial.values.find("metallicFactor") != tinyMaterial.values.end())
         {
-            metallicFactor = static_cast<float>(mat.values["metallicFactor"].Factor());
+            metallicFactor = static_cast<float>(tinyMaterial.values["metallicFactor"].Factor());
         }
 
-        if (mat.values.find("baseColorFactor") != mat.values.end())
+        if (tinyMaterial.values.find("baseColorFactor") != tinyMaterial.values.end())
         {
-            baseColorFactor = glm::make_vec4(mat.values["baseColorFactor"].ColorFactor().data());
+            baseColorFactor = glm::make_vec4(tinyMaterial.values["baseColorFactor"].ColorFactor().data());
         }
 
-        if (mat.additionalValues.find("normalTexture") != mat.additionalValues.end())
+        if (tinyMaterial.additionalValues.find("normalTexture") != tinyMaterial.additionalValues.end())
         {
-            normalTexture = textures[mat.additionalValues["normalTexture"].TextureIndex()];
-            texCoordSets.normal = mat.additionalValues["normalTexture"].TextureTexCoord();
+            normalTexture = textures[tinyMaterial.additionalValues["normalTexture"].TextureIndex()];
+            texCoordSets.normal = tinyMaterial.additionalValues["normalTexture"].TextureTexCoord();
         }
 
-        if (mat.additionalValues.find("emissiveTexture") != mat.additionalValues.end())
+        if (tinyMaterial.additionalValues.find("emissiveTexture") != tinyMaterial.additionalValues.end())
         {
-            emissiveTexture = textures[mat.additionalValues["emissiveTexture"].TextureIndex()];
-            texCoordSets.emissive = mat.additionalValues["emissiveTexture"].TextureTexCoord();
+            emissiveTexture = textures[tinyMaterial.additionalValues["emissiveTexture"].TextureIndex()];
+            texCoordSets.emissive = tinyMaterial.additionalValues["emissiveTexture"].TextureTexCoord();
         }
 
-        if (mat.additionalValues.find("occlusionTexture") != mat.additionalValues.end())
+        if (tinyMaterial.additionalValues.find("occlusionTexture") != tinyMaterial.additionalValues.end())
         {
-            occlusionTexture = textures[mat.additionalValues["occlusionTexture"].TextureIndex()];
-            texCoordSets.occlusion = mat.additionalValues["occlusionTexture"].TextureTexCoord();
+            occlusionTexture = textures[tinyMaterial.additionalValues["occlusionTexture"].TextureIndex()];
+            texCoordSets.occlusion = tinyMaterial.additionalValues["occlusionTexture"].TextureTexCoord();
         }
 
-        if (mat.additionalValues.find("alphaMode") != mat.additionalValues.end())
+        if (tinyMaterial.additionalValues.find("alphaMode") != tinyMaterial.additionalValues.end())
         {
-            tinygltf::Parameter param = mat.additionalValues["alphaMode"];
+            tinygltf::Parameter param = tinyMaterial.additionalValues["alphaMode"];
             if (param.string_value == "BLEND")
                 alphaMode = Material::ALPHAMODE_BLEND;
 
@@ -70,20 +70,20 @@ namespace Deako {
             }
         }
 
-        if (mat.additionalValues.find("alphaCutoff") != mat.additionalValues.end())
+        if (tinyMaterial.additionalValues.find("alphaCutoff") != tinyMaterial.additionalValues.end())
         {
-            alphaCutoff = static_cast<float>(mat.additionalValues["alphaCutoff"].Factor());
+            alphaCutoff = static_cast<float>(tinyMaterial.additionalValues["alphaCutoff"].Factor());
         }
 
-        if (mat.additionalValues.find("emissiveFactor") != mat.additionalValues.end())
+        if (tinyMaterial.additionalValues.find("emissiveFactor") != tinyMaterial.additionalValues.end())
         {
-            emissiveFactor = glm::vec4(glm::make_vec3(mat.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
+            emissiveFactor = glm::vec4(glm::make_vec3(tinyMaterial.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
         }
 
         // extensions
-        if (mat.extensions.find("KHR_materials_pbrSpecularGlossiness") != mat.extensions.end())
+        if (tinyMaterial.extensions.find("KHR_materials_pbrSpecularGlossiness") != tinyMaterial.extensions.end())
         {
-            auto ext = mat.extensions.find("KHR_materials_pbrSpecularGlossiness");
+            auto ext = tinyMaterial.extensions.find("KHR_materials_pbrSpecularGlossiness");
             if (ext->second.Has("specularGlossinessTexture"))
             {
                 auto index = ext->second.Get("specularGlossinessTexture").Get("index");
@@ -120,12 +120,12 @@ namespace Deako {
             }
         }
 
-        if (mat.extensions.find("KHR_materials_unlit") != mat.extensions.end())
+        if (tinyMaterial.extensions.find("KHR_materials_unlit") != tinyMaterial.extensions.end())
             unlit = true;
 
-        if (mat.extensions.find("KHR_materials_emissive_strength") != mat.extensions.end())
+        if (tinyMaterial.extensions.find("KHR_materials_emissive_strength") != tinyMaterial.extensions.end())
         {
-            auto ext = mat.extensions.find("KHR_materials_emissive_strength");
+            auto ext = tinyMaterial.extensions.find("KHR_materials_emissive_strength");
             if (ext->second.Has("emissiveStrength"))
             {
                 auto value = ext->second.Get("emissiveStrength");
@@ -144,43 +144,43 @@ namespace Deako {
             {
                 ShaderMaterial shaderMaterial{};
 
-                shaderMaterial.emissiveFactor = material.emissiveFactor;
+                shaderMaterial.emissiveFactor = material->emissiveFactor;
                 // To save space, availabilty and texture coordinate set are combined
                 // -1 = texture not used for this material, >= 0 texture used and index of texture coordinate set
-                shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ?
-                    material.texCoordSets.baseColor : -1;
+                shaderMaterial.colorTextureSet = material->baseColorTexture != nullptr ?
+                    material->texCoordSets.baseColor : -1;
 
-                shaderMaterial.normalTextureSet = material.normalTexture != nullptr ?
-                    material.texCoordSets.normal : -1;
+                shaderMaterial.normalTextureSet = material->normalTexture != nullptr ?
+                    material->texCoordSets.normal : -1;
 
-                shaderMaterial.occlusionTextureSet = material.occlusionTexture != nullptr ?
-                    material.texCoordSets.occlusion : -1;
+                shaderMaterial.occlusionTextureSet = material->occlusionTexture != nullptr ?
+                    material->texCoordSets.occlusion : -1;
 
-                shaderMaterial.emissiveTextureSet = material.emissiveTexture != nullptr ?
-                    material.texCoordSets.emissive : -1;
+                shaderMaterial.emissiveTextureSet = material->emissiveTexture != nullptr ?
+                    material->texCoordSets.emissive : -1;
 
-                shaderMaterial.alphaMask = static_cast<float>(material.alphaMode == Material::ALPHAMODE_MASK);
+                shaderMaterial.alphaMask = static_cast<float>(material->alphaMode == Material::ALPHAMODE_MASK);
 
-                shaderMaterial.alphaMaskCutoff = material.alphaCutoff;
+                shaderMaterial.alphaMaskCutoff = material->alphaCutoff;
 
-                shaderMaterial.emissiveStrength = material.emissiveStrength;
+                shaderMaterial.emissiveStrength = material->emissiveStrength;
 
-                if (material.pbrWorkflows.metallicRoughness)
+                if (material->pbrWorkflows.metallicRoughness)
                 {   // metallic roughness workflow
                     shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-                    shaderMaterial.baseColorFactor = material.baseColorFactor;
-                    shaderMaterial.metallicFactor = material.metallicFactor;
-                    shaderMaterial.roughnessFactor = material.roughnessFactor;
-                    shaderMaterial.PhysicalDescriptorTextureSet = material.metallicRoughnessTexture != nullptr ? material.texCoordSets.metallicRoughness : -1;
-                    shaderMaterial.colorTextureSet = material.baseColorTexture != nullptr ? material.texCoordSets.baseColor : -1;
+                    shaderMaterial.baseColorFactor = material->baseColorFactor;
+                    shaderMaterial.metallicFactor = material->metallicFactor;
+                    shaderMaterial.roughnessFactor = material->roughnessFactor;
+                    shaderMaterial.PhysicalDescriptorTextureSet = material->metallicRoughnessTexture != nullptr ? material->texCoordSets.metallicRoughness : -1;
+                    shaderMaterial.colorTextureSet = material->baseColorTexture != nullptr ? material->texCoordSets.baseColor : -1;
                 }
-                else if (material.pbrWorkflows.specularGlossiness)
+                else if (material->pbrWorkflows.specularGlossiness)
                 {   // specular glossiness workflow
                     shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSSINESS);
-                    shaderMaterial.PhysicalDescriptorTextureSet = material.extension.specularGlossinessTexture != nullptr ? material.texCoordSets.specularGlossiness : -1;
-                    shaderMaterial.colorTextureSet = material.extension.diffuseTexture != nullptr ? material.texCoordSets.baseColor : -1;
-                    shaderMaterial.diffuseFactor = material.extension.diffuseFactor;
-                    shaderMaterial.specularFactor = glm::vec4(material.extension.specularFactor, 1.0f);
+                    shaderMaterial.PhysicalDescriptorTextureSet = material->extension.specularGlossinessTexture != nullptr ? material->texCoordSets.specularGlossiness : -1;
+                    shaderMaterial.colorTextureSet = material->extension.diffuseTexture != nullptr ? material->texCoordSets.baseColor : -1;
+                    shaderMaterial.diffuseFactor = material->extension.diffuseFactor;
+                    shaderMaterial.specularFactor = glm::vec4(material->extension.specularFactor, 1.0f);
                 }
 
                 shaderMaterials.push_back(shaderMaterial);

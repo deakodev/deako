@@ -9,8 +9,8 @@ namespace Deako {
     class TextureImporter
     {
     public:
-        static Ref<Texture2D> ImportTexture2D(AssetHandle handle, const AssetMetadata& metadata);
-        static Ref<TextureCubeMap> ImportTextureCubeMap(AssetHandle handle, const AssetMetadata& metadata);
+        static Ref<Texture2D> ImportTexture2D(const AssetMetadata& metadata);
+        static Ref<TextureCubeMap> ImportTextureCubeMap(const AssetMetadata& metadata);
 
     };
 

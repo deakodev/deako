@@ -7,7 +7,7 @@
 
 namespace Deako {
 
-    using AssetImportFunction = std::function<Ref<Asset>(AssetHandle, const AssetMetadata&)>;
+    using AssetImportFunction = std::function<Ref<Asset>(const AssetMetadata&)>;
     static std::map <AssetType, AssetImportFunction> s_AssetImportFunctions = {
         { AssetType::Texture2D, TextureImporter::ImportTexture2D },
         { AssetType::TextureCubeMap, TextureImporter::ImportTextureCubeMap },
@@ -15,7 +15,7 @@ namespace Deako {
         { AssetType::Scene, SceneImporter::ImportScene }
     };
 
-    Ref<Asset> AssetImporter::Import(AssetHandle handle, const AssetMetadata& metadata)
+    Ref<Asset> AssetImporter::Import(const AssetMetadata& metadata)
     {
         auto it = s_AssetImportFunctions.find(metadata.type);
         if (it == s_AssetImportFunctions.end())
@@ -24,7 +24,7 @@ namespace Deako {
             return nullptr;
         }
 
-        return it->second(handle, metadata);
+        return it->second(metadata);
     }
 
 }

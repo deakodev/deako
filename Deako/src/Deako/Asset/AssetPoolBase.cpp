@@ -39,7 +39,7 @@ namespace Deako {
         else
         {
             const AssetMetadata& metadata = GetMetadata(handle);
-            asset = AssetImporter::Import(handle, metadata);
+            asset = AssetImporter::Import(metadata);
         }
 
         return asset;
@@ -76,17 +76,19 @@ namespace Deako {
         metadata.path = path;
         metadata.type = type;
 
-        Ref<Asset> asset = AssetImporter::Import(handle, metadata);
+        Ref<Asset> asset = AssetImporter::Import(metadata);
         asset->m_Handle = handle;
 
-        if (asset)
-        {
-            m_LoadedAssets[handle] = asset;
-            m_AssetRegistry[handle] = metadata;
-            Serialize::AssetRegistry();
-        }
+        if (asset) AddAsset(asset, metadata);
 
         return asset;
+    }
+
+    void EditorAssetPool::AddAsset(Ref<Asset> asset, const AssetMetadata& metadata)
+    {
+        m_LoadedAssets[asset->m_Handle] = asset;
+        m_AssetRegistry[asset->m_Handle] = metadata;
+        Serialize::AssetRegistry();
     }
 
 }

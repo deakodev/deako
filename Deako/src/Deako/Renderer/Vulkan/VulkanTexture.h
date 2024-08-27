@@ -56,9 +56,9 @@ namespace Deako {
     struct Texture2D : public Texture
     {
         Texture2D() {}
-        Texture2D(const TextureDetails& details, Buffer buffer = Buffer());
+        Texture2D(const TextureDetails& details, Buffer& buffer);
 
-        void LoadFromGLTFImage(tinygltf::Image& gltfimage, std::filesystem::path path, TextureSampler textureSampler);
+        void GenerateFromGLTF(tinygltf::Image& gltfimage, Buffer& textureData, TextureSampler textureSampler);
 
         static AssetType GetStaticType() { return AssetType::Texture2D; }
         virtual AssetType GetType() const override { return GetStaticType(); }
@@ -68,12 +68,9 @@ namespace Deako {
     {
         enum Target { NONE = 0, IRRADIANCE = 1, PREFILTERED = 2 } target;
 
-        TextureCubeMap(const TextureDetails& details, Buffer buffer = Buffer());
+        TextureCubeMap(const TextureDetails& details, Buffer& buffer);
 
         TextureCubeMap(Target target) : target(target) {}
-
-        void LoadFromFile(std::filesystem::path path, VkFormat format, VkImageUsageFlags imageUsageFlags =
-            VK_IMAGE_USAGE_SAMPLED_BIT, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         void GenerateCubeMap();
 

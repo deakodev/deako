@@ -121,6 +121,11 @@ namespace Deako {
             for (auto& node : nodes) node->Update();
     }
 
+    void Model::SetMaterials(const std::vector<Ref<Material>>& materials)
+    {
+        this->materials = materials;
+    }
+
     void Model::SetVertices()
     {
         // create host-visible staging buffers
@@ -181,12 +186,9 @@ namespace Deako {
         if (indices.buffer != VK_NULL_HANDLE)
             VulkanBuffer::Destroy(indices);
 
-        for (auto texture : textures) texture->Destroy();
         for (auto node : nodes) delete node;
         for (auto skin : skins) delete skin;
 
-        textures.resize(0);
-        textureSamplers.resize(0);
         materials.resize(0);
         animations.resize(0);
         nodes.resize(0);

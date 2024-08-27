@@ -82,7 +82,7 @@ namespace Deako {
         } pbrWorkflows;
 
         Material() {}
-        Material(tinygltf::Material& mat, std::vector<Ref<Texture2D>>& textures);
+        Material(tinygltf::Material& tinyMaterial, std::vector<Ref<Texture2D>>& textures);
 
         static AssetType GetStaticType() { return AssetType::Material; }
         virtual AssetType GetType() const override { return GetStaticType(); }

@@ -2,6 +2,8 @@
 
 #include "UUID.h"
 
+#include <typeindex>
+
 namespace Deako {
 
     using AssetHandle = UUID;
@@ -12,13 +14,13 @@ namespace Deako {
         Texture2D,
         TextureCubeMap,
         Material,
-        Prefab,
         Model,
         Scene,
     };
 
     const std::string& AssetTypeToString(AssetType type);
     AssetType AssetTypeFromString(const std::string& type);
+    AssetType AssetTypeFromTypeIndex(const std::type_index& typeIndex);
 
     struct AssetMetadata
     {

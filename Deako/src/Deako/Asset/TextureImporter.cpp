@@ -9,7 +9,7 @@
 
 namespace Deako {
 
-    Ref<Texture2D> TextureImporter::ImportTexture2D(AssetHandle handle, const AssetMetadata& metadata)
+    Ref<Texture2D> TextureImporter::ImportTexture2D(const AssetMetadata& metadata)
     {
         DK_CORE_INFO("Importing Texture2D <{0}>", metadata.path.filename().string());
 
@@ -70,7 +70,7 @@ namespace Deako {
         return texture;
     }
 
-    Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(AssetHandle handle, const AssetMetadata& metadata)
+    Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(const AssetMetadata& metadata)
     {
         DK_CORE_INFO("Importing TextureCube <{0}>", metadata.path.filename().string());
 

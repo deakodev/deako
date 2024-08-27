@@ -49,10 +49,10 @@ namespace Deako {
         VulkanImage::Destroy(image);
     }
 
-    Texture2D::Texture2D(const TextureDetails& details, Buffer buffer)
+    Texture2D::Texture2D(const TextureDetails& details, Buffer& buffer)
         : Texture(details)
     {
-        if (!buffer)
+        if (buffer.size == 0)
             DK_CORE_ERROR("Texture buffer empty. Unable to create Texture2D!");
 
         // create host-visible staging buffer that contains the raw image data
@@ -125,34 +125,19 @@ namespace Deako {
     }
 
     // loads image for texture. Supports jpg, png, embedded and external files as well as external KTX2 files with basis universal texture compression
-    void Texture2D::LoadFromGLTFImage(tinygltf::Image& gltfimage, std::filesystem::path path, TextureSampler textureSampler)
+    void Texture2D::GenerateFromGLTF(tinygltf::Image& gltfimage, Buffer& textureData, TextureSampler textureSampler)
     {
-        bool isKtx2 = false; // KTX2 files need to be handled explicitly
-        if (gltfimage.uri.find_last_of(".") != std::string::npos)
-        {
-            if (gltfimage.uri.substr(gltfimage.uri.find_last_of(".") + 1) == "ktx2")
-                isKtx2 = true;
-        }
-
         image.format = VK_FORMAT_R8G8B8A8_UNORM;
 
-        if (isKtx2)
+        if (gltfimage.uri.substr(gltfimage.uri.find_last_of(".") + 1) == "ktx2")
         {  // image is KTX2 using basis universal compression, needs to be loaded from disk and will be transcoded to a native GPU format
+            if (textureData.size == 0)
+                DK_CORE_ERROR("Texture buffer empty. Unable to create Texture2D!");
+
             basist::ktx2_transcoder ktxTranscoder;
 
-            std::ifstream ifs(path.string(), std::ios::binary | std::ios::in | std::ios::ate);
-            if (!ifs.is_open())
-                throw std::runtime_error("Could not load requested image file: " + path.string());
-
-            uint32_t inputDataSize = static_cast<uint32_t>(ifs.tellg());
-            char* inputData = new char[inputDataSize];
-
-            ifs.seekg(0, std::ios::beg);
-            ifs.read(inputData, inputDataSize);
-
-            bool success = ktxTranscoder.init(inputData, inputDataSize);
-            if (!success)
-                throw std::runtime_error("Could not initialize ktx2 transcoder for image file: " + path.string());
+            bool success = ktxTranscoder.init(textureData.data, textureData.size);
+            DK_CORE_ASSERT(success, "Could not initialize ktx2 transcoder for image file: " + (gltfimage.uri));
 
             // select target format based on device features (use uncompressed if none supported)
             auto targetFormat = basist::transcoder_texture_format::cTFRGBA32;
@@ -239,7 +224,7 @@ namespace Deako {
 
             success = ktxTranscoder.start_transcoding();
             if (!success)
-                throw std::runtime_error("Could not start transcoding for image file " + path.string());
+                throw std::runtime_error("Could not start transcoding for image file ");
 
             // transcode all mip levels into the staging buffer
             for (uint32_t i = 0; i < mipLevels; i++)
@@ -248,7 +233,7 @@ namespace Deako {
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
                 uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
                 if (!ktxTranscoder.transcode_image_level(i, 0, 0, bufferPtr, numBlocksOrPixels, targetFormat, 0)) {
-                    throw std::runtime_error("Could not transcode the requested image file " + path.string());
+                    throw std::runtime_error("Could not transcode the requested image file ");
                 }
                 bufferPtr += outputSize;
             }
@@ -292,7 +277,6 @@ namespace Deako {
             VulkanBuffer::Destroy(staging);
 
             delete[] buffer;
-            delete[] inputData;
         }
         else
         {   // image is a basic glTF format like png or jpg and can be loaded directly via tinyglTF
@@ -444,7 +428,7 @@ namespace Deako {
         UpdateDescriptor();
     }
 
-    TextureCubeMap::TextureCubeMap(const TextureDetails& details, Buffer buffer)
+    TextureCubeMap::TextureCubeMap(const TextureDetails& details, Buffer& buffer)
         : Texture(details)
     {
         if (!buffer)
