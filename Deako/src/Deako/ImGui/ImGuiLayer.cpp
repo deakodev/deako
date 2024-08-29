@@ -1,6 +1,8 @@
 #include "ImGuiLayer.h"
 #include "dkpch.h"
 
+#include "ImGuiIcons.h"
+
 #include "Deako/Core/Application.h"
 
 #include <imgui.h>
@@ -62,6 +64,14 @@ namespace Deako {
 
         io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 16.0f);
         io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 16.0f);
+
+        static const ImWchar iconsRanges[] = { 0xf000, 0xf82f, 0 };
+        ImFontConfig iconsConfig;
+        iconsConfig.MergeMode = true;  // merge with previous font
+        iconsConfig.PixelSnapH = true;
+        iconsConfig.GlyphOffset = { -8.0, 22.0f };
+
+        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/fontawesome/FA-Regular-400.ttf", 72.0f, &iconsConfig, iconsRanges);
 
         ImGuiStyle& style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)

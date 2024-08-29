@@ -9,8 +9,10 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
+        m_ActiveProject = Project::GetActive();
         m_ActiveScene = Scene::GetActiveScene();
 
+        m_ContentBrowserPanel.SetContext(m_ActiveProject);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
 
@@ -92,6 +94,9 @@ namespace Deako {
 
             ImGui::EndMenuBar();
         }
+
+        //// SCENE HIERARCHY ////
+        m_ContentBrowserPanel.OnImGuiRender();
 
         //// SCENE HIERARCHY ////
         m_SceneHierarchyPanel.OnImGuiRender();

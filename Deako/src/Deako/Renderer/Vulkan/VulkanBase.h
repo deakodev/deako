@@ -164,11 +164,9 @@ namespace Deako {
         std::vector<DescriptorSets>        descriptorSets;
         VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
 
-        // std::map<std::string, std::string> environments;
         AllocatedBuffer                    shaderMaterialBuffer;
         VkDescriptorBufferInfo             shaderMaterialDescriptorInfo{ VK_NULL_HANDLE };
         VkDescriptorSet                    shaderMaterialDescriptorSet{ VK_NULL_HANDLE };
-
 
         Camera                             camera;
     };

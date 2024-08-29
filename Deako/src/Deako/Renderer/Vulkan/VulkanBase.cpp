@@ -1168,13 +1168,13 @@ namespace Deako {
 
         ImGui_ImplVulkan_Init(&initInfo);
 
+        // viewport
         VkSamplerCreateInfo sampler{};
         sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         sampler.magFilter = VK_FILTER_LINEAR;
         sampler.minFilter = VK_FILTER_LINEAR;
         vkCreateSampler(vr->device, &sampler, nullptr, &vr->viewport.sampler);
 
-        // viewport images
         vr->viewport.images.resize(vr->swapchain.imageCount);
         vr->viewport.textureIDs.resize(vr->swapchain.imageCount);
         for (uint32_t i = 0; i < vr->viewport.images.size(); i++)

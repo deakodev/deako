@@ -14,7 +14,7 @@ namespace Deako {
         DK_CORE_INFO("Importing Texture2D <{0}>", metadata.path.filename().string());
 
         uint32_t width{ 0 }, height{ 0 }, mipLevels{ 1 };
-        std::vector<uint32_t> mipLevelWidths, mipLevelHeights, mipLevelOffsets;
+        std::vector<uint32_t> mipLevelWidths{ 1 }, mipLevelHeights{ 1 }, mipLevelOffsets{ 1 };
         Buffer buffer;
 
         if (metadata.path.extension() == ".ktx")
@@ -47,7 +47,11 @@ namespace Deako {
 
             int channels;
             uint8_t* data = stbi_load(metadata.path.c_str(), reinterpret_cast<int*>(&width), reinterpret_cast<int*>(&height), &channels, STBI_rgb_alpha);
-            DK_CORE_ASSERT(buffer, "Unable to load texture from file!");
+            DK_CORE_ASSERT(data, "Unable to load texture from file!");
+            // TODO: think about mips
+            mipLevelWidths[0] = width;
+            mipLevelHeights[0] = height;
+            mipLevelOffsets[0] = 0;
 
             size_t bufferSize = width * height * channels; // TODO: find better way to determine size?
             buffer = Buffer(data, bufferSize);
@@ -68,6 +72,15 @@ namespace Deako {
         Ref<Texture2D> texture = CreateRef<Texture2D>(details, buffer);
 
         return texture;
+    }
+
+    Ref<Texture2D> TextureImporter::ImportTexture2DViaPath(const std::filesystem::path& path)
+    {
+        AssetMetadata metadata;
+        metadata.path = path;
+        metadata.type = AssetType::Texture2D;
+
+        return ImportTexture2D(metadata);
     }
 
     Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(const AssetMetadata& metadata)

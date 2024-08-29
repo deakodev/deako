@@ -49,6 +49,8 @@ namespace Deako {
         Texture() {}
         Texture(TextureDetails details);
 
+        VkImageView GetImageView() { return image.view; }
+
         void UpdateDescriptor();
         void Destroy();
     };

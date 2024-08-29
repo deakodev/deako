@@ -24,8 +24,8 @@ namespace Deako {
 
     struct AssetMetadata
     {
-        AssetType type = AssetType::None;
         std::filesystem::path path;
+        AssetType type = AssetType::None;
 
         operator bool() const { return type != AssetType::None; }
     };
