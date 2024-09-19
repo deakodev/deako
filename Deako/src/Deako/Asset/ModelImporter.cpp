@@ -8,70 +8,11 @@
 
 namespace Deako {
 
-    Ref<Model> ModelImporter::ImportModel(const AssetMetadata& metadata)
+    Ref<Model> ModelImporter::ImportModel(AssetHandle handle, AssetMetadata metadata)
     {
         DK_CORE_INFO("Importing Model");
 
-
         return nullptr;
-    }
-
-    void ModelImporter::LoadTextureSamplers(tinygltf::Model& tinyModel, Ref<Model> model)
-    {
-        // for (tinygltf::Sampler tinySampler : tinyModel.samplers)
-        // {
-        //     TextureSampler sampler{};
-        //     sampler.SetFilterModes(tinySampler.minFilter, tinySampler.magFilter);
-        //     sampler.SetWrapModes(tinySampler.wrapS, tinySampler.wrapT);
-        //     sampler.addressModeW = sampler.addressModeV;
-
-        //     model->textureSamplers.push_back(sampler);
-        // }
-    }
-
-    void ModelImporter::LoadTextures(tinygltf::Model& tinyModel, Ref<Model> model)
-    {
-        // for (tinygltf::Texture& tinyTex : tinyModel.textures)
-        // {
-        //     int source = tinyTex.source;
-        //     if (tinyTex.extensions.find("KHR_texture_basisu") != tinyTex.extensions.end())
-        //     {    // if a texture uses KHR_texture_basisu, get source index from extension structure
-        //         auto ext = tinyTex.extensions.find("KHR_texture_basisu");
-        //         auto value = ext->second.Get("source");
-        //         source = value.Get<int>();
-        //     }
-
-        //     tinygltf::Image tinyImage = tinyModel.images[source];
-        //     TextureSampler textureSampler;
-        //     if (tinyTex.sampler == -1)
-        //     {    // no sampler specified, use a default one
-        //         textureSampler.magFilter = VK_FILTER_LINEAR;
-        //         textureSampler.minFilter = VK_FILTER_LINEAR;
-        //         textureSampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        //         textureSampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        //         textureSampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        //     }
-        //     else
-        //     {
-        //         textureSampler = model->textureSamplers[tinyTex.sampler];
-        //     }
-
-        //     Ref<Texture2D> texture = CreateRef<Texture2D>();
-        //     texture->LoadFromGLTFImage(tinyImage, model->path, textureSampler);
-        //     model->textures.push_back(texture);
-        // }
-    }
-
-    void ModelImporter::LoadMaterials(tinygltf::Model& tinyModel, Ref<Model> model)
-    {
-        // for (tinygltf::Material& tinyMaterial : tinyModel.materials)
-        // {
-        //     Material material{ tinyMaterial, model->textures };
-        //     material.index = static_cast<uint32_t>(model->materials.size());
-        //     model->materials.push_back(material);
-        // }
-        // // push a default material at the end of the list for meshes with no material assigned
-        // model->materials.push_back(Material());
     }
 
     void ModelImporter::LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale)

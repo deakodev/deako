@@ -41,8 +41,19 @@ namespace Deako {
 
         const Registry& GetRegistry() { return m_Registry; }
 
+        Entity GetEntityByName(const std::string& name);
+        // Entity GetEntityByUUID(EntityID id);
+
+        template<typename... Components>
+        auto GetAllEntitiesWith()
+        {
+            return m_Registry.view<Components...>();
+        }
+
         static AssetType GetStaticType() { return AssetType::Scene; }
         virtual AssetType GetType() const override { return GetStaticType(); }
+
+        virtual void Destroy() override {}
 
     private:
         template<typename T>
@@ -51,9 +62,6 @@ namespace Deako {
     private:
         Registry m_Registry;
         SceneDetails m_Details;
-
-        float m_ViewportWidth = 0.0f;
-        float m_ViewportHeight = 0.0f;
 
         friend class Entity;
         friend class SceneHierarchyPanel;

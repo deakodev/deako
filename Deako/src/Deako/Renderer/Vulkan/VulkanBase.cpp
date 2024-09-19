@@ -2,10 +2,7 @@
 #include "dkpch.h"
 
 #include "Deako/Core/Application.h"
-#include "Deako/Asset/AssetPoolWrapper.h"
-#include "Deako/Asset/GLTFImporter.h"
-#include "Deako/Project/Project.h"
-#include "Deako/Scene/Scene.h"
+#include "Deako/Asset/AssetPool.h"
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -95,20 +92,13 @@ namespace Deako {
 
         VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
-        for (auto& [tag, model] : vr->propModels)
-        {
-            if (model) AssetPool::DestroyAsset<Model>(model->m_Handle);
-        }
-        for (auto& [tag, model] : vr->environmentModels)
-        {
-            if (model) AssetPool::DestroyAsset<Model>(model->m_Handle);
-        }
+        AssetPool::CleanUp();
 
+        vr->textures.empty->Destroy();
         vr->textures.lutBrdf->Destroy();
         vr->textures.irradianceCube->Destroy();
         vr->textures.prefilteredCube->Destroy();
         vr->textures.environmentCube->Destroy();
-        vr->textures.empty->Destroy();
 
         for (auto& frame : vr->frames)
         {
@@ -524,39 +514,28 @@ namespace Deako {
     {
         Ref<Project> project = Project::Open("sandbox/sandbox.proj.deako");
 
-        vr->textures.empty = AssetPool::ImportAsset<Texture2D>("textures/empty.ktx");
+        vr->scene = AssetPool::Import<Scene>("scenes/sandbox.scene.deako");
 
-        Ref<Scene> scene = AssetPool::ImportAsset<Scene>("scenes/sandbox.scene.deako");
+        Scene::SetActiveScene(vr->scene);
 
-        Scene::SetActiveScene(scene);
-
-        const Scene::Registry& registry = scene->GetRegistry();
-
-        Ref<Model> helmet = AssetPool::ImportGLTF("models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf");
-        Ref<Model> box = AssetPool::ImportGLTF("models/Box/glTF-Embedded/Box.gltf");
-
-        auto modalEntities = registry.view<TagComponent, ModelComponent>();
-        for (auto& entity : modalEntities)
+        auto entities = vr->scene->GetAllEntitiesWith<TagComponent, ModelComponent>();
+        for (auto& entity : entities)
         {
-            auto [tagComp, modelComp] = modalEntities.get<TagComponent, ModelComponent>(entity);
+            auto [tagComp, modelComp] = entities.get<TagComponent, ModelComponent>(entity);
+            Ref<Model> model = AssetPool::Get<Model>(modelComp.handle);
+            vr->entities.emplace(tagComp.tag, model);
 
-            if (modelComp.usage == ModelComponent::Usage::PROP)
+            if (tagComp.tag == "Skybox")
             {
-                vr->propModels[tagComp.tag] = helmet;
-            }
-            else if (modelComp.usage == ModelComponent::Usage::ENVIRONMENT)
-            {
-                vr->environmentModels[tagComp.tag] = box;
-            }
-            else if (modelComp.usage == ModelComponent::Usage::NONE)
-            {
-                DK_CORE_WARN("{0} model not assigned usage!", tagComp.tag);
+                vr->background = model;
+                vr->entities.erase(tagComp.tag);
             }
         }
 
         CreateMaterialBuffer();
 
-        vr->textures.environmentCube = AssetPool::ImportAsset<TextureCubeMap>("environments/papermill.ktx");
+        vr->textures.empty = AssetPool::Import<Texture2D>("textures/empty.ktx");
+        vr->textures.environmentCube = AssetPool::Import<TextureCubeMap>("environments/satara_night_cube.ktx");
         vr->textures.irradianceCube->GenerateCubeMap();
         vr->textures.prefilteredCube->GenerateCubeMap();
 
@@ -575,7 +554,7 @@ namespace Deako {
         if (minUniformAlignment > 0)
             vr->dynamicUniformAlignment = (vr->dynamicUniformAlignment + minUniformAlignment - 1) & ~(minUniformAlignment - 1);
 
-        size_t dynamicBufferSize = vr->propModels.size() * vr->dynamicUniformAlignment;
+        size_t dynamicBufferSize = vr->entities.size() * vr->dynamicUniformAlignment;
 
         vr->uniformDataDynamic.model = (glm::mat4*)VulkanMemory::AlignedAlloc(dynamicBufferSize, vr->dynamicUniformAlignment);
         DK_CORE_ASSERT(vr->uniformDataDynamic.model);
@@ -606,7 +585,7 @@ namespace Deako {
 
     void VulkanBase::UpdateUniforms()
     {
-        // shared scene
+        // // shared scene
         vr->uniformDataShared.projection = vr->camera.matrices.perspective;
         vr->uniformDataShared.view = vr->camera.matrices.view;
 
@@ -615,17 +594,17 @@ namespace Deako {
 
         // models
         uint32_t index = 0;
-        for (auto& [tag, model] : vr->propModels)
+        for (auto& [tag, model] : vr->entities)
         {
             // aligned offset
             glm::mat4* modelMatrix = (glm::mat4*)(((uint64_t)vr->uniformDataDynamic.model + (index * vr->dynamicUniformAlignment)));
 
-            glm::mat4 aabb = vr->propModels[tag]->aaBoundingBox;
+            glm::mat4 aabb = vr->entities[tag]->aaBoundingBox;
 
             float scaleX = glm::length(glm::vec3(aabb[0]));
             float scaleY = glm::length(glm::vec3(aabb[1]));
             float scaleZ = glm::length(glm::vec3(aabb[2]));
-            float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 2.0f;
+            float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 6.0f;
 
             glm::vec3 aabbMin = glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
             glm::vec3 aabbMax = aabbMin + glm::vec3(scaleX, scaleY, scaleZ);
@@ -647,7 +626,7 @@ namespace Deako {
         }
 
         VulkanResources::UniformSet uniformSet = vr->uniforms[vr->currentFrame];
-        memcpy(uniformSet.dynamic.buffer.mapped, vr->uniformDataDynamic.model, vr->dynamicUniformAlignment * vr->propModels.size());
+        memcpy(uniformSet.dynamic.buffer.mapped, vr->uniformDataDynamic.model, vr->dynamicUniformAlignment * vr->entities.size());
         memcpy(uniformSet.shared.buffer.mapped, &vr->uniformDataShared, sizeof(vr->uniformDataShared));
         memcpy(uniformSet.params.buffer.mapped, &vr->shaderValuesParams, sizeof(vr->shaderValuesParams));
 
@@ -655,7 +634,7 @@ namespace Deako {
         VkMappedMemoryRange memoryRange{};
         memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         memoryRange.memory = uniformSet.dynamic.buffer.memory;
-        memoryRange.size = vr->dynamicUniformAlignment * vr->propModels.size();
+        memoryRange.size = vr->dynamicUniformAlignment * vr->entities.size();
         vkFlushMappedMemoryRanges(vr->device, 1, &memoryRange);
     }
 
@@ -669,7 +648,7 @@ namespace Deako {
         // environment samplers (radiance, irradiance, brdf lut)
         imageSamplerCount += 3;
 
-        for (auto& [tag, model] : vr->propModels)
+        for (auto& [tag, model] : vr->entities)
         {
             for (auto& material : model->materials)
             {
@@ -788,7 +767,7 @@ namespace Deako {
             VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
 
             // per-material descriptor sets
-            for (auto& [tag, model] : vr->propModels)
+            for (auto& [tag, model] : vr->entities)
             {
                 for (auto& material : model->materials)
                 {
@@ -850,7 +829,7 @@ namespace Deako {
                 layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
                 VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.node));
 
-                for (auto& [tag, model] : vr->propModels)
+                for (auto& [tag, model] : vr->entities)
                 {
                     for (auto& node : model->nodes) // per-node descriptor set
                         node->SetDescriptorSet();
@@ -1156,7 +1135,7 @@ namespace Deako {
         initInfo.Queue = vr->graphicsQueue;
         initInfo.ImageCount = vs->frameOverlap;
         initInfo.MinImageCount = 2;
-        initInfo.MSAASamples = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;;
+        initInfo.MSAASamples = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = VK_NULL_HANDLE;
 
         initInfo.UseDynamicRendering = true;
@@ -1347,7 +1326,7 @@ namespace Deako {
         //         vr->models.scene.UpdateAnimation(vr->models.animationIndex, vr->models.animationTimer);
         //     }
 
-        //     UpdateShaderParams();
+            // UpdateShaderParams();
         // }
 
         if (vr->camera.updated) UpdateUniforms();
@@ -1408,13 +1387,13 @@ namespace Deako {
         {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 1, &dynamicOffset);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelines["skybox"]);
-            vr->environmentModels["Skybox"]->Draw(commandBuffer);
+            vr->background->Draw(commandBuffer);
         }
 
         VkDeviceSize offsets[1] = { 0 };
 
         uint32_t index = 0;
-        for (auto& [tag, model] : vr->propModels)
+        for (auto [tag, model] : vr->entities)
         {
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, offsets);
 
@@ -1433,8 +1412,7 @@ namespace Deako {
             for (auto node : model->nodes)
                 RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK, dynamicOffset);
             // transparent primitives
-            // TODO: Correct depth sorting
-            for (auto node : model->nodes)
+            for (auto node : model->nodes) // TODO: Correct depth sorting
                 RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND, dynamicOffset);
 
             index++;

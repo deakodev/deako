@@ -189,7 +189,7 @@ namespace Deako {
         for (auto node : nodes) delete node;
         for (auto skin : skins) delete skin;
 
-        materials.resize(0);
+        // materials.resize(0);
         animations.resize(0);
         nodes.resize(0);
         linearNodes.resize(0);

@@ -2,9 +2,13 @@
 
 #include "Scene.h"
 
+#include "Deako/Core/UUID.h"
+
 #include "entt.hpp"
 
 namespace Deako {
+
+    using EntityID = UUID;
 
     class Entity
     {
@@ -41,6 +45,9 @@ namespace Deako {
             DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
         }
+
+        UUID GetUUID() { return GetComponent<IDComponent>().id; }
+        const std::string& GetName() { return GetComponent<TagComponent>().tag; }
 
         // allows us to check if entity is valid, e.g., if(entity)
         operator bool() const { return m_EntityHandle != entt::null; }

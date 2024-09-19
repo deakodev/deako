@@ -7,7 +7,7 @@ namespace Deako {
     class AssetImporter
     {
     public:
-        static Ref<Asset> Import(const AssetMetadata& metadata);
+        static Ref<Asset> Import(AssetHandle handle, AssetMetadata metadata);
     };
 
 }

@@ -9,7 +9,7 @@ namespace Deako {
     class SceneImporter
     {
     public:
-        static Ref<Scene> ImportScene(const AssetMetadata& metadata);
+        static Ref<Scene> ImportScene(AssetHandle handle, AssetMetadata metadata);
 
     };
 

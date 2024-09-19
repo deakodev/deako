@@ -4,8 +4,6 @@
 #include "Deako/Event/KeyEvent.h"
 #include "Deako/Event/MouseEvent.h"
 
-// #include "Deako/Renderer/Vulkan/VulkanBase.h"
-
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -28,7 +26,7 @@ namespace Deako {
         static void SetStyles();
 
     private:
-        static void SetDarkThemeColors();
+        static void SetDarkTheme();
 
     private:
         bool m_BlockEvents = true;

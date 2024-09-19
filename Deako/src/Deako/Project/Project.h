@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Deako/Asset/AssetPoolBase.h"
+#include "Deako/Asset/AssetPool.h"
 
 namespace Deako {
 
@@ -15,7 +15,7 @@ namespace Deako {
     class Project
     {
     public:
-        static Ref<Project> Open(const std::string& filename);
+        static Ref<Project> Open(const std::filesystem::path& path);
         bool Save();
 
         static Ref<Project> GetActive() { return s_ActiveProject; }
@@ -43,12 +43,11 @@ namespace Deako {
         const ProjectDetails& GetDetails() { return m_Details; }
 
         Ref<AssetPoolBase> GetAssetPool() { return m_AssetPool; }
-        Ref<EditorAssetPool> GetEditorAssetPool() { return std::static_pointer_cast<EditorAssetPool>(m_AssetPool); }
-        Ref<RuntimeAssetPool> GetRuntimeAssetPool() { return std::static_pointer_cast<RuntimeAssetPool>(m_AssetPool); }
 
     private:
         ProjectDetails m_Details;
         Ref<AssetPoolBase> m_AssetPool;
+
         inline static std::filesystem::path s_ProjectDirectory{ "Deako-Editor/projects/" };
         inline static Ref<Project> s_ActiveProject;
     };

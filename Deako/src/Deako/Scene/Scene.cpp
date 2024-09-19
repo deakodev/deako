@@ -59,6 +59,18 @@ namespace Deako {
         m_Registry.destroy(entity);
     }
 
+    Entity Scene::GetEntityByName(const std::string& name)
+    {
+        auto entities = m_Registry.view<TagComponent>();
+        for (auto entity : entities)
+        {
+            const TagComponent& tc = entities.get<TagComponent>(entity);
+            if (tc.tag == name)
+                return Entity{ entity, this };
+        }
+        return {};
+    }
+
     template<>
     void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
     {
@@ -75,7 +87,17 @@ namespace Deako {
     }
 
     template<>
+    void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component)
+    {
+    }
+
+    template<>
     void Scene::OnComponentAdded<ModelComponent>(Entity entity, ModelComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component)
     {
     }
 

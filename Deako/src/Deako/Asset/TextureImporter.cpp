@@ -9,17 +9,17 @@
 
 namespace Deako {
 
-    Ref<Texture2D> TextureImporter::ImportTexture2D(const AssetMetadata& metadata)
+    Ref<Texture2D> TextureImporter::ImportTexture2D(AssetHandle handle, AssetMetadata metadata)
     {
-        DK_CORE_INFO("Importing Texture2D <{0}>", metadata.path.filename().string());
+        DK_CORE_INFO("Importing Texture2D <{0}>", metadata.assetPath.filename().string());
 
         uint32_t width{ 0 }, height{ 0 }, mipLevels{ 1 };
         std::vector<uint32_t> mipLevelWidths{ 1 }, mipLevelHeights{ 1 }, mipLevelOffsets{ 1 };
         Buffer buffer;
 
-        if (metadata.path.extension() == ".ktx")
+        if (metadata.assetPath.extension() == ".ktx")
         {
-            gli::texture2d texture(gli::load(metadata.path.string()));
+            gli::texture2d texture(gli::load(metadata.assetPath.string()));
             DK_CORE_ASSERT(!texture.empty(), "Unable to load KTX texture from file!");
 
             width = static_cast<uint32_t>(texture[0].extent().x);
@@ -46,7 +46,7 @@ namespace Deako {
             stbi_set_flip_vertically_on_load(1);
 
             int channels;
-            uint8_t* data = stbi_load(metadata.path.c_str(), reinterpret_cast<int*>(&width), reinterpret_cast<int*>(&height), &channels, STBI_rgb_alpha);
+            uint8_t* data = stbi_load(metadata.assetPath.c_str(), reinterpret_cast<int*>(&width), reinterpret_cast<int*>(&height), &channels, STBI_rgb_alpha);
             DK_CORE_ASSERT(data, "Unable to load texture from file!");
             // TODO: think about mips
             mipLevelWidths[0] = width;
@@ -70,28 +70,30 @@ namespace Deako {
         details.layout = VulkanImage::ConvertToVulkanLayout(ImageLayout::DK_SHADER_READ_ONLY_OPTIMAL);
 
         Ref<Texture2D> texture = CreateRef<Texture2D>(details, buffer);
+        texture->m_Handle = handle;
 
         return texture;
     }
 
     Ref<Texture2D> TextureImporter::ImportTexture2DViaPath(const std::filesystem::path& path)
     {
+        AssetHandle handle;
         AssetMetadata metadata;
-        metadata.path = path;
-        metadata.type = AssetType::Texture2D;
+        metadata.assetPath = path;
+        metadata.assetType = AssetType::Texture2D;
 
-        return ImportTexture2D(metadata);
+        return ImportTexture2D(handle, metadata);
     }
 
-    Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(const AssetMetadata& metadata)
+    Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(AssetHandle handle, AssetMetadata metadata)
     {
-        DK_CORE_INFO("Importing TextureCube <{0}>", metadata.path.filename().string());
+        DK_CORE_INFO("Importing TextureCube <{0}>", metadata.assetPath.filename().string());
 
         uint32_t width{ 0 }, height{ 0 }, mipLevels{ 1 };
         std::vector<uint32_t> mipLevelWidths, mipLevelHeights, mipLevelOffsets;
         Buffer buffer;
 
-        gli::texture_cube textureCube(gli::load(metadata.path.string()));
+        gli::texture_cube textureCube(gli::load(metadata.assetPath.string()));
         DK_CORE_ASSERT(!textureCube.empty(), "Unable to load texture cube from file!");
 
         width = static_cast<uint32_t>(textureCube[0].extent().x);
@@ -129,6 +131,7 @@ namespace Deako {
         details.layout = VulkanImage::ConvertToVulkanLayout(ImageLayout::DK_SHADER_READ_ONLY_OPTIMAL);
 
         Ref<TextureCubeMap> texture = CreateRef<TextureCubeMap>(details, buffer);
+        texture->m_Handle = handle;
 
         return texture;
     }

@@ -14,6 +14,7 @@ namespace Deako {
             { AssetType::TextureCubeMap, "TextureCubeMap" },
             { AssetType::Material, "Material" },
             { AssetType::Model, "Model" },
+            { AssetType::Prefab, "Prefab" },
             { AssetType::Scene, "Scene" },
     };
 

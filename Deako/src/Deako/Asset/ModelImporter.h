@@ -9,11 +9,8 @@ namespace Deako {
     class ModelImporter
     {
     public:
-        static Ref<Model> ImportModel(const AssetMetadata& metadata);
+        static Ref<Model> ImportModel(AssetHandle handle, AssetMetadata metadata);
 
-        static void LoadTextureSamplers(tinygltf::Model& tinyModel, Ref<Model> model);
-        static void LoadTextures(tinygltf::Model& tinyModel, Ref<Model> model);
-        static void LoadMaterials(tinygltf::Model& tinyModel, Ref<Model> model);
         static void LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale);
         static void LoadAnimations(tinygltf::Model& tinyModel, Ref<Model> model);
         static void LoadSkins(tinygltf::Model& tinyModel, Ref<Model> model);

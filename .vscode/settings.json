@@ -83,7 +83,9 @@
     "typeindex": "cpp",
     "shared_mutex": "cpp",
     "cinttypes": "cpp",
-    "memory_resource": "cpp"
+    "memory_resource": "cpp",
+    "print": "cpp",
+    "memory": "cpp"
   },
   "editor.cursorStyle": "line-thin",
   "editor.fontFamily": "'SF Mono', Menlo, Monaco, 'Courier New', monospace",

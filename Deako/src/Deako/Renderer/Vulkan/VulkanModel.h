@@ -189,7 +189,7 @@ namespace Deako {
         glm::mat4 aaBoundingBox;
 
         Model() = default;
-        void Destroy();
+        virtual void Destroy() override;
 
         void Draw(VkCommandBuffer commandBuffer);
         void DrawNode(Node* node, VkCommandBuffer commandBuffer);

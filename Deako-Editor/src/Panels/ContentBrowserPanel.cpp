@@ -23,7 +23,7 @@ namespace Deako {
     {
         auto now = RateLimiter::Clock::now();
 
-        ImGui::Begin("Content Browser");
+        ImGui::Begin("Assets");
 
         if (m_RateLimiter.Trigger(now))
         {
@@ -40,53 +40,86 @@ namespace Deako {
             }
         }
 
-        static float cellMargin = 10.0f;
-        static float thumbnailSize = 92.0f;
-        float cellWidth = thumbnailSize + cellMargin;
+        float buttonWidth = ImGui::GetContentRegionAvail().x;
+        float buttonHeight = 22.0f;
 
-        float panelWidth = ImGui::GetContentRegionAvail().x;
-        int columnCount = (int)(panelWidth / cellWidth);
-        if (columnCount < 1) columnCount = 1;
-
-        ImGui::Columns(columnCount, 0, false);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(cellMargin, 0.0f));
-
-        // render from cached directory contents
-        for (const DirectoryEntry& entry : m_DirectoryCache)
+        if (ImGui::BeginTable("Entries", 1))
         {
-            auto& icon = entry.isDirectory ? Icons::Folder : Icons::File;
+            ImGui::TableNextColumn();
 
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-
-            ImGui::Button(icon, { thumbnailSize, thumbnailSize });
-
-            ImGui::PopStyleColor(3);
-
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            for (const DirectoryEntry& entry : m_DirectoryCache)
             {
-                if (entry.isDirectory)
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
+                auto& icon = entry.isDirectory ? Icons::Folder : Icons::File;
+
+                ImGui::Button((icon + entry.filename).c_str(), { buttonWidth, buttonHeight });
+
+                if (ImGui::BeginDragDropSource())
                 {
-                    m_CurrentDirectory /= entry.path.filename();
-                    Refresh(); // refresh when entering a directory
+                    std::string itemPath = entry.path.string();
+                    ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size() + 1, ImGuiCond_Once);
+                    ImGui::EndDragDropSource();
+                }
+
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                {
+                    if (entry.isDirectory)
+                    {
+                        m_CurrentDirectory /= entry.path.filename();
+                        Refresh(); // refresh when entering a directory
+                    }
                 }
             }
-
-            ImGui::TextWrapped("%s", entry.filename.c_str());
-
-            ImGui::NextColumn();
+            ImGui::EndTable();
         }
 
-        ImGui::PopStyleVar();
-        ImGui::Columns(1);
+        // render from cached directory contents
+        // for (const DirectoryEntry& entry : m_DirectoryCache)
+        // {
+        //     auto& icon = entry.isDirectory ? Icons::Folder : Icons::File;
+
+        //     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        //     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
+        //     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+
+        //     ImGui::Button((icon + entry.filename).c_str(), { thumbnailSize, thumbnailSize });
+
+        //     ImGui::PopStyleColor(3);
+
+        //     if (ImGui::BeginDragDropSource())
+        //     {
+        //         std::string itemPath = entry.path.string();
+        //         ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size() + 1, ImGuiCond_Once);
+        //         ImGui::EndDragDropSource();
+        //     }
+
+        //     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        //     {
+        //         if (entry.isDirectory)
+        //         {
+        //             m_CurrentDirectory /= entry.path.filename();
+        //             Refresh(); // refresh when entering a directory
+        //         }
+        //     }
+
+        //     // ImGui::TextWrapped("%s", entry.filename.c_str());
+
+        //     ImGui::NextColumn();
+        // }
+
+        // ImGui::PopStyleVar();
+        // ImGui::Columns(1);
 
         ImGui::End();
+
+        ImGui::ShowDemoWindow();
     }
 
     void ContentBrowserPanel::Refresh()
     {
-        m_DirectoryCache.clear(); // Clear previous contents
+        m_DirectoryCache.clear();
 
         for (auto& it : std::filesystem::directory_iterator(m_CurrentDirectory))
         {

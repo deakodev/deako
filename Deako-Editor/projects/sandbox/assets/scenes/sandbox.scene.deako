@@ -2,33 +2,21 @@ Scene:
   Name: Sandbox
   Filename: sandbox.scene.deako
 Entities:
-  - Entity: 1
+  - Entity: 81234097091941911
     TagComponent:
       Tag: DamagedHelmet
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    ModelComponent:
-      Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
-      Usage: 1
-  - Entity: 2
-    TagComponent:
-      Tag: DamagedHelmet2
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    ModelComponent:
-      Path: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
-      Usage: 1
-  - Entity: 3
+    PrefabComponent:
+      AssetHandle: 51418710489529541
+  - Entity: 63025543015532544
     TagComponent:
       Tag: Skybox
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    ModelComponent:
-      Path: models/Box/glTF-Embedded/Box.gltf
-      Usage: 2
+    PrefabComponent:
+      AssetHandle: 57892318812072087

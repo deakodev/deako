@@ -4,27 +4,29 @@
 #include "TextureImporter.h"
 #include "ModelImporter.h"
 #include "SceneImporter.h"
+#include "PrefabImporter.h"
 
 namespace Deako {
 
-    using AssetImportFunction = std::function<Ref<Asset>(const AssetMetadata&)>;
-    static std::map <AssetType, AssetImportFunction> s_AssetImportFunctions = {
+    using AssetImportFunction = std::function<Ref<Asset>(AssetHandle, AssetMetadata)>;
+    static std::map<AssetType, AssetImportFunction> s_AssetImportFunctions = {
         { AssetType::Texture2D, TextureImporter::ImportTexture2D },
         { AssetType::TextureCubeMap, TextureImporter::ImportTextureCubeMap },
         { AssetType::Model, ModelImporter::ImportModel },
+        { AssetType::Prefab, PrefabImporter::ImportPrefab },
         { AssetType::Scene, SceneImporter::ImportScene }
     };
 
-    Ref<Asset> AssetImporter::Import(const AssetMetadata& metadata)
+    Ref<Asset> AssetImporter::Import(AssetHandle handle, AssetMetadata metadata)
     {
-        auto it = s_AssetImportFunctions.find(metadata.type);
+        auto it = s_AssetImportFunctions.find(metadata.assetType);
         if (it == s_AssetImportFunctions.end())
         {
-            DK_CORE_ERROR("No import function available for asset type: {0}", (uint16_t)metadata.type);
+            DK_CORE_ERROR("No import function available for asset type: {0}", (uint16_t)metadata.assetType);
             return nullptr;
         }
 
-        return it->second(metadata);
+        return it->second(handle, metadata);
     }
 
 }

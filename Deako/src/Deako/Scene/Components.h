@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Deako/Renderer/Vulkan/VulkanModel.h"
+#include "Deako/Core/UUID.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -8,6 +8,14 @@
 #include <glm/gtx/quaternion.hpp>
 
 namespace Deako {
+
+    struct IDComponent
+    {
+        UUID id;
+
+        IDComponent() = default;
+        IDComponent(const IDComponent&) = default;
+    };
 
     struct TagComponent
     {
@@ -41,28 +49,36 @@ namespace Deako {
 
     struct TextureComponent
     {
-        AssetHandle texture;
+        std::vector<AssetHandle> handles;
 
         TextureComponent() = default;
         TextureComponent(const TextureComponent&) = default;
-        TextureComponent(AssetHandle texture)
-            : texture(texture) {}
+    };
+
+    struct MaterialComponent
+    {
+        std::vector<AssetHandle> handles;
+
+        MaterialComponent() = default;
+        MaterialComponent(const MaterialComponent&) = default;
     };
 
     struct ModelComponent
     {
-        enum Usage { NONE = 0, PROP = 1, ENVIRONMENT = 2 };
-        Usage usage{ NONE };
-
-        AssetHandle model;
+        AssetHandle handle;
 
         ModelComponent() = default;
+        ModelComponent(AssetHandle handle)
+            : handle(handle) {}
         ModelComponent(const ModelComponent&) = default;
     };
 
+    struct PrefabComponent
+    {
+        AssetHandle handle;
 
-
-
-
+        PrefabComponent() = default;
+        PrefabComponent(const PrefabComponent&) = default;
+    };
 
 }

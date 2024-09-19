@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Deako/Project/Project.h"
-#include "Deako/Asset/AssetPoolBase.h"
 #include "Deako/Scene/Scene.h"
 #include "Deako/Scene/Entity.h"
 

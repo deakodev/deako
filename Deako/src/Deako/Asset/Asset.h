@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "UUID.h"
+#include "Deako/Core/UUID.h"
 
 #include <typeindex>
 
@@ -15,6 +15,7 @@ namespace Deako {
         TextureCubeMap,
         Material,
         Model,
+        Prefab,
         Scene,
     };
 
@@ -24,10 +25,15 @@ namespace Deako {
 
     struct AssetMetadata
     {
-        std::filesystem::path path;
-        AssetType type = AssetType::None;
+        AssetType assetType{ AssetType::None };
+        std::filesystem::path assetPath;
 
-        operator bool() const { return type != AssetType::None; }
+        AssetMetadata() = default;
+        AssetMetadata(AssetType type)
+            : assetType(type) {}
+        virtual ~AssetMetadata() = default;
+
+        operator bool() const { return assetType != AssetType::None; }
     };
 
     class Asset
@@ -35,8 +41,10 @@ namespace Deako {
     public:
         virtual AssetType GetType() const = 0;
 
+        virtual ~Asset() {};
+
+        virtual void Destroy() = 0;
+
         AssetHandle m_Handle; // handle generated automatically
     };
-
-
 }

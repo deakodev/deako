@@ -29,6 +29,17 @@ namespace Deako {
 
         ImGui::Image(textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
 
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            {
+                const char* path = (const char*)payload->Data;
+                DK_TRACE("Payload: {0}", path);
+                // OpenScene(path);
+            }
+            ImGui::EndDragDropTarget();
+        }
+
         ImGui::End();
         ImGui::PopStyleVar();
     }

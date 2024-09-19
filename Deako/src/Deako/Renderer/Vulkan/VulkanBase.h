@@ -1,12 +1,15 @@
 #pragma once
 
-#include "Deako/Renderer/EditorCamera.h"
-
 #include "VulkanDebug.h"
 #include "VulkanModel.h"
 #include "VulkanTexture.h"
 #include "VulkanTypes.h"
 #include "VulkanUtils.h"
+
+#include "Deako/Project/Project.h"
+#include "Deako/Scene/Scene.h"
+#include "Deako/Scene/Entity.h"
+#include "Deako/Renderer/EditorCamera.h"
 
 #include <vulkan/vulkan.h>
 
@@ -97,15 +100,19 @@ namespace Deako {
         } textures;
 
 
-        std::unordered_map<std::string, Ref<Model>> propModels;
-        std::unordered_map<std::string, Ref<Model>> environmentModels;
+        // std::unordered_map<std::string, Ref<Prefab>> propModels;
+        // std::unordered_map<std::string, Ref<Prefab>> environmentModels;
 
-        struct Scene
-        {
-            int32_t animationIndex{ 0 };
-            float animationTimer{ 0.0f };
-            bool animate{ true };
-        } scene;
+        // struct Scene
+        // {
+        //     int32_t animationIndex{ 0 };
+        //     float animationTimer{ 0.0f };
+        //     bool animate{ true };
+        // } scene;
+
+        Ref<Scene>                                  scene;
+        Ref<Model>                                  background;
+        std::unordered_map<std::string, Ref<Model>> entities;
 
         struct UniformSet
         {

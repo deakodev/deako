@@ -5,11 +5,11 @@
 
 namespace Deako {
 
-    Ref<Scene> SceneImporter::ImportScene(const AssetMetadata& metadata)
+    Ref<Scene> SceneImporter::ImportScene(AssetHandle handle, AssetMetadata metadata)
     {
-        DK_CORE_INFO("Importing Scene <{0}>", metadata.path.filename().string());
+        DK_CORE_INFO("Importing Scene <{0}>", metadata.assetPath.filename().string());
 
-        Ref<Scene> scene = Deserialize::Scene(metadata.path);
+        Ref<Scene> scene = Deserialize::Scene(metadata.assetPath);
 
         if (scene) return scene;
         else return nullptr;

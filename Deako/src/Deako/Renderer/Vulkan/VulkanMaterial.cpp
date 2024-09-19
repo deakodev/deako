@@ -138,7 +138,7 @@ namespace Deako {
     {
         std::vector<ShaderMaterial> shaderMaterials{};
 
-        for (auto& [tag, model] : vr->propModels)
+        for (auto& [tag, model] : vr->entities)
         {
             for (auto& material : model->materials)
             {

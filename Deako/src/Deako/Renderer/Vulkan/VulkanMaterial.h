@@ -84,6 +84,8 @@ namespace Deako {
         Material() {}
         Material(tinygltf::Material& tinyMaterial, std::vector<Ref<Texture2D>>& textures);
 
+        virtual void Destroy() override {}
+
         static AssetType GetStaticType() { return AssetType::Material; }
         virtual AssetType GetType() const override { return GetStaticType(); }
     };

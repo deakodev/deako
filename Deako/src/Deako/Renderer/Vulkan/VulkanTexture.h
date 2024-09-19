@@ -52,7 +52,7 @@ namespace Deako {
         VkImageView GetImageView() { return image.view; }
 
         void UpdateDescriptor();
-        void Destroy();
+        virtual void Destroy() override;
     };
 
     struct Texture2D : public Texture
