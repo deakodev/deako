@@ -2,6 +2,7 @@
 #include "dkpch.h"
 
 #include "Deako/Renderer/Renderer.h"
+#include "Deako/Renderer/Vulkan/VulkanBase.h"
 #include "Deako/Project/Serialize.h"
 
 #include "Entity.h"
@@ -13,16 +14,15 @@ namespace Deako {
         m_Details.path = path;
     }
 
-    Ref<Scene> Scene::Open(const std::string& filename)
+    Ref<Scene> Scene::Open(const std::filesystem::path& path)
     {
-        std::filesystem::path path = "Deako-Editor/projects/" + filename;
-
-        Ref<Scene> scene = Deserialize::Scene(path);
+        Ref<Scene> scene = AssetPool::Import<Scene>(path);
 
         if (scene)
         {
-            s_ActiveScene = scene;
-            return s_ActiveScene;
+            SetActive(scene);
+            VulkanBase::UpdateScene();
+            return scene;
         }
 
         return nullptr;
@@ -98,6 +98,11 @@ namespace Deako {
 
     template<>
     void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component)
+    {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<EnvironmentComponent>(Entity entity, EnvironmentComponent& component)
     {
     }
 

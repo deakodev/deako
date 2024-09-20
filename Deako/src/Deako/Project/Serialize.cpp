@@ -71,7 +71,7 @@ namespace Deako {
             (projectNode["AssetRegistryPath"]) ? projectNode["AssetRegistryPath"].as<std::string>() : "",
             });
 
-        DK_CORE_TRACE("Deserialized Project '{0}'", projectNode["Name"].as<std::string>());
+        DK_CORE_INFO("Deser Project '{0}'", projectNode["Name"].as<std::string>());
 
         return project;
     }
@@ -135,7 +135,7 @@ namespace Deako {
             (*assetRegistry)[handle] = metadata;
         }
 
-        DK_CORE_TRACE("Deserialized AssetRegistry");
+        DK_CORE_INFO("Deser AssetRegistry");
 
         return assetRegistry;
     }
@@ -190,14 +190,15 @@ namespace Deako {
             sceneNode["Filename"].as<std::string>()
             });
 
-        DK_CORE_TRACE("Deserialized Scene '{0}'", sceneNode["Name"].as<std::string>());
+        DK_CORE_INFO("Deser Scene '{0}' <{1}>",
+            sceneNode["Name"].as<std::string>(), path.filename().string());
 
         auto yamlEntities = data["Entities"];
         if (yamlEntities)
         {
             for (auto yamlEntity : yamlEntities)
             {
-                uint64_t uuid = yamlEntity["Entity"].as<uint64_t>(); // TODO: uuid
+                uint64_t uuid = yamlEntity["Entity"].as<uint64_t>();
 
                 std::string name;
 
@@ -284,7 +285,14 @@ namespace Deako {
                     entity.AddComponent<ModelComponent>(prefab->model->m_Handle);
                 }
 
-                DK_CORE_TRACE("Deserializied Entity '{0}' [{1}]", name, uuid);
+                auto envCompYaml = yamlEntity["EnvironmentComponent"];
+                if (envCompYaml)
+                {
+                    auto& envComp = entity.AddComponent<EnvironmentComponent>();
+                    envComp.active = envCompYaml["Active"].as<bool>();
+                }
+
+                DK_CORE_INFO("Deser Entity '{0}' [{1}]", name, uuid);
             }
         }
 
@@ -377,6 +385,17 @@ namespace Deako {
             out << YAML::Key << "AssetHandle" << YAML::Value << prefabComp.handle;
 
             out << YAML::EndMap; // PrefabComponent
+        }
+
+        if (entity.HasComponent<EnvironmentComponent>())
+        {
+            out << YAML::Key << "EnvironmentComponent";
+            out << YAML::BeginMap; // EnvironmentComponent
+
+            auto& envComp = entity.GetComponent<EnvironmentComponent>();
+            out << YAML::Key << "Active" << YAML::Value << envComp.active;
+
+            out << YAML::EndMap; // EnvironmentComponent
         }
 
         out << YAML::EndMap; // Entity

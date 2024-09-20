@@ -25,7 +25,7 @@ namespace Deako {
 
         using Registry = entt::registry;
 
-        static Ref<Scene> Open(const std::string& filename);
+        static Ref<Scene> Open(const std::filesystem::path& path);
         bool Save();
 
         void OnUpdateEditor(Camera& editorCamera);
@@ -33,8 +33,8 @@ namespace Deako {
         Entity CreateEntity(const std::string& name = std::string());
         void DestroyEntity(Entity entity);
 
-        static void SetActiveScene(Ref<Scene> scene) { s_ActiveScene = scene; }
-        static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
+        static void SetActive(Ref<Scene> scene) { s_ActiveScene = scene; }
+        static Ref<Scene> GetActive() { return s_ActiveScene; }
 
         void SetDetails(SceneDetails details) { m_Details = details; }
         const SceneDetails& GetDetails() { return m_Details; }

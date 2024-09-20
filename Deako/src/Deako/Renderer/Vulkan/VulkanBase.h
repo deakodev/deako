@@ -94,24 +94,21 @@ namespace Deako {
         {
             Ref<Texture2D> empty;
             Ref<Texture2D> lutBrdf;
+        } textures;
+
+        // int32_t animationIndex{ 0 };
+        // float animationTimer{ 0.0f };
+        // bool animate{ true };
+
+        struct Skybox
+        {
+            Ref<Model> model;
             Ref<TextureCubeMap> environmentCube{ CreateRef<TextureCubeMap>(TextureCubeMap::NONE) };
             Ref<TextureCubeMap> irradianceCube{ CreateRef<TextureCubeMap>(TextureCubeMap::IRRADIANCE) };
             Ref<TextureCubeMap> prefilteredCube{ CreateRef<TextureCubeMap>(TextureCubeMap::PREFILTERED) };
-        } textures;
+        } skybox;
 
-
-        // std::unordered_map<std::string, Ref<Prefab>> propModels;
-        // std::unordered_map<std::string, Ref<Prefab>> environmentModels;
-
-        // struct Scene
-        // {
-        //     int32_t animationIndex{ 0 };
-        //     float animationTimer{ 0.0f };
-        //     bool animate{ true };
-        // } scene;
-
-        Ref<Scene>                                  scene;
-        Ref<Model>                                  background;
+        Ref<Project> project;
         std::unordered_map<std::string, Ref<Model>> entities;
 
         struct UniformSet
@@ -193,6 +190,35 @@ namespace Deako {
         static void ViewportResize(const glm::vec2& viewportSize);
 
         static void UpdateUniforms();
+        static void UpdateScene()
+        {
+            Idle();
+
+            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.scene, nullptr);
+            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.material, nullptr);
+            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.node, nullptr);
+            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.materialBuffer, nullptr);
+            vkDestroyDescriptorPool(vr->device, vr->descriptorPool, nullptr);
+
+            // for (auto& uniform : vr->uniforms)
+            // {
+            //     VulkanBuffer::Destroy(uniform.dynamic.buffer);
+            //     VulkanBuffer::Destroy(uniform.shared.buffer);
+            //     VulkanBuffer::Destroy(uniform.params.buffer);
+            // }
+
+            // VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
+
+            // vr->textures.lutBrdf->Destroy();
+            // vr->skybox.irradianceCube->Destroy();
+            // vr->skybox.prefilteredCube->Destroy();
+
+            vr->entities.clear();
+
+            SetUpAssets();
+            // SetUpUniforms();
+            SetUpDescriptors();
+        }
 
     private:
         static void CreateInstance(const char* appName);

@@ -31,11 +31,11 @@ namespace Deako {
 
         if (ImGui::BeginDragDropTarget())
         {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
             {
                 const char* path = (const char*)payload->Data;
                 DK_TRACE("Payload: {0}", path);
-                // OpenScene(path);
+                // Ref<Scene> scene = Scene::Open(path);
             }
             ImGui::EndDragDropTarget();
         }

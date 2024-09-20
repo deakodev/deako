@@ -92,13 +92,11 @@ namespace Deako {
 
         VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
-        AssetPool::CleanUp();
-
-        vr->textures.empty->Destroy();
         vr->textures.lutBrdf->Destroy();
-        vr->textures.irradianceCube->Destroy();
-        vr->textures.prefilteredCube->Destroy();
-        vr->textures.environmentCube->Destroy();
+        vr->skybox.irradianceCube->Destroy();
+        vr->skybox.prefilteredCube->Destroy();
+
+        AssetPool::CleanUp();
 
         for (auto& frame : vr->frames)
         {
@@ -512,13 +510,13 @@ namespace Deako {
 
     void VulkanBase::SetUpAssets()
     {
-        Ref<Project> project = Project::Open("sandbox/sandbox.proj.deako");
+        if (!Project::GetActive())
+        {
+            Project::Open("sandbox/sandbox.proj.deako");
+            vr->textures.empty = AssetPool::Import<Texture2D>("textures/empty.ktx");
+        }
 
-        vr->scene = AssetPool::Import<Scene>("scenes/sandbox.scene.deako");
-
-        Scene::SetActiveScene(vr->scene);
-
-        auto entities = vr->scene->GetAllEntitiesWith<TagComponent, ModelComponent>();
+        auto entities = Scene::GetActive()->GetAllEntitiesWith<TagComponent, ModelComponent>();
         for (auto& entity : entities)
         {
             auto [tagComp, modelComp] = entities.get<TagComponent, ModelComponent>(entity);
@@ -527,18 +525,17 @@ namespace Deako {
 
             if (tagComp.tag == "Skybox")
             {
-                vr->background = model;
+                vr->skybox.model = model;
                 vr->entities.erase(tagComp.tag);
+
+                auto& textureComp = Scene::GetActive()->GetRegistry().get<TextureComponent>(entity);
+                vr->skybox.environmentCube = AssetPool::Get<TextureCubeMap>(textureComp.handles[0]);
+                vr->skybox.irradianceCube->GenerateCubeMap();
+                vr->skybox.prefilteredCube->GenerateCubeMap();
             }
         }
 
         CreateMaterialBuffer();
-
-        vr->textures.empty = AssetPool::Import<Texture2D>("textures/empty.ktx");
-        vr->textures.environmentCube = AssetPool::Import<TextureCubeMap>("environments/satara_night_cube.ktx");
-        vr->textures.irradianceCube->GenerateCubeMap();
-        vr->textures.prefilteredCube->GenerateCubeMap();
-
         GenerateBRDFLookUpTable();
     }
 
@@ -723,14 +720,14 @@ namespace Deako {
                 write[2].descriptorCount = 1;
                 write[2].dstSet = vr->descriptorSets[i].scene;
                 write[2].dstBinding = 2;
-                write[2].pImageInfo = &vr->textures.irradianceCube->descriptor;
+                write[2].pImageInfo = &vr->skybox.irradianceCube->descriptor;
 
                 write[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write[3].descriptorCount = 1;
                 write[3].dstSet = vr->descriptorSets[i].scene;
                 write[3].dstBinding = 3;
-                write[3].pImageInfo = &vr->textures.prefilteredCube->descriptor;
+                write[3].pImageInfo = &vr->skybox.prefilteredCube->descriptor;
 
                 write[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                 write[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -894,7 +891,7 @@ namespace Deako {
                 write[2].descriptorCount = 1;
                 write[2].dstSet = vr->descriptorSets[i].skybox;
                 write[2].dstBinding = 2;
-                write[2].pImageInfo = &vr->textures.prefilteredCube->descriptor;
+                write[2].pImageInfo = &vr->skybox.prefilteredCube->descriptor;
 
                 vkUpdateDescriptorSets(vr->device, static_cast<uint32_t>(write.size()), write.data(), 0, nullptr);
             }
@@ -1387,7 +1384,8 @@ namespace Deako {
         {
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, 1, &vr->descriptorSets[vr->currentFrame].skybox, 1, &dynamicOffset);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelines["skybox"]);
-            vr->background->Draw(commandBuffer);
+
+            vr->skybox.model->Draw(commandBuffer);
         }
 
         VkDeviceSize offsets[1] = { 0 };

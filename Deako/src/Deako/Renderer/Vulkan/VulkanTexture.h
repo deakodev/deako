@@ -52,6 +52,7 @@ namespace Deako {
         VkImageView GetImageView() { return image.view; }
 
         void UpdateDescriptor();
+
         virtual void Destroy() override;
     };
 
@@ -80,7 +81,5 @@ namespace Deako {
         virtual AssetType GetType() const override { return GetStaticType(); }
 
     };
-
-    void LoadEnvironment(std::filesystem::path path);
 
 }

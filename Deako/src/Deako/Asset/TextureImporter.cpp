@@ -75,16 +75,6 @@ namespace Deako {
         return texture;
     }
 
-    Ref<Texture2D> TextureImporter::ImportTexture2DViaPath(const std::filesystem::path& path)
-    {
-        AssetHandle handle;
-        AssetMetadata metadata;
-        metadata.assetPath = path;
-        metadata.assetType = AssetType::Texture2D;
-
-        return ImportTexture2D(handle, metadata);
-    }
-
     Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(AssetHandle handle, AssetMetadata metadata)
     {
         DK_CORE_INFO("Importing TextureCube <{0}>", metadata.assetPath.filename().string());

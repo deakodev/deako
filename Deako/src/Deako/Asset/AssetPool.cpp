@@ -18,7 +18,7 @@ namespace Deako {
         AssetHandle handle;
         AssetMetadata metadata;
         metadata.assetType = AssetType::Model;
-        metadata.assetPath = path;
+        metadata.assetPath = Project::GetAssetDirectory() / path;
 
         Ref<Asset> asset = Import(handle, metadata);
         return std::static_pointer_cast<Model>(asset);
@@ -42,7 +42,7 @@ namespace Deako {
         AssetHandle handle;
         AssetMetadata metadata;
         metadata.assetType = AssetType::Texture2D;
-        metadata.assetPath = path;
+        metadata.assetPath = Project::GetAssetDirectory() / path;
 
         Ref<Asset> asset = Import(handle, metadata);
         return std::static_pointer_cast<Texture2D>(asset);
@@ -54,7 +54,7 @@ namespace Deako {
         AssetHandle handle;
         AssetMetadata metadata;
         metadata.assetType = AssetType::TextureCubeMap;
-        metadata.assetPath = path;
+        metadata.assetPath = Project::GetAssetDirectory() / path;
 
         Ref<Asset> asset = Import(handle, metadata);
         return std::static_pointer_cast<TextureCubeMap>(asset);
@@ -62,13 +62,31 @@ namespace Deako {
 
     Ref<Asset> AssetPool::Import(AssetHandle handle, AssetMetadata metadata)
     {
-        metadata.assetPath = Project::GetAssetDirectory() / metadata.assetPath;
-        return Project::GetActive()->GetAssetPool()->Import(handle, metadata);
+        Ref<Asset> asset = Project::GetActive()->GetAssetPool()->Import(handle, metadata);
+        AddToImported(asset);
+        return asset;
     }
 
     void AssetPool::Add(Ref<Asset> asset, AssetMetadata metadata)
     {
         Project::GetActive()->GetAssetPool()->Add(asset, metadata);
+    }
+
+    void AssetPool::AddToImported(Ref<Asset> asset)
+    {
+        Project::GetActive()->GetAssetPool()->AddToImported(asset);
+    }
+
+    template <>
+    Ref<Texture2D> AssetPool::Get<Texture2D>(AssetHandle handle)
+    {
+        return Project::GetActive()->GetAssetPool()->Get<Texture2D>(handle);
+    }
+
+    template <>
+    Ref<TextureCubeMap> AssetPool::Get<TextureCubeMap>(AssetHandle handle)
+    {
+        return Project::GetActive()->GetAssetPool()->Get<TextureCubeMap>(handle);
     }
 
     template <>
@@ -81,6 +99,12 @@ namespace Deako {
     Ref<Prefab> AssetPool::Get<Prefab>(AssetHandle handle)
     {
         return Project::GetActive()->GetAssetPool()->Get<Prefab>(handle);
+    }
+
+    template <>
+    Ref<Scene> AssetPool::Get<Scene>(AssetHandle handle)
+    {
+        return Project::GetActive()->GetAssetPool()->Get<Scene>(handle);
     }
 
     void AssetPool::CleanUp()
@@ -98,6 +122,11 @@ namespace Deako {
     {
         m_AssetsImported[asset->m_Handle] = asset;
         m_AssetRegistry[asset->m_Handle] = metadata;
+    }
+
+    void AssetPoolBase::AddToImported(Ref<Asset> asset)
+    {
+        m_AssetsImported[asset->m_Handle] = asset;
     }
 
     void AssetPoolBase::Remove(AssetHandle handle)

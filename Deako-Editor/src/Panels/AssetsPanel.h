@@ -11,11 +11,11 @@ namespace Deako {
         std::string filename;
     };
 
-    class ContentBrowserPanel
+    class AssetsPanel
     {
     public:
-        ContentBrowserPanel() = default;
-        ContentBrowserPanel(const Ref<Project>& project);
+        AssetsPanel() = default;
+        AssetsPanel(const Ref<Project>& project);
 
         void SetContext(const Ref<Project>& context);
 

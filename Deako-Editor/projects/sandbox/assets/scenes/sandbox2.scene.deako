@@ -11,6 +11,15 @@ Entities:
       Scale: [1, 1, 1]
     PrefabComponent:
       AssetHandle: 51418710489529541
+  - Entity: 81134394391941372
+    TagComponent:
+      Tag: DamagedHelmet
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PrefabComponent:
+      AssetHandle: 51418710489529541
   - Entity: 63025543015532544
     TagComponent:
       Tag: Skybox

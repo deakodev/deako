@@ -13,24 +13,6 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-    void LoadEnvironment(std::filesystem::path path)
-    {
-        // DK_CORE_INFO("Loading Environment <{0}>", path.filename().string());
-
-        // if (vr->textures.environmentCube.image.image)
-        // {
-        //     vr->textures.environmentCube.Destroy();
-        //     vr->textures.irradianceCube.Destroy();
-        //     vr->textures.prefilteredCube.Destroy();
-        // }
-
-        // vr->textures.environmentCube.LoadFromFile(path, VK_FORMAT_R16G16B16A16_SFLOAT);
-
-
-        // vr->textures.irradianceCube.GenerateCubeMap();
-        // vr->textures.prefilteredCube.GenerateCubeMap();
-    }
-
     Texture::Texture(TextureDetails details)
         : details(details)
     {
@@ -747,7 +729,7 @@ namespace Deako {
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.dstSet = descriptorSet;
         writeDescriptorSet.dstBinding = 0;
-        writeDescriptorSet.pImageInfo = &vr->textures.environmentCube->descriptor;
+        writeDescriptorSet.pImageInfo = &vr->skybox.environmentCube->descriptor;
         vkUpdateDescriptorSets(vr->device, 1, &writeDescriptorSet, 0, nullptr);
 
         struct PushBlockIrradiance
@@ -965,7 +947,7 @@ namespace Deako {
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
 
-                vr->background->Draw(commandBuffer);
+                vr->skybox.model->Draw(commandBuffer);
 
                 vkCmdEndRenderPass(commandBuffer);
 

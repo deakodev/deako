@@ -16,6 +16,7 @@ namespace Deako {
         static Ref<T> Import(const std::filesystem::path& path);
 
         static void Add(Ref<Asset> asset, AssetMetadata metadata);
+        static void AddToImported(Ref<Asset> asset);
 
         template <typename T>
         static Ref<T> Get(AssetHandle handle);
@@ -32,6 +33,7 @@ namespace Deako {
         Ref<Asset> Import(AssetHandle handle, AssetMetadata metadata);
 
         void Add(Ref<Asset> asset, AssetMetadata metadata);
+        void AddToImported(Ref<Asset> asset);
 
         void Remove(AssetHandle handle);
 

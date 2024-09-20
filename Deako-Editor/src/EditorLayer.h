@@ -4,7 +4,7 @@
 
 #include "Panels/ViewportPanel.h"
 #include "Panels/SceneHierarchyPanel.h"
-#include "Panels/ContentBrowserPanel.h"
+#include "Panels/AssetsPanel.h"
 
 #include <glm/glm.hpp>
 #include <imgui/imgui.h>
@@ -28,7 +28,7 @@ namespace Deako {
 
         ViewportPanel m_ViewportPanel;
         SceneHierarchyPanel m_SceneHierarchyPanel;
-        ContentBrowserPanel m_ContentBrowserPanel;
+        AssetsPanel m_AssetsPanel;
 
         Ref<Project> m_ActiveProject;
         Ref<Scene> m_ActiveScene;

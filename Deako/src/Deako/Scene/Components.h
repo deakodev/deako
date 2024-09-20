@@ -81,4 +81,12 @@ namespace Deako {
         PrefabComponent(const PrefabComponent&) = default;
     };
 
+    struct EnvironmentComponent
+    {
+        bool active;
+
+        EnvironmentComponent() = default;
+        EnvironmentComponent(const EnvironmentComponent&) = default;
+    };
+
 }

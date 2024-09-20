@@ -1,17 +1,17 @@
-#include "ContentBrowserPanel.h"
+#include "AssetsPanel.h"
 #include "dkpch.h"
 
 #include <imgui/imgui.h>
 
 namespace Deako {
 
-    ContentBrowserPanel::ContentBrowserPanel(const Ref<Project>& context)
+    AssetsPanel::AssetsPanel(const Ref<Project>& context)
         : m_RateLimiter(0, 1) // 0 counter cycle, 1-second time cycle
     {
         SetContext(context);
     }
 
-    void ContentBrowserPanel::SetContext(const Ref<Project>& context)
+    void AssetsPanel::SetContext(const Ref<Project>& context)
     {
         m_Context = context;
         m_AssetDirectory = Project::GetAssetDirectory();
@@ -19,7 +19,7 @@ namespace Deako {
         Refresh();
     }
 
-    void ContentBrowserPanel::OnImGuiRender()
+    void AssetsPanel::OnImGuiRender()
     {
         auto now = RateLimiter::Clock::now();
 
@@ -59,7 +59,7 @@ namespace Deako {
                 if (ImGui::BeginDragDropSource())
                 {
                     std::string itemPath = entry.path.string();
-                    ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size() + 1, ImGuiCond_Once);
+                    ImGui::SetDragDropPayload("ASSET_PATH", itemPath.c_str(), itemPath.size() + 1, ImGuiCond_Once);
                     ImGui::EndDragDropSource();
                 }
 
@@ -91,7 +91,7 @@ namespace Deako {
         //     if (ImGui::BeginDragDropSource())
         //     {
         //         std::string itemPath = entry.path.string();
-        //         ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath.c_str(), itemPath.size() + 1, ImGuiCond_Once);
+        //         ImGui::SetDragDropPayload("ASSET_PATH", itemPath.c_str(), itemPath.size() + 1, ImGuiCond_Once);
         //         ImGui::EndDragDropSource();
         //     }
 
@@ -117,7 +117,7 @@ namespace Deako {
         ImGui::ShowDemoWindow();
     }
 
-    void ContentBrowserPanel::Refresh()
+    void AssetsPanel::Refresh()
     {
         m_DirectoryCache.clear();
 

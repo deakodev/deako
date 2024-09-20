@@ -1,7 +1,13 @@
 AssetRegistry:
+  - AssetHandle: 57928164075139581
+    AssetType: TextureCubeMap
+    AssetPath: environments/satara_night_cube.ktx
   - AssetHandle: 51418710489529541
     AssetType: Prefab
     AssetPath: models/DamagedHelmet/glTF-Embedded/DamagedHelmet.gltf
   - AssetHandle: 57892318812072087
     AssetType: Prefab
     AssetPath: models/Box/glTF-Embedded/Box.gltf
+  - AssetHandle: 81217790785539564
+    AssetType: Scene
+    AssetPath: scenes/sandbox.scene.deako
