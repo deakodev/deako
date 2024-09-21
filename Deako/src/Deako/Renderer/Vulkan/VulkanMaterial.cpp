@@ -187,8 +187,8 @@ namespace Deako {
             }
         }
 
-        if (vr->shaderMaterialBuffer.buffer != VK_NULL_HANDLE)
-            VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
+        // if (vr->shaderMaterialBuffer.buffer != VK_NULL_HANDLE && vr->shaderMaterialBuffer.memory != VK_NULL_HANDLE)
+        //     VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
         VkDeviceSize bufferSize = shaderMaterials.size() * sizeof(ShaderMaterial);
 

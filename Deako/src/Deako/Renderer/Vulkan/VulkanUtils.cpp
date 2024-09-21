@@ -415,9 +415,9 @@ namespace Deako {
 
         void Destroy(const AllocatedBuffer& buffer)
         {
-            if (buffer.memory)
+            if (buffer.memory != VK_NULL_HANDLE)
                 vkFreeMemory(vr->device, buffer.memory, nullptr);
-            if (buffer.buffer)
+            if (buffer.buffer != VK_NULL_HANDLE)
                 vkDestroyBuffer(vr->device, buffer.buffer, nullptr);
         }
 

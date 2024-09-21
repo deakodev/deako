@@ -1,7 +1,5 @@
 #pragma once
 
-#include "VulkanBase.h"
-
 #include <vulkan/vulkan.h>
 
 namespace Deako {

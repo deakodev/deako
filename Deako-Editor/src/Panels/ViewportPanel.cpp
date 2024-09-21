@@ -6,7 +6,7 @@ namespace Deako {
     {
         if (m_ViewportResize)
         {
-            VulkanBase::ViewportResize(m_ViewportSize); // TODO: abstract from vulkan when working on camera
+            VulkanScene::ViewportResize(m_ViewportSize); // TODO: abstract from vulkan when working on camera
             m_ViewportResize = false;
         }
     }
@@ -35,7 +35,7 @@ namespace Deako {
             {
                 const char* path = (const char*)payload->Data;
                 DK_TRACE("Payload: {0}", path);
-                // Ref<Scene> scene = Scene::Open(path);
+                Ref<Scene> scene = Scene::Open(path);
             }
             ImGui::EndDragDropTarget();
         }

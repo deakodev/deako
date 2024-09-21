@@ -21,7 +21,8 @@ namespace Deako {
         if (scene)
         {
             SetActive(scene);
-            VulkanBase::UpdateScene();
+            VulkanScene::SetPrepared(false);
+
             return scene;
         }
 

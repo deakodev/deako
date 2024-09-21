@@ -7,6 +7,7 @@ namespace Deako {
 
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
+
     namespace VulkanDebug {
 
         VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(

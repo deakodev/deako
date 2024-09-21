@@ -5,6 +5,7 @@
 #include "VulkanTexture.h"
 #include "VulkanTypes.h"
 #include "VulkanUtils.h"
+#include "VulkanScene.h"
 
 #include "Deako/Project/Project.h"
 #include "Deako/Scene/Scene.h"
@@ -182,67 +183,20 @@ namespace Deako {
         static void Idle();
         static void Shutdown();
 
-        static void Render();
+        static void WindowResize();
 
         static Ref<VulkanSettings>& GetSettings() { return vs; }
         static Ref<VulkanResources>& GetResources() { return vr; }
-
-        static void ViewportResize(const glm::vec2& viewportSize);
-
-        static void UpdateUniforms();
-        static void UpdateScene()
-        {
-            Idle();
-
-            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.scene, nullptr);
-            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.material, nullptr);
-            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.node, nullptr);
-            vkDestroyDescriptorSetLayout(vr->device, vr->descriptorSetLayouts.materialBuffer, nullptr);
-            vkDestroyDescriptorPool(vr->device, vr->descriptorPool, nullptr);
-
-            // for (auto& uniform : vr->uniforms)
-            // {
-            //     VulkanBuffer::Destroy(uniform.dynamic.buffer);
-            //     VulkanBuffer::Destroy(uniform.shared.buffer);
-            //     VulkanBuffer::Destroy(uniform.params.buffer);
-            // }
-
-            // VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
-
-            // vr->textures.lutBrdf->Destroy();
-            // vr->skybox.irradianceCube->Destroy();
-            // vr->skybox.prefilteredCube->Destroy();
-
-            vr->entities.clear();
-
-            SetUpAssets();
-            // SetUpUniforms();
-            SetUpDescriptors();
-        }
 
     private:
         static void CreateInstance(const char* appName);
         static void SetUpDebugMessenger();
         static void SetUpDevice();
         static void SetUpSwapchain();
+        static void SetUpPipelineCache();
         static void SetUpCommands();
         static void SetUpSyncObjects();
-        static void SetUpAssets();
-        static void SetUpUniforms();
-        static void SetUpDescriptors();
-        static void SetUpPipelines();
         static void SetUpImGui();
-
-        static void AddPipelineSet(const std::string prefix, std::filesystem::path vertexShader, std::filesystem::path fragmentShader);
-
-        static void DrawFrame();
-        static void DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-        // static void UpdateUniforms();
-        static void UpdateShaderParams();
-
-        static void WindowResize();
 
     private:
         static Ref<VulkanResources>        vr;

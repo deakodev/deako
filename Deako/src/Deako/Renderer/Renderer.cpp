@@ -35,7 +35,7 @@ namespace Deako {
 
     void Renderer::Flush()
     {
-        VulkanBase::Render();
+        VulkanScene::Render();
     }
 
     void Renderer::StartBatch()
