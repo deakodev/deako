@@ -4,6 +4,7 @@
 #include "Deako/Renderer/Vulkan/VulkanTexture.h"
 #include "Deako/Renderer/Vulkan/VulkanMaterial.h"
 #include "Deako/Renderer/Vulkan/VulkanModel.h"
+#include "Deako/Asset/Prefab.h"
 #include "Deako/Scene/Scene.h"
 
 namespace Deako {
@@ -47,6 +48,7 @@ namespace Deako {
             {std::type_index(typeid(TextureCubeMap)), AssetType::TextureCubeMap},
             {std::type_index(typeid(Material)), AssetType::Material},
             {std::type_index(typeid(Model)), AssetType::Model},
+            {std::type_index(typeid(Prefab)), AssetType::Prefab},
             {std::type_index(typeid(Scene)), AssetType::Scene},
         };
 
@@ -56,6 +58,5 @@ namespace Deako {
 
         return it->second;
     }
-
 
 }

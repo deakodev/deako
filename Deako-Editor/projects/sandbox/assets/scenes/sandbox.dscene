@@ -1,6 +1,5 @@
 Scene:
-  Name: Sandbox
-  Filename: sandbox.scene.deako
+  Name: Sandbox Light
 Entities:
   - Entity: 81234097091941911
     TagComponent:
@@ -20,7 +19,7 @@ Entities:
       Scale: [1, 1, 1]
     TextureComponent:
       AssetHandles:
-        - 44938964025039682
+        - 57928164075139581
     PrefabComponent:
       AssetHandle: 57892318812072087
     EnvironmentComponent:

@@ -9,7 +9,7 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-    void VulkanScene::Prepare()
+    void VulkanScene::Build()
     {
         VulkanBase::Idle();
 
@@ -21,7 +21,7 @@ namespace Deako {
 
         SetUpPipelines();
 
-        vr->prepared = true;
+        m_SceneValid = true;
     }
 
     void VulkanScene::CleanUp()
@@ -53,31 +53,43 @@ namespace Deako {
         vr->entities.clear();
     }
 
+    void VulkanScene::Rebuild()
+    {
+        CleanUp();
+        Build();
+    }
+
     void VulkanScene::SetUpAssets()
     {
-        if (!Project::GetActive())
-        {
-            Project::Open("sandbox/sandbox.proj.deako");
+        if (!vr->textures.empty)
             vr->textures.empty = AssetPool::Import<Texture2D>("textures/empty.ktx");
-        }
 
-        auto entities = Scene::GetActive()->GetAllEntitiesWith<TagComponent, ModelComponent>();
-        for (auto& entity : entities)
+        vr->entities = Scene::GetAllEntitiesWith<TagComponent, ModelComponent>();
+
+        for (auto it = vr->entities.begin(); it != vr->entities.end(); )
         {
-            auto [tagComp, modelComp] = entities.get<TagComponent, ModelComponent>(entity);
-            Ref<Model> model = AssetPool::Get<Model>(modelComp.handle);
-            vr->entities.emplace(tagComp.tag, model);
+            Entity entity = *it;
+            std::string& tag = entity.GetComponent<TagComponent>().tag;
 
-            if (tagComp.tag == "Skybox")
+            if (tag == "Skybox")
             {
-                vr->skybox.model = model;
-                vr->entities.erase(tagComp.tag);
+                auto& modelComp = entity.GetComponent<ModelComponent>();
+                Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
 
-                auto& textureComp = Scene::GetActive()->GetRegistry().get<TextureComponent>(entity);
-                vr->skybox.environmentCube = AssetPool::Get<TextureCubeMap>(textureComp.handles[0]);
+                // easy access, separate from others
+                vr->skybox.model = model;
+                // erase the entity and update the iterator
+                vr->entities.erase(it);
+
+                // Handle the skybox-specific components
+                auto& textureComp = entity.GetComponent<TextureComponent>();
+                vr->skybox.environmentCube = AssetPool::GetAsset<TextureCubeMap>(textureComp.handles[0]);
                 vr->skybox.irradianceCube->GenerateCubeMap();
                 vr->skybox.prefilteredCube->GenerateCubeMap();
+                break;
             }
+
+            ++it;
         }
 
         CreateMaterialBuffer();
@@ -136,33 +148,29 @@ namespace Deako {
 
         // models
         uint32_t index = 0;
-        for (auto& [tag, model] : vr->entities)
+        for (Entity entity : vr->entities)
         {
-            // aligned offset
+            // aligned offset for dynamic uniform
             glm::mat4* modelMatrix = (glm::mat4*)(((uint64_t)vr->uniformDataDynamic.model + (index * vr->dynamicUniformAlignment)));
 
-            glm::mat4 aabb = vr->entities[tag]->aaBoundingBox;
+            *modelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
 
-            float scaleX = glm::length(glm::vec3(aabb[0]));
-            float scaleY = glm::length(glm::vec3(aabb[1]));
-            float scaleZ = glm::length(glm::vec3(aabb[2]));
-            float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 6.0f;
+            // auto& modelComp = entity.GetComponent<ModelComponent>();
+            // glm::mat4 aabb = AssetPool::GetAsset<Model>(modelComp.handle)->aaBoundingBox;
 
-            glm::vec3 aabbMin = glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
-            glm::vec3 aabbMax = aabbMin + glm::vec3(scaleX, scaleY, scaleZ);
-            glm::vec3 centroid = (aabbMin + aabbMax) / 2.0f; // center of the models aabb
-            glm::vec3 translate = -centroid;
+            // float scaleX = glm::length(glm::vec3(aabb[0]));
+            // float scaleY = glm::length(glm::vec3(aabb[1]));
+            // float scaleZ = glm::length(glm::vec3(aabb[2]));
+            // float scaleFactor = (1.0f / std::max(scaleX, std::max(scaleY, scaleZ))) * 6.0f;
 
-            glm::vec3 sideBySideTranslate = glm::vec3((index * 2.0f), 0.0f, 0.0f);
+            // glm::vec3 aabbMin = glm::vec3(aabb[3][0], aabb[3][1], aabb[3][2]);
+            // glm::vec3 aabbMax = aabbMin + glm::vec3(scaleX, scaleY, scaleZ);
+            // glm::vec3 centroid = (aabbMin + aabbMax) / 2.0f; // center of the models aabb
+            // glm::vec3 translate = -centroid;
 
-            static auto startTime = std::chrono::high_resolution_clock::now();
-            auto currentTime = std::chrono::high_resolution_clock::now();
-            float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-            // construct model matrix
-            *modelMatrix = glm::translate(glm::mat4(1.0f), translate + sideBySideTranslate) *
-                glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-                glm::scale(glm::mat4(1.0f), glm::vec3(scaleFactor));
+            // static auto startTime = std::chrono::high_resolution_clock::now();
+            // auto currentTime = std::chrono::high_resolution_clock::now();
+            // float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
             index++;
         }
@@ -190,8 +198,11 @@ namespace Deako {
         // environment samplers (radiance, irradiance, brdf lut)
         imageSamplerCount += 3;
 
-        for (auto& [tag, model] : vr->entities)
+        for (Entity entity : vr->entities)
         {
+            auto& modelComp = entity.GetComponent<ModelComponent>();
+            Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+
             for (auto& material : model->materials)
             {
                 imageSamplerCount += 5;
@@ -309,8 +320,11 @@ namespace Deako {
             VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
 
             // per-material descriptor sets
-            for (auto& [tag, model] : vr->entities)
+            for (Entity entity : vr->entities)
             {
+                auto& modelComp = entity.GetComponent<ModelComponent>();
+                Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+
                 for (auto& material : model->materials)
                 {
                     VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty->descriptor;
@@ -371,8 +385,11 @@ namespace Deako {
                 layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
                 VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.node));
 
-                for (auto& [tag, model] : vr->entities)
+                for (Entity entity : vr->entities)
                 {
+                    auto& modelComp = entity.GetComponent<ModelComponent>();
+                    Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+
                     for (auto& node : model->nodes) // per-node descriptor set
                         node->SetDescriptorSet();
                 }
@@ -630,152 +647,7 @@ namespace Deako {
             vkDestroyShaderModule(vr->device, shaderStage.module, nullptr);
     }
 
-    void VulkanScene::Render()
-    {
-        if (!vr->prepared)
-        {
-            CleanUp();
-            Prepare();
-            return;
-        }
-
-        Draw();
-
-        UpdateUniforms();
-    }
-
-    void VulkanScene::Draw()
-    {
-        auto tStart = std::chrono::high_resolution_clock::now();
-
-        FrameData& frame = vr->frames[vr->currentFrame];
-
-        VkCR(vkWaitForFences(vr->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
-
-        uint32_t scImageIndex;
-        VkResult result = vkAcquireNextImageKHR(vr->device, vr->swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            VulkanBase::WindowResize();
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-        {
-            DK_CORE_ASSERT(result);
-        }
-
-        VkImage msColorTarget = vr->multisampleTarget.color.image;
-        VkFormat msColorTargetFormat = vr->multisampleTarget.color.format;
-
-        VkImage msDepthTarget = vr->multisampleTarget.depth.image;
-        VkFormat msDepthTargetFormat = vr->multisampleTarget.depth.format;
-
-        VkImage viewportImage = vr->viewport.images[scImageIndex].image;
-        VkFormat viewportFormat = vr->viewport.format;
-
-        VkImage scColorTarget = vr->swapchain.colorTarget.image;
-        VkFormat scColorTargetFormat = vr->swapchain.colorTarget.format;
-
-        VkImage scImage = vr->swapchain.images[scImageIndex];
-        VkFormat scFormat = vr->swapchain.format;
-
-        // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
-        vkResetFences(vr->device, 1, &frame.waitFence);
-
-        VkCR(vkResetCommandBuffer(frame.commandBuffer, 0));
-
-        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        VkCR(vkBeginCommandBuffer(frame.commandBuffer, &commandBufferBeginInfo));
-
-        VulkanImage::Transition(frame.commandBuffer, msColorTarget, msColorTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-        VulkanImage::Transition(frame.commandBuffer, msDepthTarget, msDepthTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-        VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-
-        DrawViewport(frame.commandBuffer, scImageIndex);
-
-        VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        VulkanImage::Transition(frame.commandBuffer, scColorTarget, scColorTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-        VulkanImage::Transition(frame.commandBuffer, scImage, scFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-        DrawImGui(frame.commandBuffer, scImageIndex);
-
-        VulkanImage::Transition(frame.commandBuffer, scImage, scFormat, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-        VkCR(vkEndCommandBuffer(frame.commandBuffer));
-
-        const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-        VkCommandBufferSubmitInfo commandInfo{};
-        commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-        commandInfo.pNext = nullptr;
-        commandInfo.commandBuffer = frame.commandBuffer;
-        commandInfo.deviceMask = 0;
-
-        VkSemaphoreSubmitInfo presentSemaphoreInfo{};
-        presentSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        presentSemaphoreInfo.pNext = nullptr;
-        presentSemaphoreInfo.semaphore = frame.presentSemaphore;
-        presentSemaphoreInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
-        presentSemaphoreInfo.deviceIndex = 0;
-        presentSemaphoreInfo.value = 1;
-
-        VkSemaphoreSubmitInfo renderSemaphoreInfo{};
-        renderSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-        renderSemaphoreInfo.pNext = nullptr;
-        renderSemaphoreInfo.semaphore = frame.renderSemaphore;
-        renderSemaphoreInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
-        renderSemaphoreInfo.deviceIndex = 0;
-        renderSemaphoreInfo.value = 1;
-
-        VkSubmitInfo2 submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        submitInfo.pNext = nullptr;
-        submitInfo.waitSemaphoreInfoCount = 1;
-        submitInfo.pWaitSemaphoreInfos = &presentSemaphoreInfo;
-        submitInfo.signalSemaphoreInfoCount = 1;
-        submitInfo.pSignalSemaphoreInfos = &renderSemaphoreInfo;
-        submitInfo.commandBufferInfoCount = 1;
-        submitInfo.pCommandBufferInfos = &commandInfo;
-
-        VkCR(vkQueueSubmit2KHR(vr->graphicsQueue, 1, &submitInfo, frame.waitFence));
-
-        VkPresentInfoKHR presentInfo = {};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &frame.renderSemaphore;
-        VkSwapchainKHR swapChains[] = { vr->swapchain.swapchain };
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
-        presentInfo.pImageIndices = &scImageIndex;
-        presentInfo.pResults = nullptr; // Optional
-
-        result = vkQueuePresentKHR(vr->presentQueue, &presentInfo);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR /*|| s_State.framebufferResized*/)
-        {
-            VulkanBase::WindowResize();
-            return;
-        }
-        else if (result != VK_SUCCESS)
-        {
-            DK_CORE_ASSERT(result);
-        }
-
-        vr->currentFrame = (vr->currentFrame + 1) % vs->frameOverlap;
-
-        auto tEnd = std::chrono::high_resolution_clock::now();
-        auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-        float frameTimer = (float)tDiff / 1000.0f;
-        // vr->camera.update(frameTimer);
-    }
-
-    void VulkanScene::DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    void VulkanScene::Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex)
     {
         AllocatedImage& colorTarget = vr->multisampleTarget.color;
         AllocatedImage& depthTarget = vr->multisampleTarget.depth;
@@ -837,8 +709,11 @@ namespace Deako {
         VkDeviceSize offsets[1] = { 0 };
 
         uint32_t index = 0;
-        for (auto [tag, model] : vr->entities)
+        for (Entity entity : vr->entities)
         {
+            auto& modelComp = entity.GetComponent<ModelComponent>();
+            Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, offsets);
 
             if (model->indices.buffer != VK_NULL_HANDLE)
@@ -865,42 +740,6 @@ namespace Deako {
         vkCmdEndRenderingKHR(commandBuffer);
     }
 
-    void VulkanScene::DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-    {
-        VkRenderingAttachmentInfo colorAttachment = {};
-        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = vr->swapchain.colorTarget.view;
-        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-        colorAttachment.resolveImageView = vr->swapchain.views[imageIndex];
-        colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-        VkRenderingInfo renderInfo = {};
-        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-        renderInfo.pNext = nullptr;
-        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vr->swapchain.extent.width, vr->swapchain.extent.height };
-        renderInfo.layerCount = 1;
-        renderInfo.colorAttachmentCount = 1;
-        renderInfo.pColorAttachments = &colorAttachment;
-        renderInfo.pDepthAttachment = nullptr;
-        renderInfo.pStencilAttachment = nullptr;
-
-        vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
-
-        LayerStack& layerStack = Application::Get().GetLayerStack();
-        ImGuiLayer* imguiLayer = Application::Get().GetImGuiLayer();
-
-        imguiLayer->Begin();
-        for (Layer* layer : layerStack)
-            layer->OnImGuiRender((ImTextureID)vr->viewport.textureIDs[imageIndex]);
-        imguiLayer->End(commandBuffer);
-
-        vkCmdEndRenderingKHR(commandBuffer);
-    }
-
     void VulkanScene::UpdateShaderParams()
     {
         vr->shaderValuesParams.lightDir = glm::vec4(
@@ -908,11 +747,6 @@ namespace Deako {
             sin(glm::radians(vr->lightSource.rotation.y)),
             cos(glm::radians(vr->lightSource.rotation.x)) * cos(glm::radians(vr->lightSource.rotation.y)),
             0.0f);
-    }
-
-    void VulkanScene::SetPrepared(bool prepared)
-    {
-        vr->prepared = prepared;
     }
 
     void VulkanScene::ViewportResize(const glm::vec2& viewportSize)

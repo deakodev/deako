@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Asset.h"
-#include "AssetPool.h"
+#include "Deako/Asset/Asset.h"
+#include "Deako/Asset/AssetPool.h"
 
 #include "Deako/Renderer/Vulkan/VulkanTexture.h"
 #include "Deako/Renderer/Vulkan/VulkanMaterial.h"

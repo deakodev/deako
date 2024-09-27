@@ -9,30 +9,18 @@ namespace Deako
 
     Application* Application::s_Instance = nullptr;
 
-    Application::Application(const char* appName)
-        : m_AppName(appName)
+    Application::Application(const ApplicationSpecification& specification)
+        : m_Specification(specification)
     {
         DK_CORE_ASSERT(!s_Instance, "Application already exists!");
         s_Instance = this;
 
-        m_Window = Window::Create(WindowProps(appName));
+        m_Window = Window::Create(WindowProps(specification.name));
         m_Window->SetEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
-
-        Renderer::Init(appName);
-
-        m_ImGuiLayer = new ImGuiLayer();
-        PushOverlay(m_ImGuiLayer);
     }
 
     Application::~Application()
     {
-        if (m_ImGuiLayer)
-        {
-            m_LayerStack.PopOverlay(m_ImGuiLayer);
-            m_ImGuiLayer = nullptr;
-        }
-
-        Renderer::Shutdown();
     }
 
     void Application::OnEvent(Event& event)
@@ -49,18 +37,6 @@ namespace Deako
                 break;
             (*it)->OnEvent(event);
         }
-    }
-
-    void Application::PushLayer(Layer* layer)
-    {
-        m_LayerStack.PushLayer(layer);
-        layer->OnAttach();
-    }
-
-    void Application::PushOverlay(Layer* layer)
-    {
-        m_LayerStack.PushOverlay(layer);
-        layer->OnAttach();
     }
 
     void Application::Run()

@@ -3,8 +3,6 @@
 
 #include "ImGuiIcons.h"
 
-#include "Deako/Core/Application.h"
-
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -19,7 +17,6 @@ namespace Deako {
 
     void ImGuiLayer::OnAttach()
     {
-        SetStyles();
     }
 
     void ImGuiLayer::OnDetach()
@@ -28,7 +25,7 @@ namespace Deako {
 
     void ImGuiLayer::OnEvent(Event& event)
     {
-        if (m_BlockEvents)
+        if (s_BlockEvents)
         {
             ImGuiIO& io = ImGui::GetIO();
             event.Handled |= event.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;

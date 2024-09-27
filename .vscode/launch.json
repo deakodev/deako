@@ -6,7 +6,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Deako-Editor/Deako-Editor",
-            "args": [],
+            "args": [
+                "${workspaceFolder}/Deako-Editor/projects/Sandbox/sandbox.dproj"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "externalConsole": true,
@@ -24,7 +26,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/Release-macosx-ARM64/Deako-Editor/Deako-Editor",
-            "args": [],
+            "args": [
+                "${workspaceFolder}/Deako-Editor/projects/Sandbox/sandbox.dproj"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -37,57 +41,15 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Deako-Editor/Deako-Editor",
-            "args": [],
+            "args": [
+                "${workspaceFolder}/Deako-Editor/projects/Sandbox/sandbox.dproj"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
             "MIMode": "lldb",
             "preLaunchTask": "build editor dist"
-        },
-        {
-            "name": "Debug Sandbox",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Sandbox/Sandbox",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "externalConsole": true,
-            "MIMode": "lldb",
-            "preLaunchTask": "build sandbox debug",
-            "environment": [
-                {
-                    "name": "OS_ACTIVITY_MODE",
-                    "value": "disable"
-                }
-            ],
-        },
-        {
-            "name": "Release Sandbox",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Sandbox/Sandbox",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": true,
-            "MIMode": "lldb",
-            "preLaunchTask": "build sandbox release"
-        },
-        {
-            "name": "Dist Sandbox",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/Debug-macosx-ARM64/Sandbox/Sandbox",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": true,
-            "MIMode": "lldb",
-            "preLaunchTask": "build sandbox dist"
-        },
+        }
     ]
 }

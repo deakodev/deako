@@ -4,15 +4,15 @@
 
 namespace Deako {
 
-    class SceneHierarchyPanel
+    class ScenePanel
     {
     public:
-        SceneHierarchyPanel() = default;
-        SceneHierarchyPanel(const Ref<Scene>& context);
-
-        void SetContext(const Ref<Scene>& context);
+        ScenePanel() = default;
+        ScenePanel(const Ref<Scene>& context);
 
         void OnImGuiRender();
+
+        void SetContext(const Ref<Scene>& context);
 
         Entity GetSelectedEntity() const { return m_SelectionContext; }
 

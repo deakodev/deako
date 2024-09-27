@@ -3,6 +3,7 @@
 
 #include "Deako/Core/Application.h"
 #include "Deako/Asset/AssetPool.h"
+#include "Deako/ImGui/ImGuiLayer.h"
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -19,9 +20,9 @@ namespace Deako {
     PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
     PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
 
-    void VulkanBase::Init(const char* appName)
+    void VulkanBase::Init()
     {
-        CreateInstance(appName);
+        CreateInstance();
 
         SetUpDebugMessenger();
 
@@ -44,8 +45,6 @@ namespace Deako {
         vr->camera.setPosition({ 0.0f, 0.0f, 10.0f });
         vr->camera.setRotation({ 0.0f, 0.0f, 0.0f });
         vr->camera.updateViewMatrix();
-
-        VulkanScene::Prepare();
     }
 
     void VulkanBase::Idle()
@@ -56,10 +55,6 @@ namespace Deako {
     void VulkanBase::Shutdown()
     {
         VulkanBase::Idle();
-
-        VulkanScene::CleanUp();
-
-        AssetPool::CleanUp();
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
@@ -101,7 +96,7 @@ namespace Deako {
         vkDestroyInstance(vr->instance, nullptr);
     }
 
-    void VulkanBase::CreateInstance(const char* appName)
+    void VulkanBase::CreateInstance()
     {
         #if defined(VK_VALIDATION)
         vs->validationEnabled = true;
@@ -109,7 +104,7 @@ namespace Deako {
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = appName;
+        appInfo.pApplicationName = Application::Get().GetSpecification().name.c_str();
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "Deako Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -567,14 +562,193 @@ namespace Deako {
             vr->viewport.textureIDs[i] =
                 ImGui_ImplVulkan_AddTexture(vr->viewport.sampler, vr->viewport.images[i].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
+
+        ImGuiLayer::SetStyles();
+    }
+
+    void VulkanBase::Render()
+    {
+        if (VulkanScene::IsInvalid())
+        {
+            Scene::LinkAssets();
+            VulkanScene::Rebuild();
+            return;
+        }
+
+        Draw();
+
+        VulkanScene::UpdateUniforms();
+        VulkanScene::UpdateShaderParams();
+    }
+
+    void VulkanBase::Draw()
+    {
+        auto tStart = std::chrono::high_resolution_clock::now();
+
+        FrameData& frame = vr->frames[vr->currentFrame];
+
+        VkCR(vkWaitForFences(vr->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
+
+        uint32_t scImageIndex;
+        VkResult result = vkAcquireNextImageKHR(vr->device, vr->swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            WindowResize();
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            DK_CORE_ASSERT(result);
+        }
+
+        VkImage msColorTarget = vr->multisampleTarget.color.image;
+        VkFormat msColorTargetFormat = vr->multisampleTarget.color.format;
+
+        VkImage msDepthTarget = vr->multisampleTarget.depth.image;
+        VkFormat msDepthTargetFormat = vr->multisampleTarget.depth.format;
+
+        VkImage viewportImage = vr->viewport.images[scImageIndex].image;
+        VkFormat viewportFormat = vr->viewport.format;
+
+        VkImage scColorTarget = vr->swapchain.colorTarget.image;
+        VkFormat scColorTargetFormat = vr->swapchain.colorTarget.format;
+
+        VkImage scImage = vr->swapchain.images[scImageIndex];
+        VkFormat scFormat = vr->swapchain.format;
+
+        // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
+        vkResetFences(vr->device, 1, &frame.waitFence);
+
+        VkCR(vkResetCommandBuffer(frame.commandBuffer, 0));
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        VkCR(vkBeginCommandBuffer(frame.commandBuffer, &commandBufferBeginInfo));
+
+        VulkanImage::Transition(frame.commandBuffer, msColorTarget, msColorTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+        VulkanImage::Transition(frame.commandBuffer, msDepthTarget, msDepthTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+        VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+        VulkanScene::Draw(frame.commandBuffer, scImageIndex);
+
+        VulkanImage::Transition(frame.commandBuffer, viewportImage, viewportFormat, 1, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        VulkanImage::Transition(frame.commandBuffer, scColorTarget, scColorTargetFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        VulkanImage::Transition(frame.commandBuffer, scImage, scFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        DrawImGui(frame.commandBuffer, scImageIndex);
+
+        VulkanImage::Transition(frame.commandBuffer, scImage, scFormat, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+        VkCR(vkEndCommandBuffer(frame.commandBuffer));
+
+        const VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        VkCommandBufferSubmitInfo commandInfo{};
+        commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+        commandInfo.pNext = nullptr;
+        commandInfo.commandBuffer = frame.commandBuffer;
+        commandInfo.deviceMask = 0;
+
+        VkSemaphoreSubmitInfo presentSemaphoreInfo{};
+        presentSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        presentSemaphoreInfo.pNext = nullptr;
+        presentSemaphoreInfo.semaphore = frame.presentSemaphore;
+        presentSemaphoreInfo.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR;
+        presentSemaphoreInfo.deviceIndex = 0;
+        presentSemaphoreInfo.value = 1;
+
+        VkSemaphoreSubmitInfo renderSemaphoreInfo{};
+        renderSemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+        renderSemaphoreInfo.pNext = nullptr;
+        renderSemaphoreInfo.semaphore = frame.renderSemaphore;
+        renderSemaphoreInfo.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+        renderSemaphoreInfo.deviceIndex = 0;
+        renderSemaphoreInfo.value = 1;
+
+        VkSubmitInfo2 submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        submitInfo.pNext = nullptr;
+        submitInfo.waitSemaphoreInfoCount = 1;
+        submitInfo.pWaitSemaphoreInfos = &presentSemaphoreInfo;
+        submitInfo.signalSemaphoreInfoCount = 1;
+        submitInfo.pSignalSemaphoreInfos = &renderSemaphoreInfo;
+        submitInfo.commandBufferInfoCount = 1;
+        submitInfo.pCommandBufferInfos = &commandInfo;
+
+        VkCR(vkQueueSubmit2KHR(vr->graphicsQueue, 1, &submitInfo, frame.waitFence));
+
+        VkPresentInfoKHR presentInfo = {};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &frame.renderSemaphore;
+        VkSwapchainKHR swapChains[] = { vr->swapchain.swapchain };
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains;
+        presentInfo.pImageIndices = &scImageIndex;
+        presentInfo.pResults = nullptr; // Optional
+
+        result = vkQueuePresentKHR(vr->presentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR /*|| s_State.framebufferResized*/)
+        {
+            WindowResize();
+            return;
+        }
+        else if (result != VK_SUCCESS)
+        {
+            DK_CORE_ASSERT(result);
+        }
+
+        vr->currentFrame = (vr->currentFrame + 1) % vs->frameOverlap;
+
+        auto tEnd = std::chrono::high_resolution_clock::now();
+        auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+        float frameTimer = (float)tDiff / 1000.0f;
+        // vr->camera.update(frameTimer);
+    }
+
+    void VulkanBase::DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    {
+        VkRenderingAttachmentInfo colorAttachment = {};
+        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachment.pNext = nullptr;
+        colorAttachment.imageView = vr->swapchain.colorTarget.view;
+        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+        colorAttachment.resolveImageView = vr->swapchain.views[imageIndex];
+        colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+        VkRenderingInfo renderInfo = {};
+        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderInfo.pNext = nullptr;
+        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vr->swapchain.extent.width, vr->swapchain.extent.height };
+        renderInfo.layerCount = 1;
+        renderInfo.colorAttachmentCount = 1;
+        renderInfo.pColorAttachments = &colorAttachment;
+        renderInfo.pDepthAttachment = nullptr;
+        renderInfo.pStencilAttachment = nullptr;
+
+        vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
+
+        LayerStack& layerStack = Application::Get().GetLayerStack();
+
+        ImGuiLayer::Begin();
+        for (Layer* layer : layerStack)
+            layer->OnImGuiRender((ImTextureID)vr->viewport.textureIDs[imageIndex]);
+        ImGuiLayer::End(commandBuffer);
+
+        vkCmdEndRenderingKHR(commandBuffer);
     }
 
     void VulkanBase::WindowResize()
     {
-        if (!vr->prepared) return;
-
-        vr->prepared = false;
-
         VulkanBase::Idle();
 
         ImGui_ImplVulkan_Shutdown();
@@ -597,8 +771,6 @@ namespace Deako {
         SetUpImGui();
 
         ImGuiLayer::SetStyles();
-
-        vr->prepared = true;
     }
 
 }

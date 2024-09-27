@@ -15,6 +15,8 @@ namespace Deako {
 
         IDComponent() = default;
         IDComponent(const IDComponent&) = default;
+        IDComponent(UUID uuid)
+            : id(uuid) {}
     };
 
     struct TagComponent
@@ -24,9 +26,7 @@ namespace Deako {
         TagComponent() = default;
         TagComponent(const TagComponent&) = default;
         TagComponent(const std::string& tag)
-            : tag(tag)
-        {
-        }
+            : tag(tag) {}
     };
 
     struct TransformComponent
@@ -38,13 +38,12 @@ namespace Deako {
         TransformComponent() = default;
         TransformComponent(const TransformComponent&) = default;
 
-        // glm::mat4 GetTransform() const
-        // {
-        //     glm::mat4 _rotation = glm::toMat4(glm::quat(rotation));
-
-        //     return glm::translate(glm::mat4(1.0f), translation)
-        //         * _rotation * glm::scale(glm::mat4(1.0f), scale);
-        // }
+        glm::mat4 GetTransform() const
+        {
+            return glm::translate(glm::mat4(1.0f), translation) *
+                glm::toMat4(glm::quat(rotation)) *
+                glm::scale(glm::mat4(1.0f), scale);
+        }
     };
 
     struct TextureComponent

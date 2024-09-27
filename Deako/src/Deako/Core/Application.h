@@ -12,19 +12,39 @@ int main(int argc, char** argv);
 
 namespace Deako {
 
+    struct ApplicationCommandLineArgs
+    {
+        int count = 0;
+        char** args = nullptr;
+
+        const char* operator[](int index) const
+        {
+            DK_CORE_ASSERT(index < count);
+            return args[index];
+        }
+    };
+
+    struct ApplicationSpecification
+    {
+        std::string name = "Deako Application";
+        std::string workingDirectory;
+        ApplicationCommandLineArgs commandLineArgs;
+    };
+
     class Application
     {
     public:
-        Application(const char* name = "Deako App");
+        Application(const ApplicationSpecification& specification);
         virtual ~Application();
 
+        void Close() { m_Running = false; }
+
         void OnEvent(Event& event);
-        void PushLayer(Layer* layer);
-        void PushOverlay(Layer* layer);
 
         static Application& Get() { return *s_Instance; }
+        const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
         Window& GetWindow() { return *m_Window; }
-        ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
         LayerStack& GetLayerStack() { return m_LayerStack; }
 
     private:
@@ -37,18 +57,18 @@ namespace Deako {
         bool OnWindowRestored(WindowRestoredEvent& event);
 
     private:
-        const char* m_AppName;
-        static Application* s_Instance;
+        ApplicationSpecification m_Specification;
 
         Scope<Window> m_Window;
-        ImGuiLayer* m_ImGuiLayer;
         LayerStack m_LayerStack;
 
         bool m_Running = true;
         bool m_Minimized = false;
+
+        static Application* s_Instance;
     };
 
     // To be defined client side
-    Application* CreateApplication();
+    Application* CreateApplication(ApplicationCommandLineArgs args);
 
 }

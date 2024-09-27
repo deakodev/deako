@@ -1,4 +1,4 @@
-#include "SceneHierarchyPanel.h"
+#include "ScenePanel.h"
 
 #include "Deako/Scene/Components.h"
 
@@ -7,20 +7,20 @@
 
 namespace Deako {
 
-    SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context)
+    ScenePanel::ScenePanel(const Ref<Scene>& context)
     {
         SetContext(context);
     }
 
-    void SceneHierarchyPanel::SetContext(const Ref<Scene>& context)
+    void ScenePanel::SetContext(const Ref<Scene>& context)
     {
         m_Context = context;
         m_SelectionContext = {};
     }
 
-    void SceneHierarchyPanel::OnImGuiRender()
+    void ScenePanel::OnImGuiRender()
     {
-        ImGui::Begin("Scene Hierarchy");
+        ImGui::Begin("Scene");
 
         auto view = m_Context->m_Registry.view<TagComponent>();
         for (auto entityHandle : view)
@@ -51,7 +51,7 @@ namespace Deako {
         ImGui::End();
     }
 
-    void SceneHierarchyPanel::DrawEntityNode(Entity entity)
+    void ScenePanel::DrawEntityNode(Entity entity)
     {
         ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0)
             | ImGuiTreeNodeFlags_OpenOnArrow
@@ -73,6 +73,7 @@ namespace Deako {
 
         if (opened) ImGui::TreePop();
 
+        // TODO:
         // if (entityDeleted)
         // {
         //     m_Context->DestroyEntity(entity);
@@ -191,7 +192,7 @@ namespace Deako {
         }
     }
 
-    void SceneHierarchyPanel::DrawComponents(Entity entity)
+    void ScenePanel::DrawComponents(Entity entity)
     {
         if (entity.HasComponent<TagComponent>())
         {

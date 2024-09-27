@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Asset.h"
+#include "Deako/Asset/Asset.h"
 
 #include "Deako/Renderer/Vulkan/VulkanModel.h"
 

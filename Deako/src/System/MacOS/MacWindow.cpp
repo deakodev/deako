@@ -5,8 +5,6 @@
 #include "Deako/Event/MouseEvent.h"
 #include "Deako/Event/KeyEvent.h"
 
-// #include "Deako/Renderer/Vulkan/VulkanBase.h"
-
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -35,7 +33,6 @@ namespace Deako {
         m_WindowData.title = props.title;
         m_WindowData.width = props.width;
         m_WindowData.height = props.height;
-        m_WindowData.vsync = true;
 
         DK_CORE_INFO("Creating window - {0} ({1}, {2})", props.title, props.width, props.height);
 
@@ -48,7 +45,7 @@ namespace Deako {
         }
 
         m_Window = glfwCreateWindow((int)props.width,
-            (int)props.height, props.title, nullptr, nullptr);
+            (int)props.height, props.title.c_str(), nullptr, nullptr);
         ++s_WindowCount;
 
         // Gives easy access to the windows' data in the callbacks via a pointer
@@ -169,9 +166,9 @@ namespace Deako {
             {
                 // VulkanBase::GetState()->framebufferResized = true;
 
-                WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
-                data.width = width;
-                data.height = height;
+                // WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+                // data.width = width;
+                // data.height = height;
             });
     }
 
@@ -189,16 +186,6 @@ namespace Deako {
     void MacWindow::OnUpdate()
     {
         glfwPollEvents();
-    }
-
-    bool MacWindow::IsVSync() const
-    {
-        return m_WindowData.vsync;
-    }
-
-    void MacWindow::SetVSync(bool enabled)
-    {
-        // TODO: vulkan
     }
 
     std::pair<uint32_t, uint32_t> MacWindow::GetWindowFramebufferSize()

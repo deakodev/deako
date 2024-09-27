@@ -18,10 +18,10 @@ namespace Deako {
         virtual void OnDetach() override;
         virtual void OnEvent(Event& event) override;
 
-        void Begin();
-        void End(VkCommandBuffer commandBuffer);
+        static void Begin();
+        static void End(VkCommandBuffer commandBuffer);
 
-        void BlockEvents(bool block) { m_BlockEvents = block; }
+        static void BlockEvents(bool block) { s_BlockEvents = block; }
 
         static void SetStyles();
 
@@ -29,8 +29,7 @@ namespace Deako {
         static void SetDarkTheme();
 
     private:
-        bool m_BlockEvents = true;
-        float m_Time = 0.0f;
+        inline static bool s_BlockEvents = true;
     };
 
 }

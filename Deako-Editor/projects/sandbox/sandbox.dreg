@@ -1,0 +1,13 @@
+AssetRegistry:
+  - AssetHandle: 57928164075139581
+    AssetPath: environments/satara_night_cube.ktx
+    AssetType: TextureCubeMap
+  - AssetHandle: 51418710489529541
+    AssetPath: prefabs/gltf/DamagedHelmet/DamagedHelmet.gltf
+    AssetType: Prefab
+  - AssetHandle: 44938964025039682
+    AssetPath: environments/papermill.ktx
+    AssetType: TextureCubeMap
+  - AssetHandle: 57892318812072087
+    AssetPath: prefabs/gltf/Cube/Cube.gltf
+    AssetType: Prefab

@@ -25,6 +25,7 @@ namespace Deako {
 
     struct AssetMetadata
     {
+        std::string assetName{ "Unnamed Asset" };
         AssetType assetType{ AssetType::None };
         std::filesystem::path assetPath;
 

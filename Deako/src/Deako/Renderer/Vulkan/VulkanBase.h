@@ -8,7 +8,6 @@
 #include "VulkanScene.h"
 
 #include "Deako/Project/Project.h"
-#include "Deako/Scene/Scene.h"
 #include "Deako/Scene/Entity.h"
 #include "Deako/Renderer/EditorCamera.h"
 
@@ -39,7 +38,8 @@ namespace Deako {
 
     struct VulkanResources
     {
-        bool                               prepared{ false };
+        bool                               imguiPrepared{ false };
+
         uint32_t                           currentFrame{ 0 };
 
         VkInstance                         instance{ VK_NULL_HANDLE };
@@ -110,7 +110,7 @@ namespace Deako {
         } skybox;
 
         Ref<Project> project;
-        std::unordered_map<std::string, Ref<Model>> entities;
+        std::vector<Entity> entities;
 
         struct UniformSet
         {
@@ -179,9 +179,13 @@ namespace Deako {
     class VulkanBase
     {
     public:
-        static void Init(const char* appName);
+        static void Init();
         static void Idle();
         static void Shutdown();
+
+        static void Render();
+        static void Draw();
+        static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
         static void WindowResize();
 
@@ -189,7 +193,7 @@ namespace Deako {
         static Ref<VulkanResources>& GetResources() { return vr; }
 
     private:
-        static void CreateInstance(const char* appName);
+        static void CreateInstance();
         static void SetUpDebugMessenger();
         static void SetUpDevice();
         static void SetUpSwapchain();

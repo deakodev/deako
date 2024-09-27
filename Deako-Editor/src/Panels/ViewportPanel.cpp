@@ -1,5 +1,7 @@
 #include "ViewportPanel.h"
 
+#include "../EditorLayer.h"
+
 namespace Deako {
 
     void ViewportPanel::OnUpdate()
@@ -18,7 +20,7 @@ namespace Deako {
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+        ImGuiLayer::BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 
@@ -35,7 +37,8 @@ namespace Deako {
             {
                 const char* path = (const char*)payload->Data;
                 DK_TRACE("Payload: {0}", path);
-                Ref<Scene> scene = Scene::Open(path);
+                EditorLayer::OpenScene(path);
+                Renderer::Invalidate();
             }
             ImGui::EndDragDropTarget();
         }

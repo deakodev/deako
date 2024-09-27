@@ -4,51 +4,54 @@
 
 namespace Deako {
 
-    struct ProjectDetails
+    struct ProjectMetadata
     {
         std::string name{ "Untitled" };
 
+        std::filesystem::path workingDirectory;
         std::filesystem::path assetDirectory;
-        std::filesystem::path assetRegistryPath; // relative to assetDirectory
+
+        std::filesystem::path assetRegistryPath;
+        std::filesystem::path initialScenePath;
     };
 
     class Project
     {
     public:
-        static Ref<Project> Open(const std::filesystem::path& path);
+        static Ref<Project> Load(const std::filesystem::path& path);
         bool Save();
 
         static Ref<Project> GetActive() { return s_ActiveProject; }
 
-        static std::filesystem::path GetProjectDirectory()
+        std::filesystem::path GetWorkingDirectory()
         {
-            DK_CORE_ASSERT(s_ActiveProject);
-            return s_ProjectDirectory;
+            return m_Metadata.workingDirectory;
         }
 
-        static std::filesystem::path GetAssetDirectory()
+        std::filesystem::path GetAssetDirectory()
         {
-            DK_CORE_ASSERT(s_ActiveProject);
-            return GetProjectDirectory() / s_ActiveProject->m_Details.assetDirectory;
+            return GetWorkingDirectory() / m_Metadata.assetDirectory;
         }
 
-        static std::filesystem::path GetAssetRegistryPath()
+        std::filesystem::path GetAssetRegistryPath()
         {
-            DK_CORE_ASSERT(s_ActiveProject);
-            return GetAssetDirectory() / s_ActiveProject->m_Details.assetRegistryPath;
+            return GetWorkingDirectory() / m_Metadata.assetRegistryPath;
         }
 
+        std::filesystem::path GetInitialScenePath()
+        {
+            return GetAssetDirectory() / m_Metadata.initialScenePath;
+        }
 
-        void SetDetails(const ProjectDetails& details) { m_Details = details; }
-        const ProjectDetails& GetDetails() { return m_Details; }
+        void SetMetadata(const ProjectMetadata& metadata) { m_Metadata = metadata; }
+        const ProjectMetadata& GetMetadata() { return m_Metadata; }
 
         Ref<AssetPoolBase> GetAssetPool() { return m_AssetPool; }
 
     private:
-        ProjectDetails m_Details;
+        ProjectMetadata m_Metadata;
         Ref<AssetPoolBase> m_AssetPool;
 
-        inline static std::filesystem::path s_ProjectDirectory{ "Deako-Editor/projects/" };
         inline static Ref<Project> s_ActiveProject;
     };
 

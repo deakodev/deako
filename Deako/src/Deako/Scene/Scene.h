@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Deako/Renderer/EditorCamera.h"
 #include "Deako/Asset/Asset.h"
 
 #include "Components.h"
@@ -10,45 +9,44 @@
 
 namespace Deako {
 
-    class Entity;
+    using SceneRegistry = entt::registry;
+    using EntityMap = std::unordered_map<UUID, entt::entity>;
 
-    struct SceneDetails
+    struct SceneMetadata : public AssetMetadata
     {
         std::string name{ "Untitled" };
-        std::filesystem::path path;
     };
+
+    class Entity;
 
     class Scene : public Asset
     {
     public:
-        Scene(const std::filesystem::path& path);
-
-        using Registry = entt::registry;
-
         static Ref<Scene> Open(const std::filesystem::path& path);
         bool Save();
 
-        void OnUpdateEditor(Camera& editorCamera);
+        static void LinkAssets();
 
-        Entity CreateEntity(const std::string& name = std::string());
-        void DestroyEntity(Entity entity);
-
-        static void SetActive(Ref<Scene> scene) { s_ActiveScene = scene; }
         static Ref<Scene> GetActive() { return s_ActiveScene; }
 
-        void SetDetails(SceneDetails details) { m_Details = details; }
-        const SceneDetails& GetDetails() { return m_Details; }
+        void OnUpdate();
 
-        const Registry& GetRegistry() { return m_Registry; }
+        void SetName(const std::string& name) { m_Metadata.name = name; }
 
-        Entity GetEntityByName(const std::string& name);
-        // Entity GetEntityByUUID(EntityID id);
+        const SceneMetadata& GetMetadata() { return m_Metadata; }
+
+        const SceneRegistry& GetRegistry() { return m_Registry; }
+
+        Entity CreateEntity(const std::string& name = std::string());
+        Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
+        void DestroyEntity(Entity entity);
+
+        Entity GetEntity(entt::entity handle);
+        Entity GetEntity(const std::string& tag);
+        Entity GetEntity(UUID uuid);
 
         template<typename... Components>
-        auto GetAllEntitiesWith()
-        {
-            return m_Registry.view<Components...>();
-        }
+        static std::vector<Entity> GetAllEntitiesWith();
 
         static AssetType GetStaticType() { return AssetType::Scene; }
         virtual AssetType GetType() const override { return GetStaticType(); }
@@ -60,13 +58,14 @@ namespace Deako {
         void OnComponentAdded(Entity entity, T& component);
 
     private:
-        Registry m_Registry;
-        SceneDetails m_Details;
-
-        friend class Entity;
-        friend class SceneHierarchyPanel;
+        SceneMetadata m_Metadata;
+        SceneRegistry m_Registry;
+        EntityMap m_EntityMap;
 
         inline static Ref<Scene> s_ActiveScene;
+
+        friend class Entity;
+        friend class ScenePanel;
     };
 
 }

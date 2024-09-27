@@ -138,8 +138,11 @@ namespace Deako {
     {
         std::vector<ShaderMaterial> shaderMaterials{};
 
-        for (auto& [tag, model] : vr->entities)
+        for (Entity entity : vr->entities)
         {
+            auto& modelComp = entity.GetComponent<ModelComponent>();
+            Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+
             for (auto& material : model->materials)
             {
                 ShaderMaterial shaderMaterial{};

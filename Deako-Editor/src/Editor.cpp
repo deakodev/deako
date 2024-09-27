@@ -8,20 +8,36 @@ namespace Deako {
     class DeakoEditor : public Application
     {
     public:
-        DeakoEditor()
-            : Application("Deako Editor")
+        DeakoEditor(const ApplicationSpecification& spec)
+            : Application(spec)
         {
-            PushLayer(new EditorLayer());
+            m_EditorLayer = CreateScope<EditorLayer>();
+            GetLayerStack().PushLayer(m_EditorLayer.get());
+
+            m_ImGuiLayer = CreateScope<ImGuiLayer>();
+            GetLayerStack().PushOverlay(m_ImGuiLayer.get());
         }
 
         ~DeakoEditor()
         {
+            GetLayerStack().PopOverlay(m_ImGuiLayer.get());
+            GetLayerStack().PopLayer(m_EditorLayer.get());
         }
+
+    private:
+        Scope<EditorLayer> m_EditorLayer;
+        Scope<ImGuiLayer> m_ImGuiLayer;
+
     };
 
-    Application* CreateApplication()
+    Application* CreateApplication(Deako::ApplicationCommandLineArgs args)
     {
-        return new DeakoEditor();
+        ApplicationSpecification spec;
+        spec.name = "Deako Editor";
+        spec.workingDirectory = "../Deako-Editor";
+        spec.commandLineArgs = args;
+
+        return new DeakoEditor(spec);
     }
 
 }

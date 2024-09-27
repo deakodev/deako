@@ -1,28 +1,11 @@
 #pragma once
 
-#include "Asset.h"
+#include "Deako/Asset/Asset.h"
 
 namespace Deako {
 
     using AssetRegistry = std::unordered_map<AssetHandle, AssetMetadata>;
     using AssetMap = std::unordered_map<AssetHandle, Ref<Asset>>;
-
-    class AssetPool
-    {
-    public:
-        static Ref<Asset> Import(AssetHandle handle, AssetMetadata metadata);
-
-        template <typename T>
-        static Ref<T> Import(const std::filesystem::path& path);
-
-        static void Add(Ref<Asset> asset, AssetMetadata metadata);
-        static void AddToImported(Ref<Asset> asset);
-
-        template <typename T>
-        static Ref<T> Get(AssetHandle handle);
-
-        static void CleanUp();
-    };
 
     class AssetPoolBase
     {
@@ -30,19 +13,19 @@ namespace Deako {
         AssetPoolBase(Ref<AssetRegistry> registry)
             : m_AssetRegistry(*registry) {}
 
-        Ref<Asset> Import(AssetHandle handle, AssetMetadata metadata);
-
-        void Add(Ref<Asset> asset, AssetMetadata metadata);
-        void AddToImported(Ref<Asset> asset);
-
-        void Remove(AssetHandle handle);
-
-        template <typename T>
-        Ref<T> Get(AssetHandle handle);
-
         void CleanUp();
 
+        Ref<Asset> ImportAsset(AssetHandle handle, AssetMetadata metadata);
+
+        void AddAsset(Ref<Asset> asset, AssetMetadata metadata);
+
+        void RemoveAsset(AssetHandle handle);
+
+        template <typename T>
+        Ref<T> GetAsset(AssetHandle handle);
+
         const AssetRegistry& GetAssetRegistry() const { return m_AssetRegistry; }
+        const AssetMap& GetAssetMap() const { return m_AssetsImported; }
         AssetMetadata GetMetadata(AssetHandle handle);
 
     private:
@@ -54,4 +37,55 @@ namespace Deako {
         AssetMap m_AssetsImported;
     };
 
+    class AssetPool
+    {
+    public:
+        static Ref<AssetPoolBase> Get();
+
+        static void CleanUp()
+        {
+            AssetPool::Get()->CleanUp();
+        }
+
+        static const AssetRegistry& GetAssetRegistry()
+        {
+            return AssetPool::Get()->GetAssetRegistry();
+        }
+
+        static AssetMetadata GetMetadata(AssetHandle handle)
+        {
+            return AssetPool::Get()->GetMetadata(handle);
+        }
+
+        static Ref<Asset> Import(AssetHandle handle, AssetMetadata metadata)
+        {
+            // metadata.assetPath = Project::GetActive()->GetAssetDirectory() / metadata.assetPath;
+            return AssetPool::Get()->ImportAsset(handle, metadata);
+        }
+
+        template <typename T>
+        static Ref<T> Import(const std::filesystem::path& path)
+        {
+            AssetHandle handle;
+            AssetMetadata metadata;
+            metadata.assetType = AssetTypeFromTypeIndex(std::type_index(typeid(T)));
+            metadata.assetPath = path;
+
+            Ref<Asset> asset = AssetPool::Get()->ImportAsset(handle, metadata);
+            return std::static_pointer_cast<T>(asset);
+        }
+
+
+        static void AddAsset(Ref<Asset> asset, AssetMetadata metadata)
+        {
+            return AssetPool::Get()->AddAsset(asset, metadata);
+        }
+
+        template <typename T>
+        static Ref<T> GetAsset(AssetHandle handle)
+        {
+            return AssetPool::Get()->GetAsset<T>(handle);
+        }
+
+    };
 }

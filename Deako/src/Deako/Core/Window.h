@@ -10,11 +10,11 @@ namespace Deako {
 
     struct WindowProps
     {
-        const char* title;
+        std::string title;
         uint32_t width;
         uint32_t height;
 
-        WindowProps(const char* title = "Deako App",
+        WindowProps(const std::string& title = "Deako",
             uint32_t width = 1600,
             uint32_t height = 900)
             : title(title), width(width), height(height)
@@ -35,8 +35,6 @@ namespace Deako {
         // Useful to obtain GLFW window pointer
         virtual void* GetNativeWindow() const = 0;
 
-        virtual void SetVSync(bool enabled) = 0;
-        virtual bool IsVSync() const = 0;
         virtual std::pair<uint32_t, uint32_t> GetWindowFramebufferSize() = 0;
 
         virtual void SetEventCallback(const EventCallbackFn& callback) = 0;

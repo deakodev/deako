@@ -2,6 +2,9 @@
 
 #include "VulkanBase.h"
 
+#include "Deako/Scene/Scene.h"
+#include "Deako/Scene/Entity.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -9,13 +12,18 @@ namespace Deako {
     class VulkanScene
     {
     public:
-        static void Prepare();
-        static void Render();
+        static void Build();
+        static void Rebuild();
         static void CleanUp();
 
-        static void SetPrepared(bool prepared);
+        static void Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
+        static void UpdateUniforms();
+        static void UpdateShaderParams();
         static void ViewportResize(const glm::vec2& viewportSize);
+
+        static bool IsInvalid() { return !m_SceneValid; }
+        static void Invalidate() { m_SceneValid = false; };
 
     private:
         static void SetUpAssets();
@@ -25,12 +33,8 @@ namespace Deako {
 
         static void AddPipelineSet(const std::string prefix, std::filesystem::path vertexShader, std::filesystem::path fragmentShader);
 
-        static void Draw();
-        static void DrawViewport(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-
-        static void UpdateUniforms();
-        static void UpdateShaderParams();
+    private:
+        inline static bool m_SceneValid{ false };
     };
 
 }

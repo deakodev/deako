@@ -1,11 +1,7 @@
 #include "PrefabImporter.h"
 #include "dkpch.h"
 
-#include "ModelImporter.h"
-
-#include "Deako/Renderer/Vulkan/VulkanTexture.h"
-#include "Deako/Renderer/Vulkan/VulkanMaterial.h"
-#include "Deako/Renderer/Vulkan/VulkanModel.h"
+#include "Deako/Asset/ModelImporter.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tiny_gltf.h>
@@ -25,7 +21,7 @@ namespace Deako {
         PrefabMetadata prefabMetadata;
         prefabMetadata.assetPath = metadata.assetPath;
         prefabMetadata.assetType = metadata.assetType;
-        prefabMetadata.prefabType = PrefabType::GLTF; // TODO: Add a switch later if needed
+        prefabMetadata.prefabType = PrefabType::GLTF; // TODO: AddAsset a switch later if needed
 
         auto it = s_PrefabImportFunctions.find(prefabMetadata.prefabType);
         if (it == s_PrefabImportFunctions.end())
@@ -136,7 +132,7 @@ namespace Deako {
                 textures.push_back(texture);
                 prefab->textures[texture->m_Handle] = texture;
 
-                AssetPool::Add(texture, textureMetadata);
+                AssetPool::AddAsset(texture, textureMetadata);
             }
 
             std::vector<Ref<Material>> materials;
@@ -151,7 +147,7 @@ namespace Deako {
                 materials.push_back(material);
                 prefab->materials[material->m_Handle] = material;
 
-                AssetPool::Add(material, materialMetadata);
+                AssetPool::AddAsset(material, materialMetadata);
             }
 
             // push a default material at the end of the list for meshes with no material assigned
@@ -162,7 +158,7 @@ namespace Deako {
 
             prefab->materials[material->m_Handle] = material;
 
-            AssetPool::Add(material, materialMetadata);
+            AssetPool::AddAsset(material, materialMetadata);
 
             materials.push_back(material);
             prefab->model->SetMaterials(materials);
@@ -212,9 +208,9 @@ namespace Deako {
                     DK_CORE_WARN("Unsupported extension {0}. Model may not display as intended.", ext);
             }
 
-            AssetPool::Add(std::static_pointer_cast<Asset>(prefab->model), modelMetadata);
+            AssetPool::AddAsset(std::static_pointer_cast<Asset>(prefab->model), modelMetadata);
 
-            AssetPool::Add(std::static_pointer_cast<Asset>(prefab), metadata);
+            AssetPool::AddAsset(std::static_pointer_cast<Asset>(prefab), metadata);
 
             return prefab;
         }

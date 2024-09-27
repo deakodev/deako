@@ -1,32 +1,17 @@
 #include "Scene.h"
 #include "dkpch.h"
 
+#include "Deako/Asset/Prefab.h"
 #include "Deako/Renderer/Renderer.h"
-#include "Deako/Renderer/Vulkan/VulkanBase.h"
 #include "Deako/Project/Serialize.h"
-
-#include "Entity.h"
 
 namespace Deako {
 
-    Scene::Scene(const std::filesystem::path& path)
-    {
-        m_Details.path = path;
-    }
-
     Ref<Scene> Scene::Open(const std::filesystem::path& path)
     {
-        Ref<Scene> scene = AssetPool::Import<Scene>(path);
+        s_ActiveScene = AssetPool::Import<Scene>(path);
 
-        if (scene)
-        {
-            SetActive(scene);
-            VulkanScene::SetPrepared(false);
-
-            return scene;
-        }
-
-        return nullptr;
+        return s_ActiveScene;
     }
 
     bool Scene::Save()
@@ -37,7 +22,7 @@ namespace Deako {
         return false;
     }
 
-    void Scene::OnUpdateEditor(Camera& editorCamera)
+    void Scene::OnUpdate()
     {
         Renderer::BeginScene();
 
@@ -46,11 +31,19 @@ namespace Deako {
 
     Entity Scene::CreateEntity(const std::string& name)
     {
+        return CreateEntityWithUUID(UUID(), name);
+    }
+
+    Entity Scene::CreateEntityWithUUID(UUID uuid, const std::string& name)
+    {
         Entity entity = { m_Registry.create(), this };
 
+        entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<TransformComponent>();
         auto& tagComp = entity.AddComponent<TagComponent>();
         tagComp.tag = name.empty() ? "Entity" : name;
+
+        m_EntityMap[uuid] = entity;
 
         return entity;
     }
@@ -60,16 +53,97 @@ namespace Deako {
         m_Registry.destroy(entity);
     }
 
-    Entity Scene::GetEntityByName(const std::string& name)
+    Entity Scene::GetEntity(entt::entity handle)
     {
-        auto entities = m_Registry.view<TagComponent>();
-        for (auto entity : entities)
+        auto entityHandles = m_Registry.view<TagComponent>();
+        for (auto entityHandle : entityHandles)
         {
-            const TagComponent& tc = entities.get<TagComponent>(entity);
-            if (tc.tag == name)
-                return Entity{ entity, this };
+            if (entityHandle == handle)
+                return { entityHandle, this };
         }
         return {};
+    }
+
+    Entity Scene::GetEntity(const std::string& tag)
+    {
+        auto entityHandles = m_Registry.view<TagComponent>();
+        for (auto entityHandle : entityHandles)
+        {
+            const TagComponent& tagComp = entityHandles.get<TagComponent>(entityHandle);
+            if (tagComp.tag == tag)
+                return { entityHandle, this };
+        }
+        return {};
+    }
+
+    Entity Scene::GetEntity(UUID uuid)
+    {
+        if (m_EntityMap.find(uuid) != m_EntityMap.end())
+            return { m_EntityMap.at(uuid), this };
+
+        return {};
+    }
+
+    template<>
+    std::vector<Entity> Scene::GetAllEntitiesWith<TagComponent, ModelComponent>()
+    {
+        auto entityHandles = s_ActiveScene->m_Registry.view<TagComponent, ModelComponent>();
+
+        std::vector<Entity> entities;
+        for (auto entityHandle : entityHandles)
+        {
+            entities.emplace_back(entityHandle, s_ActiveScene.get());
+        }
+
+        return entities;
+    }
+
+    template<>
+    std::vector<Entity> Scene::GetAllEntitiesWith<PrefabComponent>()
+    {
+        auto entityHandles = s_ActiveScene->m_Registry.view<PrefabComponent>();
+
+        std::vector<Entity> entities;
+        for (auto entityHandle : entityHandles)
+        {
+            entities.emplace_back(entityHandle, s_ActiveScene.get());
+        }
+
+        return entities;
+    }
+
+    void Scene::LinkAssets()
+    {
+        std::vector<Entity> prefabEntities = GetAllEntitiesWith<PrefabComponent>();
+        for (auto prefabEntity : prefabEntities)
+        {
+            AssetHandle prefabHandle = prefabEntity.GetComponent<PrefabComponent>().handle;
+            Ref<Prefab> prefabAsset = AssetPool::GetAsset<Prefab>(prefabHandle);
+
+            // Assign prefab asset textures
+            if (!prefabEntity.HasComponent<TextureComponent>())
+                prefabEntity.AddComponent<TextureComponent>();
+
+            auto& entityTextureHandles = prefabEntity.GetComponent<TextureComponent>().handles;
+            for (const auto& [assetHandle, textureAsset] : prefabAsset->textures)
+                entityTextureHandles.emplace_back(assetHandle);
+
+            // Assign prefab asset materials
+            if (!prefabEntity.HasComponent<MaterialComponent>())
+                prefabEntity.AddComponent<MaterialComponent>();
+
+            auto& entityMaterialHandles = prefabEntity.GetComponent<MaterialComponent>().handles;
+            for (const auto& [assetHandle, materialAsset] : prefabAsset->materials)
+                entityMaterialHandles.emplace_back(assetHandle);
+
+            // Assign prefab asset model
+            prefabEntity.AddComponent<ModelComponent>(prefabAsset->model->m_Handle);
+        }
+    }
+
+    template<>
+    void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)
+    {
     }
 
     template<>

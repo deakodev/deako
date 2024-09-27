@@ -1,51 +1,43 @@
 #include "Renderer.h"
 #include "dkpch.h"
 
+#include "Deako/Asset/AssetPool.h"
 #include "Deako/Renderer/Vulkan/VulkanBase.h"
+#include "Deako/Renderer/Vulkan/VulkanScene.h"
 
 namespace Deako {
 
-    RendererData Renderer::s_Data;
-
-    void Renderer::Init(const char* appName)
+    void Renderer::Init()
     {
-        VulkanBase::Init(appName);
+        VulkanBase::Init();
+
+        Scene::LinkAssets(); // TODO: figure out where to do this
+
+        VulkanScene::Build();
     }
 
     void Renderer::Shutdown()
     {
+        VulkanScene::CleanUp();
+
+        AssetPool::CleanUp();
+
         VulkanBase::Shutdown();
     }
 
     void Renderer::BeginScene()
     {
-
-        StartBatch();
-    }
-
-    void Renderer::BeginScene(const glm::mat4& viewProjection)
-    {
-        StartBatch();
     }
 
     void Renderer::EndScene()
     {
-        Flush();
+        VulkanBase::Render();
     }
 
-    void Renderer::Flush()
-    {
-        VulkanScene::Render();
-    }
 
-    void Renderer::StartBatch()
+    void Renderer::Invalidate()
     {
-    }
-
-    void Renderer::NextBatch()
-    {
-        Flush();
-        StartBatch();
+        VulkanScene::Invalidate();
     }
 
 }

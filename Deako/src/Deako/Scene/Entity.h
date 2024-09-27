@@ -4,7 +4,7 @@
 
 #include "Deako/Core/UUID.h"
 
-#include "entt.hpp"
+#include <entt.hpp>
 
 namespace Deako {
 

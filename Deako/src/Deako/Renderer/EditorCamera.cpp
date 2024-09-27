@@ -6,6 +6,7 @@
 
 namespace Deako {
 
+    // TODO:
     // EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
     //     : m_Projection(glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip))
     //     , m_View(glm::lookAt(glm::vec3(2.0f, 20.0f, 40.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)))

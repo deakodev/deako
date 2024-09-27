@@ -9,10 +9,9 @@ namespace Deako {
 
     struct WindowData
     {
-        const char* title;
+        std::string title;
         uint32_t width;
         uint32_t height;
-        bool vsync;
 
         EventCallbackFn EventCallback = [](Event&) {};
     };
@@ -29,8 +28,6 @@ namespace Deako {
         virtual uint32_t GetHeight() const override { return m_WindowData.height; }
         virtual void* GetNativeWindow() const override { return m_Window; }
 
-        virtual bool IsVSync() const override;
-        virtual void SetVSync(bool enabled) override;
         virtual std::pair<uint32_t, uint32_t> GetWindowFramebufferSize() override;
 
         virtual void SetEventCallback(const EventCallbackFn& callback) override

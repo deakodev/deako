@@ -1,11 +1,6 @@
 #include "Prefab.h"
 #include "dkpch.h"
 
-#include "Deako/Renderer/Vulkan/VulkanTexture.h"
-#include "Deako/Renderer/Vulkan/VulkanMaterial.h"
-#include "Deako/Renderer/Vulkan/VulkanModel.h"
-#include "Deako/Scene/Scene.h"
-
 namespace Deako {
 
     static const std::map<PrefabType, std::string> prefabTypeMap = {

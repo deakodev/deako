@@ -1,135 +1,40 @@
 #include "AssetPool.h"
 #include "dkpch.h"
 
-#include "AssetImporter.h"
-#include "Prefab.h"
-
-#include "Deako/Project/Serialize.h"
-#include "Deako/Renderer/Vulkan/VulkanModel.h"
+#include "Deako/Asset/AssetImporter.h"
+#include "Deako/Asset/Prefab.h"
 
 #include "Deako/Project/Project.h"
 #include "Deako/Scene/Scene.h"
 
 namespace Deako {
 
-    template <>
-    Ref<Model> AssetPool::Import<Model>(const std::filesystem::path& path)
+    Ref<AssetPoolBase> AssetPool::Get()
     {
-        AssetHandle handle;
-        AssetMetadata metadata;
-        metadata.assetType = AssetType::Model;
-        metadata.assetPath = Project::GetAssetDirectory() / path;
-
-        Ref<Asset> asset = Import(handle, metadata);
-        return std::static_pointer_cast<Model>(asset);
+        return Project::GetActive()->GetAssetPool();
     }
 
-    template <>
-    Ref<Scene> AssetPool::Import<Scene>(const std::filesystem::path& path)
+    void AssetPoolBase::CleanUp()
     {
-        AssetHandle handle;
-        AssetMetadata metadata;
-        metadata.assetType = AssetType::Scene;
-        metadata.assetPath = path;
-
-        Ref<Asset> asset = Import(handle, metadata);
-        return std::static_pointer_cast<Scene>(asset);
+        for (auto& [handle, asset] : m_AssetsImported)
+            RemoveAsset(handle);
     }
 
-    template <>
-    Ref<Texture2D> AssetPool::Import<Texture2D>(const std::filesystem::path& path)
+    Ref<Asset> AssetPoolBase::ImportAsset(AssetHandle handle, AssetMetadata metadata)
     {
-        AssetHandle handle;
-        AssetMetadata metadata;
-        metadata.assetType = AssetType::Texture2D;
-        metadata.assetPath = Project::GetAssetDirectory() / path;
-
-        Ref<Asset> asset = Import(handle, metadata);
-        return std::static_pointer_cast<Texture2D>(asset);
-    }
-
-    template <>
-    Ref<TextureCubeMap> AssetPool::Import<TextureCubeMap>(const std::filesystem::path& path)
-    {
-        AssetHandle handle;
-        AssetMetadata metadata;
-        metadata.assetType = AssetType::TextureCubeMap;
-        metadata.assetPath = Project::GetAssetDirectory() / path;
-
-        Ref<Asset> asset = Import(handle, metadata);
-        return std::static_pointer_cast<TextureCubeMap>(asset);
-    }
-
-    Ref<Asset> AssetPool::Import(AssetHandle handle, AssetMetadata metadata)
-    {
-        Ref<Asset> asset = Project::GetActive()->GetAssetPool()->Import(handle, metadata);
-        AddToImported(asset);
+        metadata.assetPath = Project::GetActive()->GetAssetDirectory() / metadata.assetPath;
+        Ref<Asset> asset = AssetImporter::Import(handle, metadata);
+        AddAsset(asset, metadata);
         return asset;
     }
 
-    void AssetPool::Add(Ref<Asset> asset, AssetMetadata metadata)
-    {
-        Project::GetActive()->GetAssetPool()->Add(asset, metadata);
-    }
-
-    void AssetPool::AddToImported(Ref<Asset> asset)
-    {
-        Project::GetActive()->GetAssetPool()->AddToImported(asset);
-    }
-
-    template <>
-    Ref<Texture2D> AssetPool::Get<Texture2D>(AssetHandle handle)
-    {
-        return Project::GetActive()->GetAssetPool()->Get<Texture2D>(handle);
-    }
-
-    template <>
-    Ref<TextureCubeMap> AssetPool::Get<TextureCubeMap>(AssetHandle handle)
-    {
-        return Project::GetActive()->GetAssetPool()->Get<TextureCubeMap>(handle);
-    }
-
-    template <>
-    Ref<Model> AssetPool::Get<Model>(AssetHandle handle)
-    {
-        return Project::GetActive()->GetAssetPool()->Get<Model>(handle);
-    }
-
-    template <>
-    Ref<Prefab> AssetPool::Get<Prefab>(AssetHandle handle)
-    {
-        return Project::GetActive()->GetAssetPool()->Get<Prefab>(handle);
-    }
-
-    template <>
-    Ref<Scene> AssetPool::Get<Scene>(AssetHandle handle)
-    {
-        return Project::GetActive()->GetAssetPool()->Get<Scene>(handle);
-    }
-
-    void AssetPool::CleanUp()
-    {
-        Project::GetActive()->GetAssetPool()->CleanUp();
-    }
-
-
-    Ref<Asset> AssetPoolBase::Import(AssetHandle handle, AssetMetadata metadata)
-    {
-        return AssetImporter::Import(handle, metadata);
-    }
-
-    void AssetPoolBase::Add(Ref<Asset> asset, AssetMetadata metadata)
+    void AssetPoolBase::AddAsset(Ref<Asset> asset, AssetMetadata metadata)
     {
         m_AssetsImported[asset->m_Handle] = asset;
         m_AssetRegistry[asset->m_Handle] = metadata;
     }
 
-    void AssetPoolBase::AddToImported(Ref<Asset> asset)
-    {
-        m_AssetsImported[asset->m_Handle] = asset;
-    }
-
-    void AssetPoolBase::Remove(AssetHandle handle)
+    void AssetPoolBase::RemoveAsset(AssetHandle handle)
     {
         auto loadedIt = m_AssetsImported.find(handle);
         if (loadedIt != m_AssetsImported.end())
@@ -140,7 +45,7 @@ namespace Deako {
     }
 
     template <typename T>
-    Ref<T> AssetPoolBase::Get(AssetHandle handle)
+    Ref<T> AssetPoolBase::GetAsset(AssetHandle handle)
     {
         if (!IsAssetHandleValid(handle)) return nullptr;
 
@@ -152,17 +57,10 @@ namespace Deako {
         else
         {
             AssetMetadata metadata = GetMetadata(handle);
-            metadata.assetPath = Project::GetAssetDirectory() / metadata.assetPath;
-            asset = Import(handle, metadata);
+            asset = ImportAsset(handle, metadata);
         }
 
         return std::static_pointer_cast<T>(asset);
-    }
-
-    void AssetPoolBase::CleanUp()
-    {
-        for (auto& [handle, asset] : m_AssetsImported)
-            Remove(handle);
     }
 
     AssetMetadata AssetPoolBase::GetMetadata(AssetHandle handle)
@@ -183,5 +81,10 @@ namespace Deako {
     {
         return m_AssetsImported.find(handle) != m_AssetsImported.end();
     }
+
+    template Ref<TextureCubeMap> AssetPoolBase::GetAsset<TextureCubeMap>(AssetHandle handle);
+    template Ref<Model> AssetPoolBase::GetAsset<Model>(AssetHandle handle);
+    template Ref<Scene> AssetPoolBase::GetAsset<Scene>(AssetHandle handle);
+    template Ref<Prefab> AssetPoolBase::GetAsset<Prefab>(AssetHandle handle);
 
 }

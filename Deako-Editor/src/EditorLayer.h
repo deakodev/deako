@@ -3,10 +3,9 @@
 #include "Deako.h"
 
 #include "Panels/ViewportPanel.h"
-#include "Panels/SceneHierarchyPanel.h"
+#include "Panels/ScenePanel.h"
 #include "Panels/AssetsPanel.h"
 
-#include <glm/glm.hpp>
 #include <imgui/imgui.h>
 
 namespace Deako {
@@ -23,15 +22,18 @@ namespace Deako {
         virtual void OnEvent(Event& event) override;
         virtual void OnImGuiRender(ImTextureID textureID) override;
 
+        static void OpenProject();
+        static void OpenProject(const std::filesystem::path& path);
+        static void OpenScene();
+        static void OpenScene(const std::filesystem::path& path);
+
     private:
-        Camera m_EditorCamera;
+        inline static Scope<ScenePanel> s_ScenePanel;
+        inline static Scope<AssetsPanel> s_AssetsPanel;
+        inline static Scope<ViewportPanel> s_ViewportPanel;
 
-        ViewportPanel m_ViewportPanel;
-        SceneHierarchyPanel m_SceneHierarchyPanel;
-        AssetsPanel m_AssetsPanel;
-
-        Ref<Project> m_ActiveProject;
-        Ref<Scene> m_ActiveScene;
+        inline static Ref<Project> s_ActiveProject;
+        inline static Ref<Scene> s_ActiveScene;
     };
 
 }

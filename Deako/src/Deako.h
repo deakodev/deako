@@ -16,7 +16,7 @@
 
 #include "Deako/Renderer/Renderer.h"
 #include "Deako/Renderer/EditorCamera.h"
-#include "Deako/Renderer/Vulkan/VulkanBase.h"
+#include "Deako/Renderer/Vulkan/VulkanScene.h" // TODO: temp
 
 #include "Deako/Project/Project.h"
 #include "Deako/Scene/Scene.h"

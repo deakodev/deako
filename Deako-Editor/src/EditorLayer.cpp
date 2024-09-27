@@ -9,23 +9,22 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        m_ActiveProject = Project::GetActive();
-        m_ActiveScene = Scene::GetActive();
+        s_AssetsPanel = CreateScope<AssetsPanel>();
+        s_ScenePanel = CreateScope<ScenePanel>();
+        s_ViewportPanel = CreateScope<ViewportPanel>();
 
-        m_AssetsPanel.SetContext(m_ActiveProject);
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        OpenProject();
+        OpenScene();
     }
 
     void EditorLayer::OnDetach()
     {
-
     }
 
     void EditorLayer::OnUpdate()
     {
-        m_ViewportPanel.OnUpdate();
-
-        m_ActiveScene->OnUpdateEditor(m_EditorCamera);
+        s_ViewportPanel->OnUpdate();
+        s_ActiveScene->OnUpdate();
     }
 
     void EditorLayer::OnImGuiRender(ImTextureID textureID)
@@ -81,6 +80,7 @@ namespace Deako {
         {
             if (ImGui::BeginMenu("File"))
             {
+                // TODO:
                 // if (ImGui::MenuItem("New...", "Cmd+N")) { NewScene(); }
                 // if (ImGui::MenuItem("Open...", "Cmd+O")) { OpenScene(); }
                 // ImGui::Separator();
@@ -95,14 +95,14 @@ namespace Deako {
             ImGui::EndMenuBar();
         }
 
-        //// SCENE HIERARCHY ////
-        m_AssetsPanel.OnImGuiRender();
+        //// ASSETS ////
+        s_AssetsPanel->OnImGuiRender();
 
-        //// SCENE HIERARCHY ////
-        m_SceneHierarchyPanel.OnImGuiRender();
+        //// SCENE ////
+        s_ScenePanel->OnImGuiRender();
 
         //// VIEWPORT ////
-        m_ViewportPanel.OnImGuiRender(textureID);
+        s_ViewportPanel->OnImGuiRender(textureID);
 
         ImGui::End();
     }
@@ -110,5 +110,66 @@ namespace Deako {
     void EditorLayer::OnEvent(Event& event)
     {
     }
+
+
+    void EditorLayer::OpenProject()
+    {
+        std::filesystem::path projectPath = Application::Get().GetSpecification().commandLineArgs[1];
+        if (!projectPath.empty())
+        {
+            OpenProject(projectPath);
+        }
+        else
+        {
+            DK_ERROR("No intial project selected!");
+            Application::Get().Close(); return;
+        }
+    }
+
+    void EditorLayer::OpenProject(const std::filesystem::path& path)
+    {
+        s_ActiveProject = Project::Load(path);
+
+        if (s_ActiveProject)
+        {
+            s_AssetsPanel->SetContext(s_ActiveProject);
+        }
+        else
+        {
+            DK_ERROR("No active project selected!");
+            Application::Get().Close(); return;
+        }
+    }
+
+    void EditorLayer::OpenScene()
+    {
+        std::filesystem::path scenePath = s_ActiveProject->GetInitialScenePath();
+        if (!scenePath.empty())
+        {
+            OpenScene(scenePath);
+        }
+        else
+        {
+            DK_ERROR("No intial scene selected!");
+            Application::Get().Close(); return;
+        }
+    }
+
+    void EditorLayer::OpenScene(const std::filesystem::path& path)
+    {
+        s_ActiveScene = Scene::Open(path);
+
+        if (s_ActiveScene)
+        {
+            s_ScenePanel->SetContext(s_ActiveScene);
+        }
+        else
+        {
+            DK_ERROR("No active scene selected!");
+            Application::Get().Close(); return;
+        }
+    }
+
+
 
 }

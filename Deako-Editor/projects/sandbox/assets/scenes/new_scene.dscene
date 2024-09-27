@@ -1,0 +1,28 @@
+Scene:
+  Name: Untitled
+Entities:
+  - Entity: 63025543015532544
+    TagComponent:
+      Tag: Skybox
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0, 0, 0]
+    TextureComponent:
+      AssetHandles:
+        - 44938964025039682
+    PrefabComponent:
+      AssetHandle: 57892318812072087
+    EnvironmentComponent:
+      Active: true
+  - Entity: 63025543015532542
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PrefabComponent:
+      AssetHandle: 57892318812072087
+    EnvironmentComponent:
+      Active: true
