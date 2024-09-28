@@ -34,7 +34,6 @@ namespace Deako {
         VulkanBase::Render();
     }
 
-
     void Renderer::Invalidate()
     {
         VulkanScene::Invalidate();

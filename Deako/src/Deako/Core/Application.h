@@ -52,7 +52,6 @@ namespace Deako {
         void Run();
 
         bool OnWindowClose(WindowCloseEvent& event);
-        bool OnWindowResize(WindowResizeEvent& event);
         bool OnWindowMinimized(WindowMinimizedEvent& event);
         bool OnWindowRestored(WindowRestoredEvent& event);
 

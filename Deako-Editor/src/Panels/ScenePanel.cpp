@@ -1,6 +1,7 @@
 #include "ScenePanel.h"
 
 #include "Deako/Scene/Components.h"
+#include "Deako/Asset/AssetPool.h"
 
 #include <imgui/imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -73,13 +74,12 @@ namespace Deako {
 
         if (opened) ImGui::TreePop();
 
-        // TODO:
-        // if (entityDeleted)
-        // {
-        //     m_Context->DestroyEntity(entity);
-        //     if (m_SelectionContext == entity)
-        //         m_SelectionContext = {};
-        // }
+        if (entityDeleted)
+        {
+            m_Context->DestroyEntity(entity); // TODO
+            if (m_SelectionContext == entity)
+                m_SelectionContext = {};
+        }
     }
 
     void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 90.0f)
@@ -162,12 +162,11 @@ namespace Deako {
             ImVec2 contentRegionAvail = ImGui::GetContentRegionAvail();
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
             float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
-            // ImGui::Separator();
 
             bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
             ImGui::PopStyleVar();
             ImGui::SameLine(contentRegionAvail.x - lineHeight * 0.5f);
-            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+            if (ImGui::Button(Icons::Trash.c_str(), ImVec2{ lineHeight, lineHeight }))
             {
                 ImGui::OpenPopup("ComponentSettings");
             }
@@ -251,6 +250,53 @@ namespace Deako {
         DrawComponent<TextureComponent>("Texture", entity, [](auto& component)
             {
                 ImGui::Button("Texture", ImVec2(100.0f, 0.0f));
+            });
+
+        DrawComponent<MaterialComponent>("Material", entity, [](auto& component)
+            {
+                Ref<Material> material = AssetPool::GetAsset<Material>(component.handles[1]);
+
+                if (material)
+                {
+                    // Name
+                    char buffer[256];
+                    std::memset(buffer, 0, sizeof(buffer));
+                    std::strncpy(buffer, material->name.c_str(), sizeof(buffer) - 1);
+
+                    if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
+                        material->name = std::string(buffer);
+
+                    ImGui::Text("Base Color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("##BaseColor", (float*)&material->baseColorFactor, ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoLabel);
+
+                    if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
+                    {
+                        AssetPool::Invalidate(material);
+                    }
+
+                    // metallicFactor
+                    static float minFactor = 0.0f;
+                    static float maxFactor = 1.0f;
+
+                    ImGui::Text("Metallic Factor");
+                    ImGui::SameLine();
+                    ImGui::DragScalar("##MetallicFactor", ImGuiDataType_Float, &material->metallicFactor, 0.005f, &minFactor, &maxFactor, "%.3f");
+
+                    if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
+                    {
+                        AssetPool::Invalidate(material);
+                    }
+
+                    ImGui::Text("Roughness Factor");
+                    ImGui::SameLine();
+                    ImGui::DragScalar("##RoughnessFactor", ImGuiDataType_Float, &material->roughnessFactor, 0.005f, &minFactor, &maxFactor, "%.3f");
+
+                    if (ImGui::IsItemDeactivatedAfterEdit())
+                    {
+                        AssetPool::Invalidate(material);
+                    }
+                }
             });
 
         DrawComponent<ModelComponent>("Model", entity, [](auto& component)

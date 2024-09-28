@@ -200,14 +200,14 @@ namespace Deako {
 
         for (Entity entity : vr->entities)
         {
-            auto& modelComp = entity.GetComponent<ModelComponent>();
-            Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+            auto& materialHandles = entity.GetComponent<MaterialComponent>().handles;
+            uint32_t entityMaterialCount = materialHandles.size();
 
-            for (auto& material : model->materials)
-            {
-                imageSamplerCount += 5;
-                materialCount++;
-            }
+            imageSamplerCount += (entityMaterialCount * 5);
+            materialCount += entityMaterialCount;
+
+            auto modelHandle = entity.GetComponent<ModelComponent>().handle;
+            Ref<Model> model = AssetPool::GetAsset<Model>(modelHandle);
 
             for (auto node : model->linearNodes)
                 if (node->mesh) meshCount++;

@@ -87,5 +87,10 @@ namespace Deako {
             return AssetPool::Get()->GetAsset<T>(handle);
         }
 
+        static void Invalidate(Ref<Asset> asset)
+        {
+            asset->Invalidate();
+        }
+
     };
 }

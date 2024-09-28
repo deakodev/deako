@@ -44,6 +44,8 @@ namespace Deako {
 
         virtual ~Asset() {};
 
+        virtual void Invalidate() {};
+
         virtual void Destroy() = 0;
 
         AssetHandle m_Handle; // handle generated automatically

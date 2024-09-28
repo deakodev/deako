@@ -3,4 +3,4 @@ Project:
   WorkingDirectory: sandbox
   AssetDirectory: assets
   AssetRegistryPath: sandbox.dreg
-  InitialScenePath: scenes/new_scene.dscene
+  InitialScenePath: scenes/sandbox2.dscene

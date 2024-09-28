@@ -84,9 +84,10 @@ namespace Deako {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
 
-                    auto& icon = item.isDirectory ? Icons::Folder : Icons::File;
+                    const std::string& icon = item.isDirectory ? Icons::Folder : Icons::File;
+                    std::string label = icon + "  " + item.filename;
 
-                    ImGui::Button((icon + item.filename).c_str(), { buttonWidth, buttonHeight });
+                    ImGui::Button(label.c_str(), { buttonWidth, buttonHeight });
 
                     if (ImGui::BeginDragDropSource())
                     {

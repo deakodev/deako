@@ -83,6 +83,7 @@ namespace Deako {
     }
 
     template Ref<TextureCubeMap> AssetPoolBase::GetAsset<TextureCubeMap>(AssetHandle handle);
+    template Ref<Material> AssetPoolBase::GetAsset<Material>(AssetHandle handle);
     template Ref<Model> AssetPoolBase::GetAsset<Model>(AssetHandle handle);
     template Ref<Scene> AssetPoolBase::GetAsset<Scene>(AssetHandle handle);
     template Ref<Prefab> AssetPoolBase::GetAsset<Prefab>(AssetHandle handle);

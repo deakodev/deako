@@ -27,7 +27,6 @@ namespace Deako
     {
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<WindowCloseEvent>(DK_BIND_EVENT_FN(Application::OnWindowClose));
-        dispatcher.Dispatch<WindowResizeEvent>(DK_BIND_EVENT_FN(Application::OnWindowResize));
         dispatcher.Dispatch<WindowMinimizedEvent>(DK_BIND_EVENT_FN(Application::OnWindowMinimized));
         dispatcher.Dispatch<WindowRestoredEvent>(DK_BIND_EVENT_FN(Application::OnWindowRestored));
 
@@ -57,14 +56,6 @@ namespace Deako
     {
         m_Running = false;
         return true;
-    }
-
-    // TODO: determine if necessary
-    bool Application::OnWindowResize(WindowResizeEvent& event)
-    {
-        // Renderer::OnWindowResize(event.GetWidth(), event.GetHeight());
-
-        return false;
     }
 
     bool Application::OnWindowMinimized(WindowMinimizedEvent& event)

@@ -3,13 +3,13 @@ Scene:
 Entities:
   - Entity: 81234097091941911
     TagComponent:
-      Tag: DamagedHelmet
+      Tag: BlueCube
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     PrefabComponent:
-      AssetHandle: 51418710489529541
+      AssetHandle: 47892411812032083
   - Entity: 63025543015532544
     TagComponent:
       Tag: Skybox

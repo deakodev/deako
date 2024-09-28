@@ -81,10 +81,16 @@ namespace Deako {
             bool specularGlossiness{ false };
         } pbrWorkflows;
 
+        std::string name;
+
         Material() {}
         Material(tinygltf::Material& tinyMaterial, std::vector<Ref<Texture2D>>& textures);
 
         virtual void Destroy() override {}
+
+        virtual void Invalidate() override;
+
+        void UpdateMaterialBuffer();
 
         static AssetType GetStaticType() { return AssetType::Material; }
         virtual AssetType GetType() const override { return GetStaticType(); }

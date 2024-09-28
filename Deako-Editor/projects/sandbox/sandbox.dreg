@@ -11,3 +11,6 @@ AssetRegistry:
   - AssetHandle: 57892318812072087
     AssetPath: prefabs/gltf/Cube/Cube.gltf
     AssetType: Prefab
+  - AssetHandle: 47892411812032083
+    AssetPath: prefabs/gltf/BlueCube/BlueCube.gltf
+    AssetType: Prefab

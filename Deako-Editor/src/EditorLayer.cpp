@@ -33,7 +33,7 @@ namespace Deako {
         static bool fullscreenEnabled = true;
         static bool paddingEnabled = false;
 
-        static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
+        static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_AutoHideTabBar;
         static ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
         if (fullscreenEnabled)

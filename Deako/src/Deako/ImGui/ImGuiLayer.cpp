@@ -59,16 +59,16 @@ namespace Deako {
     {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
 
-        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 16.0f);
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 16.0f);
+        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Bold.ttf", 14.0f);
+        io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/roboto/Roboto-Regular.ttf", 14.0f);
 
         static const ImWchar iconsRanges[] = { 0xf000, 0xf82f, 0 };
         ImFontConfig iconsConfig;
         iconsConfig.MergeMode = true;  // merge with previous font
         iconsConfig.PixelSnapH = true;
-        iconsConfig.GlyphOffset = { -8.0, 0.0f };
+        // iconsConfig.GlyphOffset = { -8.0, 0.0f };
 
-        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/fontawesome/FA-Regular-400.ttf", 16.0f, &iconsConfig, iconsRanges);
+        io.Fonts->AddFontFromFileTTF("Deako-Editor/assets/fonts/fontawesome/FA-Regular-400.ttf", 14.0f, &iconsConfig, iconsRanges);
 
         ImGuiStyle& style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
