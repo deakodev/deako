@@ -69,10 +69,11 @@ namespace Deako {
 
     struct TextureCubeMap : public Texture
     {
-        enum Target { NONE = 0, IRRADIANCE = 1, PREFILTERED = 2 } target;
+        enum Target { IRRADIANCE = 0, PREFILTERED = 1 } target;
 
         TextureCubeMap(const TextureDetails& details, Buffer& buffer);
 
+        TextureCubeMap() {}
         TextureCubeMap(Target target) : target(target) {}
 
         void GenerateCubeMap();

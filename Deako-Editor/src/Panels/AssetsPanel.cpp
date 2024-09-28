@@ -122,8 +122,7 @@ namespace Deako {
                 {
                     for (auto& [handle, name] : s_RegistryBins.Texture)
                     {
-                        ImGui::Text(name.c_str());
-
+                        ImGui::Text(name.c_str(), "%s");
                     }
 
                     ImGui::EndTabItem();

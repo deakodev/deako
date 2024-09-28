@@ -44,7 +44,7 @@ namespace Deako {
 
         ImGui::End();
 
-        ImGui::Begin("Properties");
+        ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoCollapse);
 
         if (m_SelectionContext)
             DrawComponents(m_SelectionContext);

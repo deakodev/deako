@@ -1,11 +1,3 @@
-/* Copyright (c) 2018-2023, Sascha Willems
- *
- * SPDX-License-Identifier: MIT
- *
- */
-
-// Generates an irradiance cube from an environment map using convolution
-
 #version 450
 
 layout (location = 0) in vec3 inPos;

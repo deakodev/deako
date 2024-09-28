@@ -143,7 +143,7 @@ namespace basisu
       static inline void destruct_array(T** p, size_t n) { p, n; }
    };
 
-#define BASISU_DEFINE_BUILT_IN_TYPE(X) \
+   #define BASISU_DEFINE_BUILT_IN_TYPE(X) \
    template<> struct scalar_type<X> { \
    enum { cFlag = true }; \
    static inline void construct(X* p) { memset(p, 0, sizeof(X)); } \
@@ -153,53 +153,49 @@ namespace basisu
    static inline void destruct_array(X* p, size_t n) { p, n; } };
 
    BASISU_DEFINE_BUILT_IN_TYPE(bool)
-   BASISU_DEFINE_BUILT_IN_TYPE(char)
-   BASISU_DEFINE_BUILT_IN_TYPE(unsigned char)
-   BASISU_DEFINE_BUILT_IN_TYPE(short)
-   BASISU_DEFINE_BUILT_IN_TYPE(unsigned short)
-   BASISU_DEFINE_BUILT_IN_TYPE(int)
-   BASISU_DEFINE_BUILT_IN_TYPE(unsigned int)
-   BASISU_DEFINE_BUILT_IN_TYPE(long)
-   BASISU_DEFINE_BUILT_IN_TYPE(unsigned long)
-#ifdef __GNUC__
-   BASISU_DEFINE_BUILT_IN_TYPE(long long)
-   BASISU_DEFINE_BUILT_IN_TYPE(unsigned long long)
-#else
-   BASISU_DEFINE_BUILT_IN_TYPE(__int64)
-   BASISU_DEFINE_BUILT_IN_TYPE(unsigned __int64)
-#endif
-   BASISU_DEFINE_BUILT_IN_TYPE(float)
-   BASISU_DEFINE_BUILT_IN_TYPE(double)
-   BASISU_DEFINE_BUILT_IN_TYPE(long double)
+      BASISU_DEFINE_BUILT_IN_TYPE(char)
+      BASISU_DEFINE_BUILT_IN_TYPE(unsigned char)
+      BASISU_DEFINE_BUILT_IN_TYPE(short)
+      BASISU_DEFINE_BUILT_IN_TYPE(unsigned short)
+      BASISU_DEFINE_BUILT_IN_TYPE(int)
+      BASISU_DEFINE_BUILT_IN_TYPE(unsigned int)
+      BASISU_DEFINE_BUILT_IN_TYPE(long)
+      BASISU_DEFINE_BUILT_IN_TYPE(unsigned long)
+      #ifdef __GNUC__
+      BASISU_DEFINE_BUILT_IN_TYPE(long long)
+      BASISU_DEFINE_BUILT_IN_TYPE(unsigned long long)
+      #else
+      BASISU_DEFINE_BUILT_IN_TYPE(__int64)
+      BASISU_DEFINE_BUILT_IN_TYPE(unsigned __int64)
+      #endif
+      BASISU_DEFINE_BUILT_IN_TYPE(float)
+      BASISU_DEFINE_BUILT_IN_TYPE(double)
+      BASISU_DEFINE_BUILT_IN_TYPE(long double)
 
-#undef BASISU_DEFINE_BUILT_IN_TYPE
+      #undef BASISU_DEFINE_BUILT_IN_TYPE
 
-   template<typename T>
+      template<typename T>
    struct bitwise_movable { enum { cFlag = false }; };
 
-#define BASISU_DEFINE_BITWISE_MOVABLE(Q) template<> struct bitwise_movable<Q> { enum { cFlag = true }; };
+   #define BASISU_DEFINE_BITWISE_MOVABLE(Q) template<> struct bitwise_movable<Q> { enum { cFlag = true }; };
 
    template<typename T>
    struct bitwise_copyable { enum { cFlag = false }; };
 
-#define BASISU_DEFINE_BITWISE_COPYABLE(Q) template<> struct bitwise_copyable<Q> { enum { cFlag = true }; };
+   #define BASISU_DEFINE_BITWISE_COPYABLE(Q) template<> struct bitwise_copyable<Q> { enum { cFlag = true }; };
 
-#define BASISU_IS_POD(T) __is_pod(T)
+   #define BASISU_IS_POD(T) __is_pod(T)
 
-#define BASISU_IS_SCALAR_TYPE(T) (scalar_type<T>::cFlag)
+   #define BASISU_IS_SCALAR_TYPE(T) (scalar_type<T>::cFlag)
 
-#if !defined(BASISU_HAVE_STD_TRIVIALLY_COPYABLE) && defined(__GNUC__) && __GNUC__<5
-   #define BASISU_IS_TRIVIALLY_COPYABLE(...) __has_trivial_copy(__VA_ARGS__)
-#else
    #define BASISU_IS_TRIVIALLY_COPYABLE(...) std::is_trivially_copyable<__VA_ARGS__>::value
-#endif
 
-// TODO: clean this up
-#define BASISU_IS_BITWISE_COPYABLE(T) (BASISU_IS_SCALAR_TYPE(T) || BASISU_IS_POD(T) || BASISU_IS_TRIVIALLY_COPYABLE(T) || (bitwise_copyable<T>::cFlag))
+   // TODO: clean this up
+   #define BASISU_IS_BITWISE_COPYABLE(T) (BASISU_IS_SCALAR_TYPE(T) || BASISU_IS_POD(T) || BASISU_IS_TRIVIALLY_COPYABLE(T) || (bitwise_copyable<T>::cFlag))
 
-#define BASISU_IS_BITWISE_COPYABLE_OR_MOVABLE(T) (BASISU_IS_BITWISE_COPYABLE(T) || (bitwise_movable<T>::cFlag))
+   #define BASISU_IS_BITWISE_COPYABLE_OR_MOVABLE(T) (BASISU_IS_BITWISE_COPYABLE(T) || (bitwise_movable<T>::cFlag))
 
-#define BASISU_HAS_DESTRUCTOR(T) ((!scalar_type<T>::cFlag) && (!__is_pod(T)))
+   #define BASISU_HAS_DESTRUCTOR(T) ((!scalar_type<T>::cFlag) && (!__is_pod(T)))
 
    typedef char(&yes_t)[1];
    typedef char(&no_t)[2];
@@ -286,8 +282,8 @@ namespace basisu
 
          if (BASISU_IS_BITWISE_COPYABLE(T))
          {
-             if ((m_p) && (other.m_p))
-                memcpy(m_p, other.m_p, m_size * sizeof(T));
+            if ((m_p) && (other.m_p))
+               memcpy(m_p, other.m_p, m_size * sizeof(T));
          }
          else
          {
@@ -330,8 +326,8 @@ namespace basisu
 
          if (BASISU_IS_BITWISE_COPYABLE(T))
          {
-             if ((m_p) && (other.m_p))
-                memcpy(m_p, other.m_p, other.m_size * sizeof(T));
+            if ((m_p) && (other.m_p))
+               memcpy(m_p, other.m_p, other.m_size * sizeof(T));
          }
          else
          {
@@ -360,81 +356,81 @@ namespace basisu
       // operator[] will assert on out of range indices, but in final builds there is (and will never be) any range checking on this method.
       //BASISU_FORCE_INLINE const T& operator[] (uint32_t i) const { assert(i < m_size); return m_p[i]; }
       //BASISU_FORCE_INLINE T& operator[] (uint32_t i) { assert(i < m_size); return m_p[i]; }
-            
-#if !BASISU_VECTOR_FORCE_CHECKING
+
+      #if !BASISU_VECTOR_FORCE_CHECKING
       BASISU_FORCE_INLINE const T& operator[] (size_t i) const { assert(i < m_size); return m_p[i]; }
       BASISU_FORCE_INLINE T& operator[] (size_t i) { assert(i < m_size); return m_p[i]; }
-#else
-      BASISU_FORCE_INLINE const T& operator[] (size_t i) const 
-      { 
-          if (i >= m_size)
-          {
-              fprintf(stderr, "operator[] invalid index: %u, max entries %u, type size %u\n", (uint32_t)i, m_size, (uint32_t)sizeof(T));
-              abort();
-          }
-          return m_p[i]; 
+      #else
+      BASISU_FORCE_INLINE const T& operator[] (size_t i) const
+      {
+         if (i >= m_size)
+         {
+            fprintf(stderr, "operator[] invalid index: %u, max entries %u, type size %u\n", (uint32_t)i, m_size, (uint32_t)sizeof(T));
+            abort();
+         }
+         return m_p[i];
       }
-      BASISU_FORCE_INLINE T& operator[] (size_t i) 
-      { 
-          if (i >= m_size)
-          {
-              fprintf(stderr, "operator[] invalid index: %u, max entries %u, type size %u\n", (uint32_t)i, m_size, (uint32_t)sizeof(T));
-              abort();
-          }
-          return m_p[i]; 
+      BASISU_FORCE_INLINE T& operator[] (size_t i)
+      {
+         if (i >= m_size)
+         {
+            fprintf(stderr, "operator[] invalid index: %u, max entries %u, type size %u\n", (uint32_t)i, m_size, (uint32_t)sizeof(T));
+            abort();
+         }
+         return m_p[i];
       }
-#endif
+      #endif
 
       // at() always includes range checking, even in final builds, unlike operator [].
       // The first element is returned if the index is out of range.
       BASISU_FORCE_INLINE const T& at(size_t i) const { assert(i < m_size); return (i >= m_size) ? m_p[0] : m_p[i]; }
       BASISU_FORCE_INLINE T& at(size_t i) { assert(i < m_size); return (i >= m_size) ? m_p[0] : m_p[i]; }
-            
-#if !BASISU_VECTOR_FORCE_CHECKING
+
+      #if !BASISU_VECTOR_FORCE_CHECKING
       BASISU_FORCE_INLINE const T& front() const { assert(m_size); return m_p[0]; }
       BASISU_FORCE_INLINE T& front() { assert(m_size); return m_p[0]; }
 
       BASISU_FORCE_INLINE const T& back() const { assert(m_size); return m_p[m_size - 1]; }
       BASISU_FORCE_INLINE T& back() { assert(m_size); return m_p[m_size - 1]; }
-#else
-      BASISU_FORCE_INLINE const T& front() const 
-      { 
-          if (!m_size)
-          {
-              fprintf(stderr, "front: vector is empty, type size %u\n", (uint32_t)sizeof(T));
-              abort();
-          }
-          return m_p[0]; 
+      #else
+      BASISU_FORCE_INLINE const T& front() const
+      {
+         if (!m_size)
+         {
+            fprintf(stderr, "front: vector is empty, type size %u\n", (uint32_t)sizeof(T));
+            abort();
+         }
+         return m_p[0];
       }
-      BASISU_FORCE_INLINE T& front() 
-      { 
-          if (!m_size)
-          {
-              fprintf(stderr, "front: vector is empty, type size %u\n", (uint32_t)sizeof(T));
-              abort();
-          }
-          return m_p[0]; 
+      BASISU_FORCE_INLINE T& front()
+      {
+         if (!m_size)
+         {
+            fprintf(stderr, "front: vector is empty, type size %u\n", (uint32_t)sizeof(T));
+            abort();
+         }
+         return m_p[0];
       }
 
-      BASISU_FORCE_INLINE const T& back() const 
-      { 
-          if(!m_size)
-          {
-              fprintf(stderr, "back: vector is empty, type size %u\n", (uint32_t)sizeof(T));
-              abort();
-          }
-          return m_p[m_size - 1]; 
+      BASISU_FORCE_INLINE const T& back() const
+      {
+         if (!m_size)
+         {
+            fprintf(stderr, "back: vector is empty, type size %u\n", (uint32_t)sizeof(T));
+            abort();
+         }
+         return m_p[m_size - 1];
       }
-      BASISU_FORCE_INLINE T& back() 
-      { 
-          if (!m_size)
-          {
-              fprintf(stderr, "back: vector is empty, type size %u\n", (uint32_t)sizeof(T));
-              abort();
-          }
-          return m_p[m_size - 1]; 
+      BASISU_FORCE_INLINE T& back()
+      {
+         if (!m_size)
+         {
+            fprintf(stderr, "back: vector is empty, type size %u\n", (uint32_t)sizeof(T));
+            abort();
+         }
+         return m_p[m_size - 1];
       }
-#endif
+      #endif
 
       BASISU_FORCE_INLINE const T* get_ptr() const { return m_p; }
       BASISU_FORCE_INLINE T* get_ptr() { return m_p; }
@@ -723,7 +719,7 @@ namespace basisu
             insert(m_size, p, n);
          return *this;
       }
-            
+
       inline void erase(uint32_t start, uint32_t n)
       {
          assert((start + n) <= m_size);
@@ -777,7 +773,7 @@ namespace basisu
          erase(static_cast<uint32_t>(p - m_p));
       }
 
-      inline void erase(T *pFirst, T *pEnd)
+      inline void erase(T* pFirst, T* pEnd)
       {
          assert(pFirst <= pEnd);
          assert(pFirst >= begin() && pFirst <= end());
@@ -912,10 +908,10 @@ namespace basisu
                assert(i >= 0 && i < (int)m_size);
                const T* pKey_i = m_p + i;
                int cmp = key < *pKey_i;
-#if defined(_DEBUG) || defined(DEBUG)
+               #if defined(_DEBUG) || defined(DEBUG)
                int cmp2 = *pKey_i < key;
                assert((cmp != cmp2) || (key == *pKey_i));
-#endif
+               #endif
                if ((!cmp) && (key == *pKey_i)) return i;
                m >>= 1;
                if (!m) break;
@@ -927,10 +923,10 @@ namespace basisu
                assert(i >= 0 && i < (int)m_size);
                pKey_i = m_p + i;
                cmp = key < *pKey_i;
-#if defined(_DEBUG) || defined(DEBUG)
+               #if defined(_DEBUG) || defined(DEBUG)
                cmp2 = *pKey_i < key;
                assert((cmp != cmp2) || (key == *pKey_i));
-#endif
+               #endif
                if ((!cmp) && (key == *pKey_i)) return i;
                m >>= 1;
                if (!m) break;
@@ -974,7 +970,7 @@ namespace basisu
                if (!m) break;
                cmp = -cmp;
                i += (((m + 1) >> 1) ^ cmp) - cmp;
-               if (i < 0) 
+               if (i < 0)
                   break;
             }
          }
@@ -1119,7 +1115,7 @@ namespace basisu
    public:
       class iterator;
       class const_iterator;
-   
+
    private:
       friend class iterator;
       friend class const_iterator;
@@ -1307,7 +1303,7 @@ namespace basisu
          if (new_hash_size > m_values.size())
             rehash((uint32_t)new_hash_size);
       }
-            
+
       class iterator
       {
          friend class hash_map<Key, Value, Hasher, Equals>;
@@ -1742,7 +1738,7 @@ namespace basisu
       inline void grow()
       {
          uint64_t n = m_values.size() * 3ULL; // was * 2
-         
+
          if (!helpers::is_power_of_2(n))
             n = helpers::next_pow2(n);
 
@@ -1959,11 +1955,11 @@ namespace basisu
 
    template<typename Key, typename Value, typename Hasher, typename Equals>
    struct bitwise_movable< hash_map<Key, Value, Hasher, Equals> > { enum { cFlag = true }; };
-   
-#if BASISU_HASHMAP_TEST
+
+   #if BASISU_HASHMAP_TEST
    extern void hash_map_test();
-#endif
-      
+   #endif
+
 } // namespace basisu
 
 namespace std

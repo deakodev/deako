@@ -11,7 +11,7 @@ namespace basisu
    {
       assert(m_size <= m_capacity);
 
-      if (sizeof(void *) == sizeof(uint64_t))
+      if (sizeof(void*) == sizeof(uint64_t))
          assert(min_new_capacity < (0x400000000ULL / element_size));
       else
          assert(min_new_capacity < (0x7FFF0000U / element_size));
@@ -34,7 +34,7 @@ namespace basisu
             abort();
          }
       }
-            
+
       const size_t desired_size = element_size * new_capacity;
       size_t actual_size = 0;
       if (!pMover)
@@ -46,24 +46,24 @@ namespace basisu
                return false;
 
             char buf[256];
-#ifdef _MSC_VER
+            #ifdef _MSC_VER
             sprintf_s(buf, sizeof(buf), "vector: realloc() failed allocating %u bytes", (uint32_t)desired_size);
-#else
-            sprintf(buf, "vector: realloc() failed allocating %u bytes", (uint32_t)desired_size);
-#endif
+            #else
+            snprintf(buf, sizeof(buf), "vector: realloc() failed allocating %zu bytes", desired_size);
+            #endif
             fprintf(stderr, "%s", buf);
             abort();
          }
 
-#if BASISU_VECTOR_DETERMINISTIC
+         #if BASISU_VECTOR_DETERMINISTIC
          actual_size = desired_size;
-#elif defined(_MSC_VER)
+         #elif defined(_MSC_VER)
          actual_size = _msize(new_p);
-#elif HAS_MALLOC_USABLE_SIZE
+         #elif HAS_MALLOC_USABLE_SIZE
          actual_size = malloc_usable_size(new_p);
-#else
+         #else
          actual_size = desired_size;
-#endif
+         #endif
          m_p = new_p;
       }
       else
@@ -75,30 +75,30 @@ namespace basisu
                return false;
 
             char buf[256];
-#ifdef _MSC_VER
+            #ifdef _MSC_VER
             sprintf_s(buf, sizeof(buf), "vector: malloc() failed allocating %u bytes", (uint32_t)desired_size);
-#else
-            sprintf(buf, "vector: malloc() failed allocating %u bytes", (uint32_t)desired_size);
-#endif
+            #else
+            snprintf(buf, sizeof(buf), "vector: malloc() failed allocating %u bytes", (uint32_t)desired_size);
+            #endif
             fprintf(stderr, "%s", buf);
             abort();
          }
 
-#if BASISU_VECTOR_DETERMINISTIC
+         #if BASISU_VECTOR_DETERMINISTIC
          actual_size = desired_size;
-#elif defined(_MSC_VER)
+         #elif defined(_MSC_VER)
          actual_size = _msize(new_p);
-#elif HAS_MALLOC_USABLE_SIZE
+         #elif HAS_MALLOC_USABLE_SIZE
          actual_size = malloc_usable_size(new_p);
-#else
+         #else
          actual_size = desired_size;
-#endif
+         #endif
 
          (*pMover)(new_p, m_p, m_size);
 
          if (m_p)
             free(m_p);
-         
+
          m_p = new_p;
       }
 
@@ -110,9 +110,9 @@ namespace basisu
       return true;
    }
 
-#if BASISU_HASHMAP_TEST
+   #if BASISU_HASHMAP_TEST
 
-#define HASHMAP_TEST_VERIFY(c) do { if (!(c)) handle_hashmap_test_verify_failure(__LINE__); } while(0)
+   #define HASHMAP_TEST_VERIFY(c) do { if (!(c)) handle_hashmap_test_verify_failure(__LINE__); } while(0)
 
    static void handle_hashmap_test_verify_failure(int line)
    {
@@ -310,6 +310,6 @@ namespace basisu
       }
    }
 
-#endif // BASISU_HASHMAP_TEST
+   #endif // BASISU_HASHMAP_TEST
 
 } // namespace basisu

@@ -5,7 +5,6 @@
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tiny_gltf.h>
-#define BASISU_HAVE_STD_TRIVIALLY_COPYABLE
 #include <basisu_transcoder.h>
 
 namespace Deako {

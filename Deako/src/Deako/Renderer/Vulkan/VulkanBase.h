@@ -104,7 +104,7 @@ namespace Deako {
         struct Skybox
         {
             Ref<Model> model;
-            Ref<TextureCubeMap> environmentCube{ CreateRef<TextureCubeMap>(TextureCubeMap::NONE) };
+            Ref<TextureCubeMap> environmentCube{ CreateRef<TextureCubeMap>() };
             Ref<TextureCubeMap> irradianceCube{ CreateRef<TextureCubeMap>(TextureCubeMap::IRRADIANCE) };
             Ref<TextureCubeMap> prefilteredCube{ CreateRef<TextureCubeMap>(TextureCubeMap::PREFILTERED) };
         } skybox;

@@ -5,7 +5,6 @@
 
 #include <gli/gli.hpp>
 
-#define BASISU_HAVE_STD_TRIVIALLY_COPYABLE
 #include <basisu_transcoder.h>
 
 namespace Deako {
