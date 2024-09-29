@@ -88,7 +88,6 @@ namespace Deako {
                     std::string label = icon + "  " + item.filename;
 
                     ImGui::Button(label.c_str(), { buttonWidth, buttonHeight });
-
                     if (ImGui::BeginDragDropSource())
                     {
                         std::string itemPath = item.path.string();
@@ -114,6 +113,9 @@ namespace Deako {
 
     void AssetsPanel::OnRegistryTabRender()
     {
+        float buttonWidth = ImGui::GetContentRegionAvail().x;
+        float buttonHeight = 22.0f;
+
         if (ImGui::BeginTabItem("Registry"))
         {
             if (ImGui::BeginTabBar("Registry Tabs", ImGuiTabBarFlags_None))
@@ -122,7 +124,12 @@ namespace Deako {
                 {
                     for (auto& [handle, name] : s_RegistryBins.Texture)
                     {
-                        ImGui::Text(name.c_str(), "%s");
+                        ImGui::Button(name.c_str(), { buttonWidth, buttonHeight });
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("ASSET_PATH", &handle, sizeof(AssetHandle));
+                            ImGui::EndDragDropSource();
+                        }
                     }
 
                     ImGui::EndTabItem();
@@ -182,15 +189,6 @@ namespace Deako {
 
             if (it != s_RegistryBinMap.end())
             {
-                // std::string filename = path.filename().string();
-
-                // if (!filename.empty())
-                // {
-                //     filename[0] = std::toupper(filename[0]);
-                // }
-
-                // metadata.assetName = filename;
-
                 it->second->emplace_back(handle, metadata.assetPath.filename().string());
             }
         }

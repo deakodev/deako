@@ -121,23 +121,33 @@ namespace Deako {
             Ref<Prefab> prefabAsset = AssetPool::GetAsset<Prefab>(prefabHandle);
 
             // Assign prefab asset textures
-            if (!prefabEntity.HasComponent<TextureComponent>())
-                prefabEntity.AddComponent<TextureComponent>();
+              // TODO: need to add support for multiple textures
+            if (prefabAsset->textures.size() > 0)
+            {
+                if (!prefabEntity.HasComponent<TextureComponent>())
+                    prefabEntity.AddComponent<TextureComponent>();
 
-            auto& entityTextureHandles = prefabEntity.GetComponent<TextureComponent>().handles;
-            for (const auto& [assetHandle, textureAsset] : prefabAsset->textures)
-                entityTextureHandles.emplace_back(assetHandle);
+                AssetHandle& textureHandle = prefabEntity.GetComponent<TextureComponent>().handle;
+                textureHandle = prefabAsset->textures[0]->m_Handle;
+            }
 
             // Assign prefab asset materials
-            if (!prefabEntity.HasComponent<MaterialComponent>())
-                prefabEntity.AddComponent<MaterialComponent>();
+            if (prefabAsset->materials.size() > 0)
+            {
+                if (!prefabEntity.HasComponent<MaterialComponent>())
+                    prefabEntity.AddComponent<MaterialComponent>();
 
-            auto& entityMaterialHandles = prefabEntity.GetComponent<MaterialComponent>().handles;
-            for (const auto& [assetHandle, materialAsset] : prefabAsset->materials)
-                entityMaterialHandles.emplace_back(assetHandle);
+                auto& entityMaterialHandles = prefabEntity.GetComponent<MaterialComponent>().handles;
+                for (const auto& [assetHandle, materialAsset] : prefabAsset->materials)
+                    entityMaterialHandles.emplace_back(assetHandle);
+            }
 
             // Assign prefab asset model
-            prefabEntity.AddComponent<ModelComponent>(prefabAsset->model->m_Handle);
+            if (prefabAsset->model)
+            {
+                if (!prefabEntity.HasComponent<ModelComponent>())
+                    prefabEntity.AddComponent<ModelComponent>(prefabAsset->model->m_Handle);
+            }
         }
     }
 

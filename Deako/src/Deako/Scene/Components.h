@@ -48,7 +48,7 @@ namespace Deako {
 
     struct TextureComponent
     {
-        std::vector<AssetHandle> handles;
+        AssetHandle handle = 0;
 
         TextureComponent() = default;
         TextureComponent(const TextureComponent&) = default;
@@ -64,7 +64,7 @@ namespace Deako {
 
     struct ModelComponent
     {
-        AssetHandle handle;
+        AssetHandle handle = 0;
 
         ModelComponent() = default;
         ModelComponent(AssetHandle handle)
@@ -74,7 +74,7 @@ namespace Deako {
 
     struct PrefabComponent
     {
-        AssetHandle handle;
+        AssetHandle handle = 0;
 
         PrefabComponent() = default;
         PrefabComponent(const PrefabComponent&) = default;

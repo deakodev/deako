@@ -11,6 +11,8 @@ namespace Deako {
     {
         VulkanBase::Init();
 
+        // AssetPool::ImportAssetRegistry(); // TODO: temp
+
         Scene::LinkAssets(); // TODO: figure out where to do this
 
         VulkanScene::Build();

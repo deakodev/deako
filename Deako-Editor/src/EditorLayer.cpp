@@ -68,7 +68,7 @@ namespace Deako {
         // Submit the DockSpace
         ImGuiIO& io = ImGui::GetIO();
         ImGuiStyle& style = ImGui::GetStyle();
-        style.WindowMinSize.x = 360.0f;
+        style.WindowMinSize.x = 300.0f;
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         {
             ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
@@ -151,22 +151,20 @@ namespace Deako {
         else
         {
             DK_ERROR("No intial scene selected!");
-            Application::Get().Close(); return;
         }
     }
 
     void EditorLayer::OpenScene(const std::filesystem::path& path)
     {
-        s_ActiveScene = Scene::Open(path);
-
-        if (s_ActiveScene)
+        Ref<Scene> newScene = Scene::Open(path);
+        if (newScene)
         {
+            s_ActiveScene = newScene;
             s_ScenePanel->SetContext(s_ActiveScene);
         }
         else
         {
             DK_ERROR("No active scene selected!");
-            Application::Get().Close(); return;
         }
     }
 

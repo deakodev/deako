@@ -83,7 +83,7 @@ namespace Deako {
 
                 // Handle the skybox-specific components
                 auto& textureComp = entity.GetComponent<TextureComponent>();
-                vr->skybox.environmentCube = AssetPool::GetAsset<TextureCubeMap>(textureComp.handles[0]);
+                vr->skybox.environmentCube = AssetPool::GetAsset<TextureCubeMap>(textureComp.handle);
                 vr->skybox.irradianceCube->GenerateCubeMap();
                 vr->skybox.prefilteredCube->GenerateCubeMap();
                 break;

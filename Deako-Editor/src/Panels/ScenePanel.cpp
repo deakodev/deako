@@ -44,7 +44,7 @@ namespace Deako {
 
         ImGui::End();
 
-        ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoCollapse);
+        ImGui::Begin("Properties");
 
         if (m_SelectionContext)
             DrawComponents(m_SelectionContext);
@@ -249,7 +249,62 @@ namespace Deako {
 
         DrawComponent<TextureComponent>("Texture", entity, [](auto& component)
             {
-                ImGui::Button("Texture", ImVec2(100.0f, 0.0f));
+                bool isTextureValid = false;
+                std::string label = "None";
+                if (component.handle != 0)
+                {
+                    const AssetMetadata& metadata = AssetPool::GetMetadata(component.handle);
+                    if (metadata.assetType == AssetType::Texture2D)
+                    {
+                        label = metadata.assetPath.filename().string() + " (Texture2D)";
+                        isTextureValid = true;
+                    }
+                    else if (metadata.assetType == AssetType::TextureCubeMap)
+                    {
+                        label = metadata.assetPath.filename().string() + " (TextureCubeMap)";
+                        isTextureValid = true;
+                    }
+                    else
+                    {
+                        label = "Invalid";
+                    }
+                }
+
+                ImVec2 buttonSize = ImGui::CalcTextSize(label.c_str());
+                buttonSize.x += 20.0f; // padding
+                float buttonWidth = glm::max<float>(100.0f, buttonSize.x);
+
+                ImGui::Button(label.c_str(), ImVec2(buttonWidth, 0.0f));
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
+                    {
+                        AssetHandle newHandle = *(AssetHandle*)payload->Data;
+
+                        AssetType newAssetType = AssetPool::GetAssetType(newHandle);
+                        if (newAssetType == AssetType::Texture2D || newAssetType == AssetType::TextureCubeMap)
+                        {
+                            component.handle = newHandle;
+                            Renderer::Invalidate();
+                        }
+                        else
+                        {
+                            DK_WARN("Wrong asset type!");
+                        }
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+
+                if (isTextureValid)
+                {
+                    ImGui::SameLine(0.0f, 10.0f);
+                    float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+                    if (ImGui::Button("Delete", ImVec2{ lineHeight, lineHeight }))
+                    {
+                        DK_INFO("Hello");
+                        component.handle = 0;
+                    }
+                }
             });
 
         DrawComponent<MaterialComponent>("Material", entity, [](auto& component)

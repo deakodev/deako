@@ -15,6 +15,8 @@ namespace Deako {
 
         void CleanUp();
 
+        void ImportAssetRegistry();
+
         Ref<Asset> ImportAsset(AssetHandle handle, AssetMetadata metadata);
 
         void AddAsset(Ref<Asset> asset, AssetMetadata metadata);
@@ -28,9 +30,9 @@ namespace Deako {
         const AssetMap& GetAssetMap() const { return m_AssetsImported; }
         AssetMetadata GetMetadata(AssetHandle handle);
 
-    private:
         bool IsAssetHandleValid(AssetHandle handle) const;
         bool IsAssetLoaded(AssetHandle handle) const;
+        AssetType GetAssetType(AssetHandle handle) const;
 
     private:
         AssetRegistry m_AssetRegistry;
@@ -57,9 +59,13 @@ namespace Deako {
             return AssetPool::Get()->GetMetadata(handle);
         }
 
+        static void ImportAssetRegistry()
+        {
+            AssetPool::Get()->ImportAssetRegistry();
+        }
+
         static Ref<Asset> Import(AssetHandle handle, AssetMetadata metadata)
         {
-            // metadata.assetPath = Project::GetActive()->GetAssetDirectory() / metadata.assetPath;
             return AssetPool::Get()->ImportAsset(handle, metadata);
         }
 
@@ -90,6 +96,21 @@ namespace Deako {
         static void Invalidate(Ref<Asset> asset)
         {
             asset->Invalidate();
+        }
+
+        static bool IsAssetHandleValid(AssetHandle handle)
+        {
+            return AssetPool::Get()->IsAssetHandleValid(handle);
+        }
+
+        static bool IsAssetLoaded(AssetHandle handle)
+        {
+            return AssetPool::Get()->IsAssetLoaded(handle);
+        }
+
+        static AssetType GetAssetType(AssetHandle handle)
+        {
+            return AssetPool::Get()->GetAssetType(handle);
         }
 
     };

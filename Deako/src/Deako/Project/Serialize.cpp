@@ -139,15 +139,8 @@ namespace Deako {
             out << YAML::BeginMap; // TextureComponent
 
             auto& textureComp = entity.GetComponent<TextureComponent>();
+            out << YAML::Key << "AssetHandle" << YAML::Value << textureComp.handle;
 
-            out << YAML::Key << "AssetHandles" << YAML::Value << YAML::BeginSeq;
-
-            for (auto handle : textureComp.handles)
-            {
-                out << handle;
-            }
-
-            out << YAML::EndSeq;
             out << YAML::EndMap; // TextureComponent
         }
 

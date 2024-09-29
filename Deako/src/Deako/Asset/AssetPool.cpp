@@ -14,6 +14,12 @@ namespace Deako {
         return Project::GetActive()->GetAssetPool();
     }
 
+    void AssetPoolBase::ImportAssetRegistry()
+    {
+        for (auto& [handle, metadata] : m_AssetRegistry)
+            ImportAsset(handle, metadata);
+    }
+
     void AssetPoolBase::CleanUp()
     {
         for (auto& [handle, asset] : m_AssetsImported)
@@ -24,8 +30,15 @@ namespace Deako {
     {
         metadata.assetPath = Project::GetActive()->GetAssetDirectory() / metadata.assetPath;
         Ref<Asset> asset = AssetImporter::Import(handle, metadata);
-        AddAsset(asset, metadata);
-        return asset;
+
+        if (asset)
+        {
+            asset->m_Handle = handle;
+            AddAsset(asset, metadata);
+            return asset;
+        }
+
+        return nullptr;
     }
 
     void AssetPoolBase::AddAsset(Ref<Asset> asset, AssetMetadata metadata)
@@ -80,6 +93,14 @@ namespace Deako {
     bool AssetPoolBase::IsAssetLoaded(AssetHandle handle) const
     {
         return m_AssetsImported.find(handle) != m_AssetsImported.end();
+    }
+
+    AssetType AssetPoolBase::GetAssetType(AssetHandle handle) const
+    {
+        if (!IsAssetHandleValid(handle))
+            return AssetType::None;
+
+        return m_AssetRegistry.at(handle).assetType;
     }
 
     template Ref<TextureCubeMap> AssetPoolBase::GetAsset<TextureCubeMap>(AssetHandle handle);

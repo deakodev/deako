@@ -18,8 +18,7 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     TextureComponent:
-      AssetHandles:
-        - 44938964025039682
+      AssetHandle: 44938964025039682
     PrefabComponent:
       AssetHandle: 57892318812072087
     EnvironmentComponent:

@@ -125,15 +125,7 @@ namespace Deako {
                 if (textureCompYaml)
                 {
                     auto& textureComp = entity.AddComponent<TextureComponent>();
-                    auto textureHandlesNode = textureCompYaml["AssetHandles"];
-
-                    if (textureHandlesNode && textureHandlesNode.IsSequence())
-                    {
-                        for (const auto& handleNode : textureHandlesNode)
-                        {
-                            textureComp.handles.push_back(handleNode.as<uint64_t>());
-                        }
-                    }
+                    textureComp.handle = textureCompYaml["AssetHandle"].as<uint64_t>();
                 }
 
                 auto materialCompYaml = yamlEntity["MaterialComponent"];
