@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Deako/Project/Project.h"
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
 #include "Deako/Scene/Scene.h"
 #include "Deako/Scene/Entity.h"
 
@@ -12,7 +13,7 @@ namespace Deako {
 
         bool Project(Deako::Project& project);
 
-        bool AssetRegistry();
+        void AssetRegistry(Deako::AssetRegistry& assetRegistry);
 
         bool Scene(Deako::Scene& scene);
 

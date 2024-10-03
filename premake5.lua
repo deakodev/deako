@@ -164,7 +164,7 @@ project "Deako-Editor"
      -- Shader compilation commands
     prebuildcommands 
     {
-        "/bin/zsh ../compile-shaders.sh"
+        "/bin/zsh ../Scripts/compile_shaders.sh"
     }
 
     files

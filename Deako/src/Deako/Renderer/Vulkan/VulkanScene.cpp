@@ -2,7 +2,6 @@
 #include "dkpch.h"
 
 #include "Deako/Core/Application.h"
-#include "Deako/Asset/AssetPool.h"
 
 namespace Deako {
 
@@ -21,7 +20,7 @@ namespace Deako {
 
         SetUpPipelines();
 
-        m_SceneValid = true;
+        s_SceneValid = true;
     }
 
     void VulkanScene::CleanUp()
@@ -61,10 +60,11 @@ namespace Deako {
 
     void VulkanScene::SetUpAssets()
     {
-        if (!vr->textures.empty)
-            vr->textures.empty = AssetPool::Import<Texture2D>("textures/empty.ktx");
+        s_ProjectAssetPool = AssetManager::GetProjectAssetPool();
+        s_EditorAssetPool = AssetManager::GetEditorAssetPool();
 
-        vr->entities = Scene::GetAllEntitiesWith<TagComponent, ModelComponent>();
+        Ref<Scene> scene = Project::GetActiveScene();
+        vr->entities = scene->GetAllEntitiesWith<TagComponent>();
 
         for (auto it = vr->entities.begin(); it != vr->entities.end(); )
         {
@@ -74,18 +74,25 @@ namespace Deako {
             if (tag == "Skybox")
             {
                 auto& modelComp = entity.GetComponent<ModelComponent>();
-                Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+                Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(modelComp.handle);
 
-                // easy access, separate from others
-                vr->skybox.model = model;
-                // erase the entity and update the iterator
-                vr->entities.erase(it);
+                vr->skybox.model = model;  // easy access, separate from others
+                vr->entities.erase(it);    // erase the entity and update the iterator
 
                 // Handle the skybox-specific components
                 auto& textureComp = entity.GetComponent<TextureComponent>();
-                vr->skybox.environmentCube = AssetPool::GetAsset<TextureCubeMap>(textureComp.handle);
+                vr->skybox.environmentCube = s_ProjectAssetPool->GetAsset<TextureCubeMap>(textureComp.handle);
+
+                if (!vr->skybox.environmentCube)
+                {
+                    Ref<Asset> emptyCubeMap = s_EditorAssetPool->GetEmpty(AssetType::TextureCubeMap);
+                    vr->skybox.environmentCube = std::dynamic_pointer_cast<TextureCubeMap>(emptyCubeMap);
+                }
+
                 vr->skybox.irradianceCube->GenerateCubeMap();
                 vr->skybox.prefilteredCube->GenerateCubeMap();
+
+                vs->displayBackground = true;
                 break;
             }
 
@@ -156,7 +163,7 @@ namespace Deako {
             *modelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
 
             // auto& modelComp = entity.GetComponent<ModelComponent>();
-            // glm::mat4 aabb = AssetPool::GetAsset<Model>(modelComp.handle)->aaBoundingBox;
+            // glm::mat4 aabb = s_ProjectAssetPool->GetAsset<Model>(modelComp.handle)->aaBoundingBox;
 
             // float scaleX = glm::length(glm::vec3(aabb[0]));
             // float scaleY = glm::length(glm::vec3(aabb[1]));
@@ -207,7 +214,7 @@ namespace Deako {
             materialCount += entityMaterialCount;
 
             auto modelHandle = entity.GetComponent<ModelComponent>().handle;
-            Ref<Model> model = AssetPool::GetAsset<Model>(modelHandle);
+            Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(modelHandle);
 
             for (auto node : model->linearNodes)
                 if (node->mesh) meshCount++;
@@ -319,16 +326,17 @@ namespace Deako {
             layoutInfo.bindingCount = static_cast<uint32_t>(setLayoutBindings.size());
             VkCR(vkCreateDescriptorSetLayout(vr->device, &layoutInfo, nullptr, &vr->descriptorSetLayouts.material));
 
+            Ref<Asset> emptyAsset = s_EditorAssetPool->GetEmpty(AssetType::Texture2D);
+            Ref<Texture2D> emptyTexture = std::static_pointer_cast<Texture2D>(emptyAsset);
+
             // per-material descriptor sets
             for (Entity entity : vr->entities)
             {
                 auto& modelComp = entity.GetComponent<ModelComponent>();
-                Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+                Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(modelComp.handle);
 
                 for (auto& material : model->materials)
                 {
-                    VkDescriptorImageInfo emptyTextureDescriptor = vr->textures.empty->descriptor;
-
                     VkDescriptorSetAllocateInfo allocInfo{};
                     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
                     allocInfo.descriptorPool = vr->descriptorPool;
@@ -337,11 +345,11 @@ namespace Deako {
                     VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &material->descriptorSet));
 
                     std::vector<VkDescriptorImageInfo> imageDescriptors = {
-                        emptyTextureDescriptor,
-                        emptyTextureDescriptor,
-                        material->normalTexture ? material->normalTexture->descriptor : emptyTextureDescriptor,
-                        material->occlusionTexture ? material->occlusionTexture->descriptor : emptyTextureDescriptor,
-                        material->emissiveTexture ? material->emissiveTexture->descriptor : emptyTextureDescriptor
+                        emptyTexture->descriptor,
+                        emptyTexture->descriptor,
+                        material->normalTexture ? material->normalTexture->descriptor : emptyTexture->descriptor,
+                        material->occlusionTexture ? material->occlusionTexture->descriptor : emptyTexture->descriptor,
+                        material->emissiveTexture ? material->emissiveTexture->descriptor : emptyTexture->descriptor
                     };
 
                     if (material->pbrWorkflows.metallicRoughness)
@@ -388,7 +396,7 @@ namespace Deako {
                 for (Entity entity : vr->entities)
                 {
                     auto& modelComp = entity.GetComponent<ModelComponent>();
-                    Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+                    Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(modelComp.handle);
 
                     for (auto& node : model->nodes) // per-node descriptor set
                         node->SetDescriptorSet();
@@ -661,8 +669,9 @@ namespace Deako {
         colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
         colorAttachment.resolveImageView = viewportImage.view;
         colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.clearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
 
         VkRenderingAttachmentInfo depthStencilAttachment = {};
         depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -712,7 +721,7 @@ namespace Deako {
         for (Entity entity : vr->entities)
         {
             auto& modelComp = entity.GetComponent<ModelComponent>();
-            Ref<Model> model = AssetPool::GetAsset<Model>(modelComp.handle);
+            Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(modelComp.handle);
 
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, offsets);
 

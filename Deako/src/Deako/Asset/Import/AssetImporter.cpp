@@ -1,10 +1,10 @@
 #include "AssetImporter.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/TextureImporter.h"
-#include "Deako/Asset/ModelImporter.h"
-#include "Deako/Asset/SceneImporter.h"
-#include "Deako/Asset/PrefabImporter.h"
+#include "Deako/Asset/Import/TextureImporter.h"
+#include "Deako/Asset/Import/ModelImporter.h"
+#include "Deako/Asset/Import/SceneImporter.h"
+#include "Deako/Asset/Import/PrefabImporter.h"
 
 namespace Deako {
 

@@ -21,6 +21,7 @@ namespace Deako {
 
     const std::string& AssetTypeToString(AssetType type);
     AssetType AssetTypeFromString(const std::string& type);
+    AssetType AssetTypeFromParentDirectory(const std::string& fileParentDirectory);
     AssetType AssetTypeFromTypeIndex(const std::type_index& typeIndex);
 
     struct AssetMetadata

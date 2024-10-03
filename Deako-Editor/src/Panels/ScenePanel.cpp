@@ -1,21 +1,21 @@
 #include "ScenePanel.h"
 
 #include "Deako/Scene/Components.h"
-#include "Deako/Asset/AssetPool.h"
 
 #include <imgui/imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace Deako {
 
-    ScenePanel::ScenePanel(const Ref<Scene>& context)
+    ScenePanel::ScenePanel(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool)
     {
-        SetContext(context);
+        SetContext(scene, projectAssetPool);
     }
 
-    void ScenePanel::SetContext(const Ref<Scene>& context)
+    void ScenePanel::SetContext(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool)
     {
-        m_Context = context;
+        m_SceneContext = scene;
+        m_ProjectAssetPool = projectAssetPool;
         m_SelectionContext = {};
     }
 
@@ -23,10 +23,10 @@ namespace Deako {
     {
         ImGui::Begin("Scene");
 
-        auto view = m_Context->m_Registry.view<TagComponent>();
+        auto view = m_SceneContext->m_Registry.view<TagComponent>();
         for (auto entityHandle : view)
         {
-            Entity entity{ entityHandle, m_Context.get() };
+            Entity entity{ entityHandle, m_SceneContext.get() };
             DrawEntityNode(entity);
         }
 
@@ -37,7 +37,7 @@ namespace Deako {
         if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
         {
             if (ImGui::MenuItem("Create Empty Entity"))
-                m_Context->CreateEntity("Empty Entity");
+                m_SceneContext->CreateEntity("Empty Entity");
 
             ImGui::EndPopup();
         }
@@ -76,7 +76,7 @@ namespace Deako {
 
         if (entityDeleted)
         {
-            m_Context->DestroyEntity(entity); // TODO
+            m_SceneContext->DestroyEntity(entity); // TODO
             if (m_SelectionContext == entity)
                 m_SelectionContext = {};
         }
@@ -247,13 +247,13 @@ namespace Deako {
                 DrawVec3Control("Scale", component.scale, 1.0f);
             });
 
-        DrawComponent<TextureComponent>("Texture", entity, [](auto& component)
+        DrawComponent<TextureComponent>("Texture", entity, [this](auto& component)
             {
                 bool isTextureValid = false;
                 std::string label = "None";
                 if (component.handle != 0)
                 {
-                    const AssetMetadata& metadata = AssetPool::GetMetadata(component.handle);
+                    const AssetMetadata& metadata = m_ProjectAssetPool->GetAssetMetadata(component.handle);
                     if (metadata.assetType == AssetType::Texture2D)
                     {
                         label = metadata.assetPath.filename().string() + " (Texture2D)";
@@ -266,7 +266,7 @@ namespace Deako {
                     }
                     else
                     {
-                        label = "Invalid";
+                        label = "Empty";
                     }
                 }
 
@@ -281,7 +281,7 @@ namespace Deako {
                     {
                         AssetHandle newHandle = *(AssetHandle*)payload->Data;
 
-                        AssetType newAssetType = AssetPool::GetAssetType(newHandle);
+                        AssetType newAssetType = m_ProjectAssetPool->GetAssetType(newHandle);
                         if (newAssetType == AssetType::Texture2D || newAssetType == AssetType::TextureCubeMap)
                         {
                             component.handle = newHandle;
@@ -307,9 +307,9 @@ namespace Deako {
                 }
             });
 
-        DrawComponent<MaterialComponent>("Material", entity, [](auto& component)
+        DrawComponent<MaterialComponent>("Material", entity, [this](auto& component)
             {
-                Ref<Material> material = AssetPool::GetAsset<Material>(component.handles[1]);
+                Ref<Material> material = m_ProjectAssetPool->GetAsset<Material>(component.handles[1]);
 
                 if (material)
                 {
@@ -327,7 +327,7 @@ namespace Deako {
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
                     {
-                        AssetPool::Invalidate(material);
+                        // AssetPool::Invalidate(material);
                     }
 
                     // metallicFactor
@@ -340,7 +340,7 @@ namespace Deako {
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
                     {
-                        AssetPool::Invalidate(material);
+                        // AssetPool::Invalidate(material);
                     }
 
                     ImGui::Text("Roughness Factor");
@@ -349,7 +349,7 @@ namespace Deako {
 
                     if (ImGui::IsItemDeactivatedAfterEdit())
                     {
-                        AssetPool::Invalidate(material);
+                        // AssetPool::Invalidate(material);
                     }
                 }
             });

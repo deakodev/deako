@@ -2,6 +2,7 @@
 
 #include "VulkanBase.h"
 
+#include "Deako/Asset/Pool/AssetManager.h"
 #include "Deako/Scene/Scene.h"
 #include "Deako/Scene/Entity.h"
 
@@ -22,8 +23,8 @@ namespace Deako {
         static void UpdateShaderParams();
         static void ViewportResize(const glm::vec2& viewportSize);
 
-        static bool IsInvalid() { return !m_SceneValid; }
-        static void Invalidate() { m_SceneValid = false; };
+        static bool IsInvalid() { return !s_SceneValid; }
+        static void Invalidate() { s_SceneValid = false; };
 
     private:
         static void SetUpAssets();
@@ -34,7 +35,9 @@ namespace Deako {
         static void AddPipelineSet(const std::string prefix, std::filesystem::path vertexShader, std::filesystem::path fragmentShader);
 
     private:
-        inline static bool m_SceneValid{ false };
+        inline static bool s_SceneValid{ false };
+        inline static Ref<ProjectAssetPool> s_ProjectAssetPool;
+        inline static Ref<EditorAssetPool> s_EditorAssetPool;
     };
 
 }

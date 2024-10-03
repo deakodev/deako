@@ -8,11 +8,11 @@ namespace Deako {
     {
     public:
         ScenePanel() = default;
-        ScenePanel(const Ref<Scene>& context);
+        ScenePanel(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool);
 
         void OnImGuiRender();
 
-        void SetContext(const Ref<Scene>& context);
+        void SetContext(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool);
 
         Entity GetSelectedEntity() const { return m_SelectionContext; }
 
@@ -21,7 +21,8 @@ namespace Deako {
         void DrawComponents(Entity entity);
 
     private:
-        Ref<Scene> m_Context;
+        Ref<Scene> m_SceneContext;
+        Ref<ProjectAssetPool> m_ProjectAssetPool;
         Entity m_SelectionContext;
     };
 

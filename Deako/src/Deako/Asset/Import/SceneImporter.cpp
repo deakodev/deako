@@ -15,6 +15,8 @@ namespace Deako {
 
         Ref<Scene> scene = Deserialize::Scene(metadata.assetPath);
 
+
+
         if (scene) return scene;
         else return nullptr;
     }

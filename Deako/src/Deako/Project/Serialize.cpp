@@ -3,6 +3,7 @@
 
 #include "Deako/Asset/Asset.h"
 #include "Deako/Asset/Prefab.h"
+#include "Deako/Asset/Pool/AssetManager.h"
 
 namespace Deako {
 
@@ -22,7 +23,7 @@ namespace Deako {
 
     bool Serialize::Project(Deako::Project& project)
     {
-        const ProjectMetadata& metadata = project.GetMetadata();
+        const ProjectMetadata& metadata = project.GetProjectMetadata();
 
         YAML::Emitter out;
         {
@@ -34,7 +35,7 @@ namespace Deako {
                 out << YAML::Key << "WorkingDirectory" << YAML::Value << metadata.workingDirectory.string();
                 out << YAML::Key << "AssetDirectory" << YAML::Value << metadata.assetDirectory.string();
                 out << YAML::Key << "AssetRegistryPath" << YAML::Value << metadata.assetRegistryPath.string();
-                out << YAML::Key << "InitialScenePath" << YAML::Value << metadata.initialScenePath.string();
+                out << YAML::Key << "InitialSceneHandle" << YAML::Value << metadata.initialSceneHandle;
                 out << YAML::EndMap; // Project
             }
             out << YAML::EndMap; // Root
@@ -46,10 +47,15 @@ namespace Deako {
         return true;
     }
 
-    bool Serialize::AssetRegistry()
+    void Serialize::AssetRegistry(Deako::AssetRegistry& assetRegistry)
     {
-        const std::filesystem::path& path = Project::GetActive()->GetAssetRegistryPath();
-        const Deako::AssetRegistry& assetRegistry = Project::GetActive()->GetAssetPool()->GetAssetRegistry();
+        std::filesystem::path assetRegistryPath = Project::GetActive()->GetAssetRegistryPath();
+
+        if (assetRegistryPath.empty() || (assetRegistryPath.extension().string() != ".dreg"))
+        {
+            DK_CORE_ERROR("Failed to serialize AssetRegistry <{0}>", assetRegistryPath.filename().string());
+            return;
+        }
 
         YAML::Emitter out;
         {
@@ -58,11 +64,13 @@ namespace Deako {
 
             for (const auto& [handle, metadata] : assetRegistry)
             {
-                if (metadata.assetPath.empty()) continue; // TODO: maybe get the dependent assets metadata
+                if (metadata.assetPath.empty()) continue;
+
+                std::filesystem::path relativePath = std::filesystem::relative(metadata.assetPath, metadata.assetPath.parent_path().parent_path());
 
                 out << YAML::BeginMap;
                 out << YAML::Key << "AssetHandle" << YAML::Value << handle;
-                out << YAML::Key << "AssetPath" << YAML::Value << metadata.assetPath.filename().string();
+                out << YAML::Key << "AssetPath" << YAML::Value << relativePath.string();
                 out << YAML::Key << "AssetType" << YAML::Value << AssetTypeToString(metadata.assetType);
                 out << YAML::EndMap;
             }
@@ -71,20 +79,20 @@ namespace Deako {
             out << YAML::EndMap; // Root
         }
 
-        std::ofstream fout(path.string());
+        std::ofstream fout(assetRegistryPath.string());
         fout << out.c_str();
 
-        return true;
+        DK_CORE_INFO("Serialized AssetRegistry <{0}>", assetRegistryPath.filename().string());
     }
 
     bool Serialize::Scene(Deako::Scene& scene)
     {
-        const SceneMetadata& metadata = scene.GetMetadata();
+        const AssetMetadata& metadata = AssetManager::GetProjectAssetPool()->GetAssetMetadata(scene.m_Handle);
         const entt::registry& registry = scene.GetRegistry();
 
         YAML::Emitter out;
         out << YAML::BeginMap;
-        out << YAML::Key << "Scene" << YAML::Value << metadata.name;
+        out << YAML::Key << "Scene" << YAML::Value << metadata.assetPath.filename().string();
         out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
         for (auto entityHandle : registry.view<entt::entity>())

@@ -22,10 +22,8 @@ namespace Deako {
         virtual void OnEvent(Event& event) override;
         virtual void OnImGuiRender(ImTextureID textureID) override;
 
-        static void OpenProject();
         static void OpenProject(const std::filesystem::path& path);
-        static void OpenScene();
-        static void OpenScene(const std::filesystem::path& path);
+        static void OpenScene(AssetHandle handle);
 
     private:
         inline static Scope<ScenePanel> s_ScenePanel;
@@ -34,6 +32,7 @@ namespace Deako {
 
         inline static Ref<Project> s_ActiveProject;
         inline static Ref<Scene> s_ActiveScene;
+        inline static Ref<ProjectAssetPool> s_ProjectAssetPool;
     };
 
 }

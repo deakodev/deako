@@ -4,6 +4,8 @@
 #include "Deako/Scene/Scene.h"
 #include "Deako/Scene/Entity.h"
 
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace Deako {
@@ -12,7 +14,7 @@ namespace Deako {
 
         Ref<Project> Project(const std::filesystem::path& path);
 
-        Ref<AssetRegistry> AssetRegistry(const std::filesystem::path& path);
+        void AssetRegistry(Deako::AssetRegistry& assetRegistry);
 
         Ref<Scene> Scene(const std::filesystem::path& path);
 

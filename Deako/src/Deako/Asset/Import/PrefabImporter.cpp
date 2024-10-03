@@ -1,7 +1,7 @@
 #include "PrefabImporter.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/ModelImporter.h"
+#include "Deako/Asset/Import/ModelImporter.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tiny_gltf.h>
@@ -46,6 +46,8 @@ namespace Deako {
 
     Ref<Prefab> PrefabImporter::ImportGLTF(AssetHandle handle, PrefabMetadata metadata)
     {
+        DK_CORE_INFO("Importing Prefab <{0}>", metadata.assetPath.filename().string());
+
         bool binary = false;
         if (metadata.assetPath.extension().string() == ".glb") binary = true;
 
@@ -94,6 +96,8 @@ namespace Deako {
             std::vector<Ref<Texture2D>> textures;
             for (tinygltf::Texture& tinyTexture : tinyModel.textures)
             {
+                DK_CORE_INFO("...prefab texture <{0}>", tinyTexture.name);
+
                 int source = tinyTexture.source;
                 if (tinyTexture.extensions.find("KHR_texture_basisu") != tinyTexture.extensions.end())
                 {    // if a texture uses KHR_texture_basisu, get source index from extension structure
@@ -130,13 +134,13 @@ namespace Deako {
 
                 textures.push_back(texture);
                 prefab->textures[texture->m_Handle] = texture;
-
-                AssetPool::AddAsset(texture, textureMetadata);
             }
 
             std::vector<Ref<Material>> materials;
             for (tinygltf::Material& tinyMaterial : tinyModel.materials)
             {
+                DK_CORE_INFO("...prefab material <{0}>", tinyMaterial.name);
+
                 Ref<Material> material = CreateRef<Material>(tinyMaterial, textures);
                 AssetMetadata materialMetadata;
                 materialMetadata.assetType = AssetType::Material;
@@ -145,8 +149,6 @@ namespace Deako {
 
                 materials.push_back(material);
                 prefab->materials[material->m_Handle] = material;
-
-                AssetPool::AddAsset(material, materialMetadata);
             }
 
             // push a default material at the end of the list for meshes with no material assigned
@@ -157,13 +159,13 @@ namespace Deako {
 
             prefab->materials[material->m_Handle] = material;
 
-            AssetPool::AddAsset(material, materialMetadata);
-
             materials.push_back(material);
             prefab->model->SetMaterials(materials);
 
             ///// MODEL
             const tinygltf::Scene& tinyScene = tinyModel.scenes[tinyModel.defaultScene > -1 ? tinyModel.defaultScene : 0];
+
+            DK_CORE_INFO("...prefab scene <{0}>", tinyScene.name);
 
             // get vertex and index buffer sizes up-front
             for (size_t i = 0; i < tinyScene.nodes.size(); i++)
@@ -206,10 +208,6 @@ namespace Deako {
                 if (std::find(supportedGLTFExts.begin(), supportedGLTFExts.end(), ext) == supportedGLTFExts.end())
                     DK_CORE_WARN("Unsupported extension {0}. Model may not display as intended.", ext);
             }
-
-            AssetPool::AddAsset(std::static_pointer_cast<Asset>(prefab->model), modelMetadata);
-
-            AssetPool::AddAsset(std::static_pointer_cast<Asset>(prefab), metadata);
 
             return prefab;
         }

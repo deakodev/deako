@@ -1,15 +1,16 @@
 Scene:
-  Name: Sandbox
+  Name: EmptyScene
+  AssetHandle: 3493729506194493865
 Entities:
-  - Entity: 81234097091941911
+  - Entity: 63025543015532543
     TagComponent:
-      Tag: DamagedHelmet
+      Tag: Box
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     PrefabComponent:
-      AssetHandle: 51418710489529541
+      AssetHandle: 57892318812072087
   - Entity: 63025543015532544
     TagComponent:
       Tag: Skybox
@@ -18,7 +19,7 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     TextureComponent:
-      AssetHandle: 57928164075139581
+      AssetHandle: 0
     PrefabComponent:
       AssetHandle: 57892318812072087
     EnvironmentComponent:

@@ -14,6 +14,8 @@
 
 #include "Deako/ImGui/ImGuiIcons.h"
 
+#include "Deako/Asset/Pool/AssetManager.h"
+
 #include "Deako/Renderer/Renderer.h"
 #include "Deako/Renderer/EditorCamera.h"
 #include "Deako/Renderer/Vulkan/VulkanScene.h" // TODO: temp

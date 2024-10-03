@@ -12,9 +12,6 @@ namespace Deako {
         s_AssetsPanel = CreateScope<AssetsPanel>();
         s_ScenePanel = CreateScope<ScenePanel>();
         s_ViewportPanel = CreateScope<ViewportPanel>();
-
-        OpenProject();
-        OpenScene();
     }
 
     void EditorLayer::OnDetach()
@@ -23,6 +20,16 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
+        if (!s_ActiveProject || !s_ActiveScene || !s_ProjectAssetPool)
+        {
+            s_ActiveProject = Project::GetActive();
+            s_ActiveScene = Project::GetActiveScene();
+            s_ProjectAssetPool = AssetManager::GetProjectAssetPool();
+
+            s_AssetsPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
+            s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
+        }
+
         s_ViewportPanel->OnUpdate();
         s_ActiveScene->OnUpdate();
     }
@@ -111,28 +118,14 @@ namespace Deako {
     {
     }
 
-
-    void EditorLayer::OpenProject()
-    {
-        std::filesystem::path projectPath = Application::Get().GetSpecification().commandLineArgs[1];
-        if (!projectPath.empty())
-        {
-            OpenProject(projectPath);
-        }
-        else
-        {
-            DK_ERROR("No intial project selected!");
-            Application::Get().Close(); return;
-        }
-    }
-
     void EditorLayer::OpenProject(const std::filesystem::path& path)
     {
         s_ActiveProject = Project::Load(path);
 
         if (s_ActiveProject)
         {
-            s_AssetsPanel->SetContext(s_ActiveProject);
+            s_ProjectAssetPool->Init();
+            s_AssetsPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
         }
         else
         {
@@ -141,26 +134,15 @@ namespace Deako {
         }
     }
 
-    void EditorLayer::OpenScene()
+    void EditorLayer::OpenScene(AssetHandle handle)
     {
-        std::filesystem::path scenePath = s_ActiveProject->GetInitialScenePath();
-        if (!scenePath.empty())
-        {
-            OpenScene(scenePath);
-        }
-        else
-        {
-            DK_ERROR("No intial scene selected!");
-        }
-    }
-
-    void EditorLayer::OpenScene(const std::filesystem::path& path)
-    {
-        Ref<Scene> newScene = Scene::Open(path);
+        Ref<Scene> newScene = s_ProjectAssetPool->GetAsset<Scene>(handle);
         if (newScene)
         {
+            Project::PrepareScene(handle);
+
             s_ActiveScene = newScene;
-            s_ScenePanel->SetContext(s_ActiveScene);
+            s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
         }
         else
         {

@@ -27,7 +27,7 @@ namespace Deako {
         bool                               validationEnabled{ true };
         bool                               vsync{ false };
         bool                               multiSampling{ true };
-        bool                               displayBackground{ true };
+        bool                               displayBackground{ false };
         bool                               animationPaused{ false };
 
         VkSampleCountFlagBits              sampleCount{ VK_SAMPLE_COUNT_4_BIT };
@@ -93,7 +93,6 @@ namespace Deako {
         // assets
         struct Textures
         {
-            Ref<Texture2D> empty;
             Ref<Texture2D> lutBrdf;
         } textures;
 

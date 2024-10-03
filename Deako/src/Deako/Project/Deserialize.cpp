@@ -31,7 +31,7 @@ namespace Deako {
             path.parent_path(),
             projectNode["AssetDirectory"].as<std::string>(),
             (projectNode["AssetRegistryPath"]) ? projectNode["AssetRegistryPath"].as<std::string>() : "",
-            (projectNode["InitialScenePath"]) ? projectNode["InitialScenePath"].as<std::string>() : "",
+            projectNode["InitialSceneHandle"].as<uint64_t>(),
             });
 
         DK_CORE_INFO("Deser Project '{0}'", projectNode["Name"].as<std::string>());
@@ -39,23 +39,27 @@ namespace Deako {
         return project;
     }
 
-    Ref<AssetRegistry> Deserialize::AssetRegistry(const std::filesystem::path& path)
+    void Deserialize::AssetRegistry(Deako::AssetRegistry& assetRegistry)
     {
-        Ref<Deako::AssetRegistry> assetRegistry = CreateRef<Deako::AssetRegistry>();
+        std::filesystem::path assetRegistryPath = Project::GetActive()->GetAssetRegistryPath();
 
         YAML::Node data;
         try
         {
-            data = YAML::LoadFile(path.string());
+            data = YAML::LoadFile(assetRegistryPath.string());
         }
         catch (YAML::ParserException e)
         {
-            DK_CORE_ERROR("Failed to load asset registry file <{0}>\n {1}", path.string(), e.what());
-            return nullptr;
+            DK_CORE_ERROR("Failed to load asset registry file <{0}>\n {1}", assetRegistryPath.filename().string(), e.what());
+            return;
         }
 
         auto rootNode = data["AssetRegistry"];
-        if (!rootNode) return assetRegistry;
+        if (!rootNode)
+        {
+            DK_CORE_ERROR("Failed to deserialize AssetRegistry <{0}>", assetRegistryPath.filename().string());
+            return;
+        }
 
         for (const auto& assetNode : rootNode)
         {
@@ -65,12 +69,10 @@ namespace Deako {
             metadata.assetType = AssetTypeFromString(assetNode["AssetType"].as<std::string>());
             metadata.assetPath = assetNode["AssetPath"].as<std::string>();
 
-            (*assetRegistry)[handle] = metadata;
+            assetRegistry[handle] = metadata;
         }
 
-        DK_CORE_INFO("Deser AssetRegistry");
-
-        return assetRegistry;
+        DK_CORE_INFO("Deserialize AssetRegistry <{0}>", assetRegistryPath.filename().string());
     }
 
     Ref<Scene> Deserialize::Scene(const std::filesystem::path& path)
@@ -90,8 +92,6 @@ namespace Deako {
 
         auto sceneNode = data["Scene"];
         if (!sceneNode) return nullptr;
-
-        scene->SetName(sceneNode["Name"].as<std::string>());
 
         DK_CORE_INFO("Deser Scene '{0}' <{1}>",
             sceneNode["Name"].as<std::string>(), path.filename().string());

@@ -34,9 +34,8 @@ namespace Deako {
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
             {
-                const char* path = (const char*)payload->Data;
-                DK_TRACE("Payload: {0}", path);
-                EditorLayer::OpenScene(path);
+                AssetHandle handle = *(AssetHandle*)(uint64_t*)payload->Data;
+                EditorLayer::OpenScene(handle);
                 Renderer::Invalidate();
             }
             ImGui::EndDragDropTarget();

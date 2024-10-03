@@ -1,8 +1,7 @@
 #include "VulkanBase.h"
 #include "dkpch.h"
 
-#include "Deako/Core/Application.h"
-#include "Deako/Asset/AssetPool.h"
+#include "Deako/Core/Application.h" 
 #include "Deako/ImGui/ImGuiLayer.h"
 
 #include <GLFW/glfw3.h>
@@ -570,7 +569,6 @@ namespace Deako {
     {
         if (VulkanScene::IsInvalid())
         {
-            Scene::LinkAssets();
             VulkanScene::Rebuild();
             return;
         }

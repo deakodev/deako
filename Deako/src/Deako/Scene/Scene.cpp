@@ -1,26 +1,12 @@
 #include "Scene.h"
 #include "dkpch.h"
 
+#include "Deako/Asset/Pool/AssetManager.h"
 #include "Deako/Asset/Prefab.h"
 #include "Deako/Renderer/Renderer.h"
 #include "Deako/Project/Serialize.h"
 
 namespace Deako {
-
-    Ref<Scene> Scene::Open(const std::filesystem::path& path)
-    {
-        s_ActiveScene = AssetPool::Import<Scene>(path);
-
-        return s_ActiveScene;
-    }
-
-    bool Scene::Save()
-    {
-        if (Serialize::Scene(*this))
-            return true;
-
-        return false;
-    }
 
     void Scene::OnUpdate()
     {
@@ -84,33 +70,22 @@ namespace Deako {
         return {};
     }
 
-    template<>
-    std::vector<Entity> Scene::GetAllEntitiesWith<TagComponent, ModelComponent>()
+    template<typename... Components>
+    std::vector<Entity> Scene::GetAllEntitiesWith()
     {
-        auto entityHandles = s_ActiveScene->m_Registry.view<TagComponent, ModelComponent>();
+        auto entityHandles = m_Registry.view<Components...>();
 
         std::vector<Entity> entities;
         for (auto entityHandle : entityHandles)
         {
-            entities.emplace_back(entityHandle, s_ActiveScene.get());
+            entities.emplace_back(entityHandle, this);
         }
 
         return entities;
     }
 
-    template<>
-    std::vector<Entity> Scene::GetAllEntitiesWith<PrefabComponent>()
-    {
-        auto entityHandles = s_ActiveScene->m_Registry.view<PrefabComponent>();
-
-        std::vector<Entity> entities;
-        for (auto entityHandle : entityHandles)
-        {
-            entities.emplace_back(entityHandle, s_ActiveScene.get());
-        }
-
-        return entities;
-    }
+    template std::vector<Entity> Scene::GetAllEntitiesWith<TagComponent>();
+    template std::vector<Entity> Scene::GetAllEntitiesWith<PrefabComponent>();
 
     void Scene::LinkAssets()
     {
@@ -118,7 +93,7 @@ namespace Deako {
         for (auto prefabEntity : prefabEntities)
         {
             AssetHandle prefabHandle = prefabEntity.GetComponent<PrefabComponent>().handle;
-            Ref<Prefab> prefabAsset = AssetPool::GetAsset<Prefab>(prefabHandle);
+            Ref<Prefab> prefabAsset = AssetManager::GetProjectAssetPool()->GetAsset<Prefab>(prefabHandle);
 
             // Assign prefab asset textures
               // TODO: need to add support for multiple textures
@@ -128,7 +103,7 @@ namespace Deako {
                     prefabEntity.AddComponent<TextureComponent>();
 
                 AssetHandle& textureHandle = prefabEntity.GetComponent<TextureComponent>().handle;
-                textureHandle = prefabAsset->textures[0]->m_Handle;
+                // textureHandle = prefabAsset->textures[0]->m_Handle;
             }
 
             // Assign prefab asset materials

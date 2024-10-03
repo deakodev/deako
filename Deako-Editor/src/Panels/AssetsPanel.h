@@ -27,9 +27,9 @@ namespace Deako {
     {
     public:
         AssetsPanel() = default;
-        AssetsPanel(const Ref<Project>& project);
+        AssetsPanel(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
 
-        void SetContext(const Ref<Project>& context);
+        void SetContext(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
 
         void OnImGuiRender();
         void OnBrowserTabRender();
@@ -39,7 +39,9 @@ namespace Deako {
         void RefreshRegistry();
 
     private:
-        Ref<Project> m_Context;
+        Ref<Project> m_ProjectContext;
+        Ref<ProjectAssetPool> m_ProjectAssetPool;
+
         std::filesystem::path m_AssetDirectory;
         std::filesystem::path m_CurrentDirectory;
         std::vector<BrowserItem> m_BrowserCache;

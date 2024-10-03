@@ -5,5 +5,5 @@ Additional environment cube maps put here must be
 
 Converting hdr environment maps can be done with [cmft](https://github.com/dariomanesku/cmft) like this:
 
-```cmft --input "papermill.hdr" --filter none --outputNum 1 --output0 "papermill_hdr16f_cube" --output0params ktx,rgba16f,cubemap --generateMipChain true --dstFaceSize 512```
+```./cmft/cmft --input "xxx.hdr" --filter none --outputNum 1 --output0 "papermill_hdr16f_cube" --output0params ktx,rgba16f,cubemap --generateMipChain true --dstFaceSize 512```
 

@@ -15,15 +15,16 @@ namespace Deako {
         { AssetType::Scene, &s_RegistryBins.Scene  }
     };
 
-    AssetsPanel::AssetsPanel(const Ref<Project>& context)
+    AssetsPanel::AssetsPanel(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool)
         : m_RateLimiter(0, 1) // 0 counter cycle, 1-second time cycle
     {
-        SetContext(context);
+        SetContext(project, projectAssetPool);
     }
 
-    void AssetsPanel::SetContext(const Ref<Project>& context)
+    void AssetsPanel::SetContext(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool)
     {
-        m_Context = context;
+        m_ProjectContext = project;
+        m_ProjectAssetPool = projectAssetPool;
         m_AssetDirectory = Project::GetActive()->GetAssetDirectory();
         m_CurrentDirectory = m_AssetDirectory;
         RefreshBrowser();
@@ -95,13 +96,20 @@ namespace Deako {
                         ImGui::EndDragDropSource();
                     }
 
-                    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    if (!item.isDirectory && ImGui::BeginPopupContextItem())
                     {
-                        if (item.isDirectory)
+                        if (ImGui::MenuItem("Import"))
                         {
-                            m_CurrentDirectory /= item.path.filename();
-                            RefreshBrowser(); // refresh when entering a directory
+                            AssetManager::GetProjectAssetPool()->ImportAsset(item.path);
+                            RefreshRegistry();
                         }
+                        ImGui::EndPopup();
+                    }
+
+                    if (item.isDirectory && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                    {
+                        m_CurrentDirectory /= item.path.filename();
+                        RefreshBrowser(); // refresh when entering a directory
                     }
                 }
                 ImGui::EndTable();
@@ -137,25 +145,61 @@ namespace Deako {
 
                 if (ImGui::BeginTabItem("Materials"))
                 {
-                    ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
+                    for (auto& [handle, name] : s_RegistryBins.Material)
+                    {
+                        ImGui::Button(name.c_str(), { buttonWidth, buttonHeight });
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("ASSET_PATH", &handle, sizeof(AssetHandle));
+                            ImGui::EndDragDropSource();
+                        }
+                    }
+
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Models"))
                 {
-                    ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
+                    for (auto& [handle, name] : s_RegistryBins.Model)
+                    {
+                        ImGui::Button(name.c_str(), { buttonWidth, buttonHeight });
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("ASSET_PATH", &handle, sizeof(AssetHandle));
+                            ImGui::EndDragDropSource();
+                        }
+                    }
+
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Prefabs"))
                 {
-                    ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
+                    for (auto& [handle, name] : s_RegistryBins.Prefab)
+                    {
+                        ImGui::Button(name.c_str(), { buttonWidth, buttonHeight });
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("ASSET_PATH", &handle, sizeof(AssetHandle));
+                            ImGui::EndDragDropSource();
+                        }
+                    }
+
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Scenes"))
                 {
-                    ImGui::Text("This is the Cucumber tab!\nblah blah blah blah blah");
+                    for (auto& [handle, name] : s_RegistryBins.Scene)
+                    {
+                        ImGui::Button(name.c_str(), { buttonWidth, buttonHeight });
+                        if (ImGui::BeginDragDropSource())
+                        {
+                            ImGui::SetDragDropPayload("ASSET_PATH", &handle, sizeof(AssetHandle));
+                            ImGui::EndDragDropSource();
+                        }
+                    }
+
                     ImGui::EndTabItem();
                 }
                 ImGui::EndTabBar();
@@ -182,7 +226,10 @@ namespace Deako {
 
     void AssetsPanel::RefreshRegistry()
     {
-        const auto& assetRegistry = AssetPool::GetAssetRegistry();
+        for (auto& [assetType, registryBin] : s_RegistryBinMap)
+            registryBin->clear();
+
+        const auto& assetRegistry = m_ProjectAssetPool->GetAssetRegistry();
         for (const auto& [handle, metadata] : assetRegistry)
         {
             auto it = s_RegistryBinMap.find(metadata.assetType);
@@ -190,6 +237,8 @@ namespace Deako {
             if (it != s_RegistryBinMap.end())
             {
                 it->second->emplace_back(handle, metadata.assetPath.filename().string());
+
+                DK_TRACE("Asset Name: {0}", metadata.assetName); // TODO: impl assetName
             }
         }
     }

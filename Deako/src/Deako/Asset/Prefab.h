@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Deako/Asset/Asset.h"
-#include "Deako/Asset/AssetPool.h"
 
 #include "Deako/Renderer/Vulkan/VulkanTexture.h"
 #include "Deako/Renderer/Vulkan/VulkanMaterial.h"
@@ -28,22 +27,18 @@ namespace Deako {
         operator bool() const { return prefabType != PrefabType::None; }
     };
 
-    class Prefab : public Asset
+    struct Prefab : public Asset
     {
-    public:
-        Prefab() = default;
-
-        virtual ~Prefab() {};
-
-        virtual void Destroy() override {}
-
-        static AssetType GetStaticType() { return AssetType::Prefab; }
-        virtual AssetType GetType() const override { return GetStaticType(); }
-
-    public: // think about 
         TextureMap textures;
         MaterialMap materials;
         Ref<Model> model;
+
+        Prefab() = default;
+
+        virtual void Destroy() override;
+
+        static AssetType GetStaticType() { return AssetType::Prefab; }
+        virtual AssetType GetType() const override { return GetStaticType(); }
     };
 
 }

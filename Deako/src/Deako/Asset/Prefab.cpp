@@ -30,4 +30,37 @@ namespace Deako {
         return PrefabType::None;
     }
 
+    void Prefab::Destroy()
+    {
+        // model->Destroy();
+
+        // if (model)
+        // {
+        //     model->Destroy();
+        //     model.reset();  // Optionally reset the model reference to free it
+        // }
+
+        // // Destroy each texture in the textures map
+        // for (auto& [handle, texture] : textures)
+        // {
+        //     if (texture)
+        //     {
+        //         texture->Destroy();
+        //         texture.reset();  // Reset the reference to release the texture
+        //     }
+        // }
+        // textures.clear();  // Clear the map to release the handles
+
+        // // Destroy each material in the materials map
+        // for (auto& [handle, material] : materials)
+        // {
+        //     if (material)
+        //     {
+        //         material->Destroy();
+        //         material.reset();  // Reset the reference to release the material
+        //     }
+        // }
+        // materials.clear();
+    }
+
 }

@@ -1,7 +1,8 @@
 #include "Renderer.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/AssetPool.h"
+#include "Deako/Project/Project.h"
+#include "Deako/Asset/Pool/AssetManager.h"
 #include "Deako/Renderer/Vulkan/VulkanBase.h"
 #include "Deako/Renderer/Vulkan/VulkanScene.h"
 
@@ -11,9 +12,11 @@ namespace Deako {
     {
         VulkanBase::Init();
 
-        // AssetPool::ImportAssetRegistry(); // TODO: temp
+        Project::Init();
 
-        Scene::LinkAssets(); // TODO: figure out where to do this
+        AssetManager::Init();
+
+        Project::PrepareScene();
 
         VulkanScene::Build();
     }
@@ -22,7 +25,9 @@ namespace Deako {
     {
         VulkanScene::CleanUp();
 
-        AssetPool::CleanUp();
+        AssetManager::CleanUp();
+
+        Project::CleanUp();
 
         VulkanBase::Shutdown();
     }
