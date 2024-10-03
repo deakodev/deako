@@ -4,6 +4,17 @@
 
 namespace Deako {
 
+    ViewportPanel::ViewportPanel(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool)
+    {
+        SetContext(scene, projectAssetPool);
+    }
+
+    void ViewportPanel::SetContext(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool)
+    {
+        m_SceneContext = scene;
+        m_ProjectAssetPool = projectAssetPool;
+    }
+
     void ViewportPanel::OnUpdate()
     {
         if (m_ViewportResize)
@@ -34,9 +45,26 @@ namespace Deako {
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
             {
-                AssetHandle handle = *(AssetHandle*)(uint64_t*)payload->Data;
-                EditorLayer::OpenScene(handle);
-                Renderer::Invalidate();
+                AssetHandle handle = *(AssetHandle*)payload->Data;
+                AssetType assetType = m_ProjectAssetPool->GetAssetType(handle);
+
+                if (assetType == AssetType::Scene)
+                {
+                    EditorLayer::OpenScene(handle);
+                    Project::PrepareScene(handle);
+                    Renderer::Invalidate();
+                }
+                else if (assetType == AssetType::Prefab)
+                {
+                    Entity entity = m_SceneContext->CreateEntity("New Prefab");
+                    entity.AddComponent<PrefabComponent>(handle);
+                    m_SceneContext->LinkAssets();
+                    Renderer::Invalidate();
+                }
+                else
+                {
+                    DK_WARN("Wrong asset type!");
+                }
             }
             ImGui::EndDragDropTarget();
         }

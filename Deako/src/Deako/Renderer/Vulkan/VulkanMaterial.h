@@ -88,10 +88,6 @@ namespace Deako {
 
         virtual void Destroy() override {}
 
-        virtual void Invalidate() override;
-
-        void UpdateMaterialBuffer();
-
         static AssetType GetStaticType() { return AssetType::Material; }
         virtual AssetType GetType() const override { return GetStaticType(); }
     };

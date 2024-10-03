@@ -413,12 +413,18 @@ namespace Deako {
             return allocBuffer;
         }
 
-        void Destroy(const AllocatedBuffer& buffer)
+        void Destroy(AllocatedBuffer& buffer)
         {
-            if (buffer.memory != VK_NULL_HANDLE)
-                vkFreeMemory(vr->device, buffer.memory, nullptr);
             if (buffer.buffer != VK_NULL_HANDLE)
+            {
                 vkDestroyBuffer(vr->device, buffer.buffer, nullptr);
+                buffer.buffer = VK_NULL_HANDLE;
+            }
+            if (buffer.memory != VK_NULL_HANDLE)
+            {
+                vkFreeMemory(vr->device, buffer.memory, nullptr);
+                buffer.memory = VK_NULL_HANDLE;
+            }
         }
 
     } // end namespace VulkanBuffer

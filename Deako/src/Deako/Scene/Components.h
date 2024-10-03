@@ -78,6 +78,8 @@ namespace Deako {
 
         PrefabComponent() = default;
         PrefabComponent(const PrefabComponent&) = default;
+        PrefabComponent(AssetHandle handle)
+            : handle(handle) {}
     };
 
     struct EnvironmentComponent

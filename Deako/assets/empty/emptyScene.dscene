@@ -2,6 +2,15 @@ Scene:
   Name: EmptyScene
   AssetHandle: 3493729506194493865
 Entities:
+  - Entity: 81234097091941911
+    TagComponent:
+      Tag: DamagedHelmet
+    TransformComponent:
+      Translation: [3, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    PrefabComponent:
+      AssetHandle: 51418710489529541
   - Entity: 63025543015532543
     TagComponent:
       Tag: Box

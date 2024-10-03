@@ -326,9 +326,7 @@ namespace Deako {
                     ImGui::ColorEdit4("##BaseColor", (float*)&material->baseColorFactor, ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoLabel);
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
-                    {
-                        // AssetPool::Invalidate(material);
-                    }
+                        Renderer::Invalidate();
 
                     // metallicFactor
                     static float minFactor = 0.0f;
@@ -339,18 +337,14 @@ namespace Deako {
                     ImGui::DragScalar("##MetallicFactor", ImGuiDataType_Float, &material->metallicFactor, 0.005f, &minFactor, &maxFactor, "%.3f");
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
-                    {
-                        // AssetPool::Invalidate(material);
-                    }
+                        Renderer::Invalidate();
 
                     ImGui::Text("Roughness Factor");
                     ImGui::SameLine();
                     ImGui::DragScalar("##RoughnessFactor", ImGuiDataType_Float, &material->roughnessFactor, 0.005f, &minFactor, &maxFactor, "%.3f");
 
                     if (ImGui::IsItemDeactivatedAfterEdit())
-                    {
-                        // AssetPool::Invalidate(material);
-                    }
+                        Renderer::Invalidate();
                 }
             });
 

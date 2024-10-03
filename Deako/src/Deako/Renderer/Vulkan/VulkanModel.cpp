@@ -45,7 +45,7 @@ namespace Deako {
                     };
                     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
 
-                    // pass material index for this primitive and vb address using a push constant, shader uses this to index into the material buffer
+                    // pass material index for this primitive using a push constant, shader uses this to index into the material buffer
                     vkCmdPushConstants(commandBuffer, vr->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &primitive->material.index);
 
                     if (primitive->hasIndices)

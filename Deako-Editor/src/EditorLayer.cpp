@@ -28,6 +28,7 @@ namespace Deako {
 
             s_AssetsPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
             s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
+            s_ViewportPanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
         }
 
         s_ViewportPanel->OnUpdate();
@@ -139,10 +140,9 @@ namespace Deako {
         Ref<Scene> newScene = s_ProjectAssetPool->GetAsset<Scene>(handle);
         if (newScene)
         {
-            Project::PrepareScene(handle);
-
             s_ActiveScene = newScene;
             s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
+            s_ViewportPanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
         }
         else
         {

@@ -137,14 +137,11 @@ namespace Deako {
         }
     }
 
-    void Material::Invalidate()
-    {
-        UpdateMaterialBuffer();
-    }
-
     void CreateMaterialBuffer()
     {
         std::vector<ShaderMaterial> shaderMaterials{};
+
+        uint32_t materialBufferIndex = 0;
 
         for (Entity entity : vr->entities)
         {
@@ -195,11 +192,14 @@ namespace Deako {
                 }
 
                 shaderMaterials.push_back(shaderMaterial);
+
+                material->index = materialBufferIndex;
+                materialBufferIndex++;
             }
         }
 
-        // if (vr->shaderMaterialBuffer.buffer != VK_NULL_HANDLE && vr->shaderMaterialBuffer.memory != VK_NULL_HANDLE)
-        //     VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
+        if (vr->shaderMaterialBuffer.buffer != VK_NULL_HANDLE)
+            VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
 
         VkDeviceSize bufferSize = shaderMaterials.size() * sizeof(ShaderMaterial);
 
@@ -226,80 +226,6 @@ namespace Deako {
         // update descriptor
         vr->shaderMaterialDescriptorInfo.buffer = vr->shaderMaterialBuffer.buffer;
         vr->shaderMaterialDescriptorInfo.offset = 0;
-        vr->shaderMaterialDescriptorInfo.range = bufferSize;
-    }
-
-    void Material::UpdateMaterialBuffer()
-    {
-        VulkanBase::Idle();
-
-        // Create a ShaderMaterial from the Material
-        ShaderMaterial shaderMaterial{};
-
-        shaderMaterial.emissiveFactor = emissiveFactor;
-        shaderMaterial.colorTextureSet = baseColorTexture != nullptr ?
-            texCoordSets.baseColor : -1;
-
-        shaderMaterial.normalTextureSet = normalTexture != nullptr ?
-            texCoordSets.normal : -1;
-
-        shaderMaterial.occlusionTextureSet = occlusionTexture != nullptr ?
-            texCoordSets.occlusion : -1;
-
-        shaderMaterial.emissiveTextureSet = emissiveTexture != nullptr ?
-            texCoordSets.emissive : -1;
-
-        shaderMaterial.alphaMask = static_cast<float>(alphaMode == Material::ALPHAMODE_MASK);
-        shaderMaterial.alphaMaskCutoff = alphaCutoff;
-        shaderMaterial.emissiveStrength = emissiveStrength;
-
-        // Depending on the workflow (metallic/roughness or specular/glossiness)
-        if (pbrWorkflows.metallicRoughness)
-        {
-            shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
-            shaderMaterial.baseColorFactor = baseColorFactor;
-            shaderMaterial.metallicFactor = metallicFactor;
-            shaderMaterial.roughnessFactor = roughnessFactor;
-            shaderMaterial.PhysicalDescriptorTextureSet = metallicRoughnessTexture != nullptr ? texCoordSets.metallicRoughness : -1;
-        }
-        else if (pbrWorkflows.specularGlossiness)
-        {
-            shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSSINESS);
-            shaderMaterial.PhysicalDescriptorTextureSet = extension.specularGlossinessTexture != nullptr ? texCoordSets.specularGlossiness : -1;
-            shaderMaterial.diffuseFactor = extension.diffuseFactor;
-            shaderMaterial.specularFactor = glm::vec4(extension.specularFactor, 1.0f);
-        }
-
-        // Buffer size for a single material
-        VkDeviceSize bufferSize = sizeof(ShaderMaterial);
-
-        // Allocate staging buffer for transfer (host-visible)
-        AllocatedBuffer staging = VulkanBuffer::Create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-        // Map the staging buffer and copy material data
-        VkCR(vkMapMemory(vr->device, staging.memory, 0, bufferSize, 0, &staging.mapped));
-        memcpy(staging.mapped, &shaderMaterial, bufferSize);
-        vkUnmapMemory(vr->device, staging.memory);
-
-        // Start a command buffer for copying the data
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
-
-        // Define the region of the buffer to update (assumes 1:1 correspondence between materials and buffer regions)
-        VkBufferCopy copyRegion{};
-        copyRegion.size = bufferSize;
-
-        // Copy the updated material data from staging to the shader material buffer on the GPU
-        vkCmdCopyBuffer(commandBuffer, staging.buffer, vr->shaderMaterialBuffer.buffer, 1, &copyRegion);
-
-        // End the command buffer
-        VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
-
-        // Cleanup the staging buffer
-        VulkanBuffer::Destroy(staging);
-
-        // Update descriptor if needed (optional)
-        vr->shaderMaterialDescriptorInfo.buffer = vr->shaderMaterialBuffer.buffer;
-        vr->shaderMaterialDescriptorInfo.offset = 0;  // Adjust based on where the material is in the buffer
         vr->shaderMaterialDescriptorInfo.range = bufferSize;
     }
 

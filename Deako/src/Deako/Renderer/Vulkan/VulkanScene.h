@@ -36,6 +36,7 @@ namespace Deako {
 
     private:
         inline static bool s_SceneValid{ false };
+
         inline static Ref<ProjectAssetPool> s_ProjectAssetPool;
         inline static Ref<EditorAssetPool> s_EditorAssetPool;
     };

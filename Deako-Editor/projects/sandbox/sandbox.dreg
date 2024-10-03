@@ -1,10 +1,7 @@
 AssetRegistry:
-  - AssetHandle: 14251617332970628629
-    AssetPath: environments/papermill.ktx
-    AssetType: TextureCubeMap
-  - AssetHandle: 7076957389637758421
-    AssetPath: scenes/sandbox.dscene
-    AssetType: Scene
+  - AssetHandle: 47892411812032083
+    AssetPath: prefabs/BlueCube.gltf
+    AssetType: Prefab
   - AssetHandle: 51418710489529541
     AssetPath: prefabs/DamagedHelmet.gltf
     AssetType: Prefab
@@ -14,6 +11,9 @@ AssetRegistry:
   - AssetHandle: 57892318812072087
     AssetPath: prefabs/Cube.gltf
     AssetType: Prefab
-  - AssetHandle: 47892411812032083
-    AssetPath: prefabs/BlueCube.gltf
-    AssetType: Prefab
+  - AssetHandle: 7076957389637758421
+    AssetPath: scenes/sandbox.dscene
+    AssetType: Scene
+  - AssetHandle: 14251617332970628629
+    AssetPath: environments/papermill.ktx
+    AssetType: TextureCubeMap
