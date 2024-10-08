@@ -1,6 +1,5 @@
 Project:
   Name: Sandbox
-  WorkingDirectory: sandbox
-  AssetDirectory: assets
-  AssetRegistryPath: sandbox.dreg
+  AssetDirectory: /Users/deakzach/Desktop/Deako/Deako-Editor/projects/Sandbox/assets
+  AssetRegistryFilename: sandbox.dreg
   InitialSceneHandle: 0

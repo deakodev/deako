@@ -56,7 +56,7 @@ namespace Deako {
 
     struct MaterialComponent
     {
-        std::vector<AssetHandle> handles;
+        AssetHandle handle = 0;
 
         MaterialComponent() = default;
         MaterialComponent(const MaterialComponent&) = default;
@@ -75,6 +75,9 @@ namespace Deako {
     struct PrefabComponent
     {
         AssetHandle handle = 0;
+        AssetHandle meshHandle = 0;
+        std::vector<AssetHandle> textureHandles;
+        std::vector<AssetHandle> materialHandles;
 
         PrefabComponent() = default;
         PrefabComponent(const PrefabComponent&) = default;
@@ -89,5 +92,14 @@ namespace Deako {
         EnvironmentComponent() = default;
         EnvironmentComponent(const EnvironmentComponent&) = default;
     };
+
+    template<typename... Component>
+    struct ComponentGroup
+    {
+    };
+
+    using AllComponents =
+        ComponentGroup<TransformComponent, TextureComponent, MaterialComponent, ModelComponent, PrefabComponent, EnvironmentComponent>;
+
 
 }

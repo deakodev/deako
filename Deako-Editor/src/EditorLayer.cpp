@@ -9,7 +9,7 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        s_AssetsPanel = CreateScope<AssetsPanel>();
+        s_RegistryPanel = CreateScope<RegistryPanel>();
         s_ScenePanel = CreateScope<ScenePanel>();
         s_ViewportPanel = CreateScope<ViewportPanel>();
     }
@@ -20,19 +20,9 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        if (!s_ActiveProject || !s_ActiveScene || !s_ProjectAssetPool)
-        {
-            s_ActiveProject = Project::GetActive();
-            s_ActiveScene = Project::GetActiveScene();
-            s_ProjectAssetPool = AssetManager::GetProjectAssetPool();
-
-            s_AssetsPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
-            s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
-            s_ViewportPanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
-        }
-
         s_ViewportPanel->OnUpdate();
         s_ActiveScene->OnUpdate();
+        if (!m_IsContextValid) SetContext();
     }
 
     void EditorLayer::OnImGuiRender(ImTextureID textureID)
@@ -88,14 +78,71 @@ namespace Deako {
         {
             if (ImGui::BeginMenu("File"))
             {
-                // TODO:
-                // if (ImGui::MenuItem("New...", "Cmd+N")) { NewScene(); }
-                // if (ImGui::MenuItem("Open...", "Cmd+O")) { OpenScene(); }
-                // ImGui::Separator();
-                // if (ImGui::MenuItem("Save", "Cmd+S")) { SaveScene(); }
-                // if (ImGui::MenuItem("Save As...", "Cmd+Shift+S")) { SaveSceneAs(); }
-                // ImGui::Separator();
-                // if (ImGui::MenuItem("Exit Editor")) { Close(); }
+                if (ImGui::MenuItem("New Scene", "Cmd+N"))
+                {
+                    SceneHandler::NewScene();
+                    SceneHandler::InvalidatePreviousScene();
+                    EditorLayer::InvalidateContext();
+                }
+                if (ImGui::MenuItem("Open...", "Cmd+O"))
+                {
+                    SceneHandler::OpenScene();
+                    SceneHandler::InvalidatePreviousScene();
+                    EditorLayer::InvalidateContext();
+                }
+                if (ImGui::BeginMenu("Import", "Cmd+I"))
+                {
+                    if (ImGui::MenuItem("Scene (.dscene)"))
+                    {
+                        SceneHandler::OpenScene();
+                        s_RegistryPanel->Refresh();
+                    }
+                    if (ImGui::MenuItem("Prefab (.gltf)"))
+                    {
+                        PrefabHandler::OpenPrefab();
+                        s_RegistryPanel->Refresh();
+                    }
+                    if (ImGui::MenuItem("Mesh (tbd)"))
+                    {
+                        DK_INFO("Mesh import not implemented!");
+                    }
+
+                    if (ImGui::MenuItem("Material (tbd)"))
+                    {
+                        DK_INFO("Material import not implemented!");
+                    }
+                    if (ImGui::MenuItem("Texture 2D (.ktx)"))
+                    {
+                        TextureHandler::OpenTexture2D();
+                        s_RegistryPanel->Refresh();
+                    }
+                    if (ImGui::MenuItem("Texture Cube Map (.ktx)"))
+                    {
+                        TextureHandler::OpenTextureCubeMap();
+                        s_RegistryPanel->Refresh();
+                    }
+                    ImGui::EndMenu();
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Save", "Cmd+S"))
+                {
+                    SceneHandler::SaveScene();
+                    ProjectHandler::SaveProject();
+                }
+                if (ImGui::MenuItem("Save As...", "Cmd+Shift+S"))
+                {
+                    SceneHandler::SaveAsScene();
+                    ProjectHandler::SaveProject();
+                }
+                if (ImGui::MenuItem("Save Copy", "Cmd+Shift+C"))
+                {
+                    DK_INFO("Save copy not implemented!");
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Exit Editor", "Cmd+Q"))
+                {
+                    Application::Get().Close();
+                }
 
                 ImGui::EndMenu();
             }
@@ -104,7 +151,7 @@ namespace Deako {
         }
 
         //// ASSETS ////
-        s_AssetsPanel->OnImGuiRender();
+        s_RegistryPanel->OnImGuiRender();
 
         //// SCENE ////
         s_ScenePanel->OnImGuiRender();
@@ -119,37 +166,18 @@ namespace Deako {
     {
     }
 
-    void EditorLayer::OpenProject(const std::filesystem::path& path)
+    void EditorLayer::SetContext()
     {
-        s_ActiveProject = Project::Load(path);
+        s_ActiveProject = ProjectHandler::GetActiveProject();
+        s_ActiveScene = SceneHandler::GetActiveScene();
+        s_ProjectAssetPool = ProjectAssetPool::Get();
 
-        if (s_ActiveProject)
-        {
-            s_ProjectAssetPool->Init();
-            s_AssetsPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
-        }
-        else
-        {
-            DK_ERROR("No active project selected!");
-            Application::Get().Close(); return;
-        }
+        s_RegistryPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
+        s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
+        s_ViewportPanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
+
+        m_IsContextValid = true;
     }
-
-    void EditorLayer::OpenScene(AssetHandle handle)
-    {
-        Ref<Scene> newScene = s_ProjectAssetPool->GetAsset<Scene>(handle);
-        if (newScene)
-        {
-            s_ActiveScene = newScene;
-            s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
-            s_ViewportPanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
-        }
-        else
-        {
-            DK_ERROR("No active scene selected!");
-        }
-    }
-
 
 
 }

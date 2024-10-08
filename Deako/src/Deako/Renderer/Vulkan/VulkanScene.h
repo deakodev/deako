@@ -2,9 +2,10 @@
 
 #include "VulkanBase.h"
 
-#include "Deako/Asset/Pool/AssetManager.h"
-#include "Deako/Scene/Scene.h"
-#include "Deako/Scene/Entity.h"
+#include "Deako/Asset/AssetManager.h"
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
+#include "Deako/Asset/Scene/Scene.h"
+#include "Deako/Asset/Scene/Entity.h"
 
 #include <vulkan/vulkan.h>
 
@@ -38,7 +39,6 @@ namespace Deako {
         inline static bool s_SceneValid{ false };
 
         inline static Ref<ProjectAssetPool> s_ProjectAssetPool;
-        inline static Ref<EditorAssetPool> s_EditorAssetPool;
     };
 
 }

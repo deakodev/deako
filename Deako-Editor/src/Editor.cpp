@@ -24,6 +24,11 @@ namespace Deako {
             GetLayerStack().PopLayer(m_EditorLayer.get());
         }
 
+        virtual void SetContext() override
+        {
+            EditorLayer::SetContext();
+        }
+
     private:
         Scope<EditorLayer> m_EditorLayer;
         Scope<ImGuiLayer> m_ImGuiLayer;

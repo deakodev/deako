@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Scene.h"
+#include "Deako/Asset/Scene/Scene.h"
 
 #include "Deako/Core/UUID.h"
 
@@ -21,7 +21,15 @@ namespace Deako {
         T& AddComponent(Args&&... args)
         {
             DK_CORE_ASSERT(!HasComponent<T>(), "Entity already has component!");
-            T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+            T& component = m_Scene->registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+            m_Scene->OnComponentAdded<T>(*this, component);
+            return component;
+        }
+
+        template<typename T, typename... Args>
+        T& AddOrReplaceComponent(Args&&... args)
+        {
+            T& component = m_Scene->registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
             m_Scene->OnComponentAdded<T>(*this, component);
             return component;
         }
@@ -30,20 +38,20 @@ namespace Deako {
         T& GetComponent()
         {
             DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
-            return m_Scene->m_Registry.get<T>(m_EntityHandle);
+            return m_Scene->registry.get<T>(m_EntityHandle);
         }
 
         template<typename T>
         bool HasComponent()
         {
-            return m_Scene->m_Registry.all_of<T>(m_EntityHandle);
+            return m_Scene->registry.all_of<T>(m_EntityHandle);
         }
 
         template<typename T>
         void RemoveComponent()
         {
             DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
-            m_Scene->m_Registry.remove<T>(m_EntityHandle);
+            m_Scene->registry.remove<T>(m_EntityHandle);
         }
 
         UUID GetUUID() { return GetComponent<IDComponent>().id; }

@@ -1,6 +1,7 @@
 #include "VulkanUtils.h"
 #include "dkpch.h"
 
+#include "Deako/Project/ProjectHandler.h"
 #include "Deako/Core/Application.h"
 #include "Deako/Renderer/RendererTypes.h"
 
@@ -498,7 +499,7 @@ namespace Deako {
         VkShaderModule CreateShaderModule(std::filesystem::path path)
         {
             DK_CORE_INFO("Reading Shader <{0}>", path.filename().string());
-            std::filesystem::path fullPath = vs->assetPath / path;
+            std::filesystem::path fullPath = ProjectHandler::GetActiveProject()->assetDirectory / path;
 
             auto shaderCode = ReadShaderFile(fullPath);
 

@@ -2,8 +2,8 @@
 
 #include "Deako/Project/Project.h"
 #include "Deako/Asset/Pool/ProjectAssetPool.h"
-#include "Deako/Scene/Scene.h"
-#include "Deako/Scene/Entity.h"
+#include "Deako/Asset/Scene/Scene.h"
+#include "Deako/Asset/Scene/Entity.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -11,11 +11,11 @@ namespace Deako {
 
     namespace Serialize {
 
-        bool Project(Deako::Project& project);
+        bool Project(Deako::Project& project, const std::filesystem::path& path);
 
-        void AssetRegistry(Deako::AssetRegistry& assetRegistry);
+        bool AssetRegistry(Deako::AssetRegistry& assetRegistry, const std::filesystem::path& path);
 
-        bool Scene(Deako::Scene& scene);
+        bool Scene(Deako::Scene& scene, AssetMetadata& metadata);
 
         void Entity(YAML::Emitter& out, Entity entity);
 

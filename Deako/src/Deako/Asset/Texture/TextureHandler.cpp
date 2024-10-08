@@ -1,15 +1,71 @@
-#include "TextureImporter.h"
+#include "TextureHandler.h"
 #include "dkpch.h"
 
-#include "Deako/Renderer/RendererTypes.h"
+#include "Deako/Asset/AssetManager.h"
+#include "Deako/Asset/Pool/EditorAssetPool.h"
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
+
 #include "Deako/Renderer/Vulkan/VulkanUtils.h"
+#include "Deako/Renderer/RendererTypes.h"
+#include "System/MacOS/MacUtils.h" 
 
 #include <gli/gli.hpp>
 #include <stb_image.h>
 
 namespace Deako {
 
-    Ref<Texture2D> TextureImporter::ImportTexture2D(AssetHandle handle, AssetMetadata metadata)
+    void TextureHandler::Init()
+    {
+        // empty texture2d
+        AssetHandle texture2DHandle;
+        AssetMetadata texture2DMetadata;
+        texture2DMetadata.assetType = AssetType::Texture2D;
+        texture2DMetadata.assetPath = "Deako/assets/empty/emptyTexture.ktx";
+        texture2DMetadata.assetName = "Empty";
+
+        s_EmptyTexture2D = std::static_pointer_cast<Texture2D>(AssetManager::ImportAsset(texture2DHandle, texture2DMetadata));
+
+        // empty texture cube map
+        AssetHandle textureCubeMapHandle;
+        AssetMetadata textureCubeMapMetadata;
+        textureCubeMapMetadata.assetType = AssetType::TextureCubeMap;
+        textureCubeMapMetadata.assetPath = "Deako/assets/empty/emptyCubeMap.ktx";
+        textureCubeMapMetadata.assetName = "Empty";
+
+        s_EmptyTextureCubeMap = std::static_pointer_cast<TextureCubeMap>(AssetManager::ImportAsset(textureCubeMapHandle, textureCubeMapMetadata));
+    }
+
+    void TextureHandler::CleanUp()
+    {
+    }
+
+    void TextureHandler::OpenTexture2D()
+    {
+        std::filesystem::path texturePath = MacUtils::File::Open("ktx", "Import Texture2D");
+        ImportTexture2D(texturePath);
+    }
+
+    Ref<Texture2D> TextureHandler::ImportTexture2D(const std::filesystem::path& path)
+    {
+        AssetHandle handle;
+        AssetMetadata metadata;
+        metadata.assetType = AssetType::Texture2D;
+        metadata.assetPath = path;
+
+        Ref<Texture2D> texture = ImportTexture2D(handle, metadata);
+
+        if (texture)
+        {
+            texture->m_Handle = handle;
+            std::string assetName = metadata.assetPath.filename().string();
+            assetName[0] = std::toupper(assetName[0]);
+            metadata.assetName = assetName;
+        }
+
+        return texture;
+    }
+
+    Ref<Texture2D> TextureHandler::ImportTexture2D(AssetHandle handle, AssetMetadata& metadata)
     {
         DK_CORE_INFO("Importing Texture2D <{0}>", metadata.assetPath.filename().string());
 
@@ -72,10 +128,45 @@ namespace Deako {
         Ref<Texture2D> texture = CreateRef<Texture2D>(details, buffer);
         texture->m_Handle = handle;
 
+        if (metadata.assetName != "Empty")
+        {
+            ProjectAssetPool::Get()->AddAssetToPool(texture, metadata);
+        }
+        else
+        {
+            EditorAssetPool::Get()->AddAssetToPool(texture);
+        }
+
         return texture;
     }
 
-    Ref<TextureCubeMap> TextureImporter::ImportTextureCubeMap(AssetHandle handle, AssetMetadata metadata)
+    void TextureHandler::OpenTextureCubeMap()
+    {
+        std::filesystem::path texturePath = MacUtils::File::Open("ktx", "Import TextureCubeMap");
+        ImportTextureCubeMap(texturePath);
+    }
+
+    Ref<TextureCubeMap> TextureHandler::ImportTextureCubeMap(const std::filesystem::path& path)
+    {
+        AssetHandle handle;
+        AssetMetadata metadata;
+        metadata.assetType = AssetType::TextureCubeMap;
+        metadata.assetPath = path;
+
+        Ref<TextureCubeMap> textureCube = ImportTextureCubeMap(handle, metadata);
+
+        if (textureCube)
+        {
+            textureCube->m_Handle = handle;
+            std::string assetName = metadata.assetPath.filename().string();
+            assetName[0] = std::toupper(assetName[0]);
+            metadata.assetName = assetName;
+        }
+
+        return textureCube;
+    }
+
+    Ref<TextureCubeMap> TextureHandler::ImportTextureCubeMap(AssetHandle handle, AssetMetadata& metadata)
     {
         DK_CORE_INFO("Importing TextureCube <{0}>", metadata.assetPath.filename().string());
 
@@ -123,8 +214,19 @@ namespace Deako {
         Ref<TextureCubeMap> texture = CreateRef<TextureCubeMap>(details, buffer);
         texture->m_Handle = handle;
 
+        if (metadata.assetName != "Empty")
+        {
+            ProjectAssetPool::Get()->AddAssetToPool(texture, metadata);
+        }
+        else
+        {
+            EditorAssetPool::Get()->AddAssetToPool(texture);
+        }
+
         return texture;
     }
+
+
 
 
 }

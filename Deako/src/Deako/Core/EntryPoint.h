@@ -6,13 +6,14 @@ int main(int argc, char** argv)
 {
     Deako::Log::Init();
 
-    auto app = Deako::CreateApplication({ argc, argv });
+    Deako::Application* deakoEditor = Deako::CreateApplication({ argc, argv });
 
     Deako::Renderer::Init();
 
-    app->Run();
+    deakoEditor->SetContext();
+    deakoEditor->Run();
 
     Deako::Renderer::Shutdown();
 
-    delete app;
+    delete deakoEditor;
 }

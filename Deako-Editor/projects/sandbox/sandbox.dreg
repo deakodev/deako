@@ -1,19 +1,16 @@
 AssetRegistry:
-  - AssetHandle: 47892411812032083
+  - AssetHandle: 5532312814824508002
     AssetPath: prefabs/BlueCube.gltf
     AssetType: Prefab
   - AssetHandle: 51418710489529541
     AssetPath: prefabs/DamagedHelmet.gltf
     AssetType: Prefab
-  - AssetHandle: 57928164075139581
-    AssetPath: environments/satara_night_cube.ktx
-    AssetType: TextureCubeMap
   - AssetHandle: 57892318812072087
     AssetPath: prefabs/Cube.gltf
     AssetType: Prefab
-  - AssetHandle: 7076957389637758421
+  - AssetHandle: 11821854033975738793
     AssetPath: scenes/sandbox.dscene
     AssetType: Scene
-  - AssetHandle: 14251617332970628629
+  - AssetHandle: 7052072051722835223
     AssetPath: environments/papermill.ktx
     AssetType: TextureCubeMap

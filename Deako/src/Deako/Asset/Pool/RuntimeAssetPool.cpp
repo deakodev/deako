@@ -1,13 +1,13 @@
 #include "RuntimeAssetPool.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/Pool/AssetManager.h"
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
 
 namespace Deako {
 
     void RuntimeAssetPool::Init()
     {
-        m_AssetsImported = AssetManager::GetProjectAssetPool()->GetAssetsImported();
+        m_AssetsImported = ProjectAssetPool::Get()->GetAssetsImported();
     }
 
     void RuntimeAssetPool::CleanUp()

@@ -14,12 +14,16 @@ namespace Deako {
 
     class Entity;
 
-    class Scene : public Asset
+    struct Scene : public Asset
     {
-    public:
-        void LinkAssets();
+        SceneRegistry registry;
+        EntityMap entityMap;
 
-        const SceneRegistry& GetRegistry() { return m_Registry; }
+        bool isSavedUpToDate{ true };
+
+        static Ref<Scene> Copy(Ref<Scene> other);
+
+        void LinkAssets();
 
         void OnUpdate();
 
@@ -39,16 +43,11 @@ namespace Deako {
 
         virtual void Destroy() override {}
 
-    private:
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
 
-    private:
-        SceneRegistry m_Registry;
-        EntityMap m_EntityMap;
-
-        friend class Entity;
-        friend class ScenePanel;
+        // friend class Entity;
+        // friend class ScenePanel;
     };
 
 }

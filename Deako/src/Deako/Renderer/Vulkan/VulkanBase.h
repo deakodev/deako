@@ -7,8 +7,7 @@
 #include "VulkanUtils.h"
 #include "VulkanScene.h"
 
-#include "Deako/Project/Project.h"
-#include "Deako/Scene/Entity.h"
+#include "Deako/Asset/Scene/Entity.h"
 #include "Deako/Renderer/EditorCamera.h"
 
 #include <vulkan/vulkan.h>
@@ -27,13 +26,11 @@ namespace Deako {
         bool                               validationEnabled{ true };
         bool                               vsync{ false };
         bool                               multiSampling{ true };
-        bool                               displayBackground{ false };
+        bool                               displayBackground{ true };
         bool                               animationPaused{ false };
 
         VkSampleCountFlagBits              sampleCount{ VK_SAMPLE_COUNT_4_BIT };
         uint32_t                           frameOverlap = 2;
-
-        std::filesystem::path               assetPath{ "Deako-Editor/projects/sandbox/assets/" };
     };
 
     struct VulkanResources
@@ -108,7 +105,6 @@ namespace Deako {
             Ref<TextureCubeMap> prefilteredCube{ CreateRef<TextureCubeMap>(TextureCubeMap::PREFILTERED) };
         } skybox;
 
-        Ref<Project> project;
         std::vector<Entity> entities;
 
         struct UniformSet

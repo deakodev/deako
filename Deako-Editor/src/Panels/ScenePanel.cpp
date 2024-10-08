@@ -1,7 +1,5 @@
 #include "ScenePanel.h"
 
-#include "Deako/Scene/Components.h"
-
 #include <imgui/imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -23,7 +21,7 @@ namespace Deako {
     {
         ImGui::Begin("Scene");
 
-        auto view = m_SceneContext->m_Registry.view<TagComponent>();
+        auto view = m_SceneContext->registry.view<TagComponent>();
         for (auto entityHandle : view)
         {
             Entity entity{ entityHandle, m_SceneContext.get() };
@@ -285,7 +283,7 @@ namespace Deako {
                         if (newAssetType == AssetType::Texture2D || newAssetType == AssetType::TextureCubeMap)
                         {
                             component.handle = newHandle;
-                            Renderer::Invalidate();
+                            SceneHandler::InvalidatePreviousScene();
                         }
                         else
                         {
@@ -309,7 +307,7 @@ namespace Deako {
 
         DrawComponent<MaterialComponent>("Material", entity, [this](auto& component)
             {
-                Ref<Material> material = m_ProjectAssetPool->GetAsset<Material>(component.handles[1]);
+                Ref<Material> material = m_ProjectAssetPool->GetAsset<Material>(component.handle);
 
                 if (material)
                 {
@@ -326,7 +324,7 @@ namespace Deako {
                     ImGui::ColorEdit4("##BaseColor", (float*)&material->baseColorFactor, ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoLabel);
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
-                        Renderer::Invalidate();
+                        SceneHandler::InvalidatePreviousScene();
 
                     // metallicFactor
                     static float minFactor = 0.0f;
@@ -337,14 +335,14 @@ namespace Deako {
                     ImGui::DragScalar("##MetallicFactor", ImGuiDataType_Float, &material->metallicFactor, 0.005f, &minFactor, &maxFactor, "%.3f");
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
-                        Renderer::Invalidate();
+                        SceneHandler::InvalidatePreviousScene();
 
                     ImGui::Text("Roughness Factor");
                     ImGui::SameLine();
                     ImGui::DragScalar("##RoughnessFactor", ImGuiDataType_Float, &material->roughnessFactor, 0.005f, &minFactor, &maxFactor, "%.3f");
 
                     if (ImGui::IsItemDeactivatedAfterEdit())
-                        Renderer::Invalidate();
+                        SceneHandler::InvalidatePreviousScene();
                 }
             });
 

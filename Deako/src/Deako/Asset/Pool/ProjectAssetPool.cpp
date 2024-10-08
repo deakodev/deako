@@ -1,13 +1,13 @@
 #include "ProjectAssetPool.h"
 #include "dkpch.h"
 
-#include "Deako/Project/Project.h"
+#include "Deako/Asset/Scene/Scene.h"
+#include "Deako/Asset/Prefab/Prefab.h"
+
+#include "Deako/Project/ProjectHandler.h"
 #include "Deako/Project/Serialize.h"
 #include "Deako/Project/Deserialize.h"
-#include "Deako/Asset/Import/AssetImporter.h"
 
-#include "Deako/Scene/Scene.h"
-#include "Deako/Asset/Prefab.h"
 #include "Deako/Renderer/Vulkan/VulkanTexture.h"
 #include "Deako/Renderer/Vulkan/VulkanMaterial.h"
 #include "Deako/Renderer/Vulkan/VulkanModel.h"
@@ -16,83 +16,47 @@ namespace Deako {
 
     void ProjectAssetPool::Init()
     {
-        Deserialize::AssetRegistry(m_AssetRegistry);
+        Ref<Project> activeProject = ProjectHandler::GetActiveProject();
+
+        m_AssetRegistryPath = activeProject->workingDirectory /
+            activeProject->assetRegistryFilename;
+
+        Deserialize::AssetRegistry(m_AssetRegistry, m_AssetRegistryPath);
     }
 
     void ProjectAssetPool::CleanUp()
     {
+        Serialize::AssetRegistry(m_AssetRegistry, m_AssetRegistryPath);
+
         if (!m_AssetsImported.empty())
             for (auto it = m_AssetsImported.begin(); it != m_AssetsImported.end(); )
             {
                 Ref<Asset> asset = it->second;
-                if (asset) asset->Destroy();
+                AssetMetadata& metadata = GetAssetMetadata(asset->m_Handle);
+                if (asset)
+                {
+                    DK_CORE_INFO("Destroying: {0}", metadata.assetName);
+                    asset->Destroy();
+                };
 
                 it = m_AssetsImported.erase(it);
             }
     }
 
-    Ref<Asset> ProjectAssetPool::ImportAsset(AssetHandle handle, AssetMetadata metadata)
+    void ProjectAssetPool::AddAssetToPool(Ref<Asset> asset, const AssetMetadata& metadata)
     {
-        metadata.assetPath = Project::GetActive()->GetAssetDirectory() / metadata.assetPath;
-        Ref<Asset> asset = AssetImporter::Import(handle, metadata);
-
-        if (asset)
-        {
-            asset->m_Handle = handle;
-            m_AssetsImported[asset->m_Handle] = asset;
-            m_AssetRegistry[asset->m_Handle] = metadata;
-
-            if (metadata.assetType == AssetType::Prefab)
-            {
-                Ref<Prefab> prefab = std::static_pointer_cast<Prefab>(asset);
-
-                for (auto& [handle, texture] : prefab->textures)
-                {
-                    m_AssetsImported[handle] = texture;
-                    metadata.assetType = AssetType::Texture2D;
-                    metadata.assetPath = "";
-                    m_AssetRegistry[handle] = metadata;
-                }
-
-                for (auto& [handle, material] : prefab->materials)
-                {
-                    m_AssetsImported[handle] = material;
-                    metadata.assetType = AssetType::Material;
-                    metadata.assetPath = "";
-                    m_AssetRegistry[handle] = metadata;
-                }
-
-                {
-                    m_AssetsImported[prefab->model->m_Handle] = prefab->model;
-                    metadata.assetType = AssetType::Model;
-                    metadata.assetPath = "";
-                    m_AssetRegistry[prefab->model->m_Handle] = metadata;
-                }
-            }
-
-            Serialize::AssetRegistry(m_AssetRegistry);
-            return asset;
-        }
-
-        return nullptr;
+        m_AssetsImported[asset->m_Handle] = asset;
+        m_AssetRegistry[asset->m_Handle] = metadata;
     }
 
-    void ProjectAssetPool::ImportAsset(const std::filesystem::path path)
+    void ProjectAssetPool::AddAssetToRegistry(Ref<Asset> asset, const AssetMetadata& metadata)
     {
-        AssetHandle handle;
-        AssetMetadata metadata;
-        metadata.assetPath = Project::GetActive()->GetAssetDirectory() / path;
-        metadata.assetType = AssetTypeFromParentDirectory(path.parent_path().filename().string());
+        m_AssetRegistry[asset->m_Handle] = metadata;
+    }
 
-        Ref<Asset> asset = AssetImporter::Import(handle, metadata);
-
-        if (asset)
-        {
-            asset->m_Handle = handle;
-            m_AssetsImported[handle] = asset;
-            m_AssetRegistry[handle] = metadata;
-            Serialize::AssetRegistry(m_AssetRegistry);
-        }
+    void ProjectAssetPool::AddAssetToImported(Ref<Asset> asset)
+    {
+        m_AssetsImported[asset->m_Handle] = asset;
     }
 
     bool ProjectAssetPool::IsAssetImported(AssetHandle handle) const
@@ -118,7 +82,8 @@ namespace Deako {
         else
         {
             AssetMetadata metadata = GetAssetMetadata(handle);
-            asset = ImportAsset(handle, metadata);
+            metadata.assetPath = ProjectHandler::GetActiveProject()->assetDirectory / metadata.assetPath;
+            asset = AssetManager::ImportAsset(handle, metadata);
         }
 
         return std::static_pointer_cast<T>(asset);

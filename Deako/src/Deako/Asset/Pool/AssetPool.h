@@ -14,8 +14,6 @@ namespace Deako {
 
         virtual ~AssetPool() = default;
 
-        virtual Ref<Asset> ImportAsset(AssetHandle handle, AssetMetadata metadata) = 0;
-
         virtual bool IsAssetHandleValid(AssetHandle handle) const = 0;
         virtual bool IsAssetImported(AssetHandle handle) const = 0;
     };

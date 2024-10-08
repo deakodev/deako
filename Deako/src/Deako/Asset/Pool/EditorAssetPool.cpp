@@ -1,39 +1,14 @@
 #include "EditorAssetPool.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/Import/AssetImporter.h"
-#include "Deako/Asset/Prefab.h"
+#include "Deako/Asset/AssetManager.h"
+#include "Deako/Asset/Prefab/Prefab.h"
+#include "Deako/Asset/Scene/Scene.h"
 
 namespace Deako {
 
     void EditorAssetPool::Init()
     {
-        {   // empty texture 2d
-            AssetHandle handle;
-            AssetMetadata metadata;
-            metadata.assetType = AssetType::Texture2D;
-            metadata.assetPath = "empty/emptyTexture.ktx";
-            Ref<Asset> emptyTexture2D = ImportAsset(handle, metadata);
-            m_EmptyAssets[AssetType::Texture2D] = emptyTexture2D;
-        }
-
-        {   // empty texture cube map
-            AssetHandle handle;
-            AssetMetadata metadata;
-            metadata.assetType = AssetType::TextureCubeMap;
-            metadata.assetPath = "empty/emptyCubeMap.ktx";
-            Ref<Asset> emptyTextureCubeMap = ImportAsset(handle, metadata);
-            m_EmptyAssets[AssetType::TextureCubeMap] = emptyTextureCubeMap;
-        }
-
-        {   // empty scene
-            AssetHandle handle;
-            AssetMetadata metadata;
-            metadata.assetType = AssetType::Scene;
-            metadata.assetPath = "empty/emptyScene.dscene";
-            Ref<Asset> emptyScene = ImportAsset(handle, metadata);
-            m_EmptyAssets[AssetType::Scene] = emptyScene;
-        }
     }
 
     void EditorAssetPool::CleanUp()
@@ -42,38 +17,18 @@ namespace Deako {
             for (auto it = m_AssetsImported.begin(); it != m_AssetsImported.end(); )
             {
                 Ref<Asset> asset = it->second;
+                AssetType assetType = asset->GetType();
+
+                DK_CORE_INFO("Destroying: {0}", AssetTypeToString(assetType));
                 if (asset) asset->Destroy();
 
                 it = m_AssetsImported.erase(it);
             }
     }
 
-    Ref<Asset> EditorAssetPool::ImportAsset(AssetHandle handle, AssetMetadata metadata)
+    void EditorAssetPool::AddAssetToPool(Ref<Asset> asset)
     {
-        metadata.assetPath = "Deako/assets" / metadata.assetPath;
-        Ref<Asset> asset = AssetImporter::Import(handle, metadata);
-
-        if (asset)
-        {
-            asset->m_Handle = handle;
-            m_AssetsImported[asset->m_Handle] = asset;
-
-            if (metadata.assetType == AssetType::Prefab)
-            {
-                Ref<Prefab> prefab = std::static_pointer_cast<Prefab>(asset);
-                m_AssetsImported[prefab->model->m_Handle] = prefab->model;
-
-                for (auto& [handle, texture] : prefab->textures)
-                    m_AssetsImported[handle] = texture;
-
-                for (auto& [handle, material] : prefab->materials)
-                    m_AssetsImported[handle] = material;
-            }
-
-            return asset;
-        }
-
-        return nullptr;
+        m_AssetsImported[asset->m_Handle] = asset;
     }
 
     bool EditorAssetPool::IsAssetImported(AssetHandle handle) const
@@ -84,13 +39,6 @@ namespace Deako {
     bool EditorAssetPool::IsAssetHandleValid(AssetHandle handle) const
     {
         return false;
-    }
-
-    Ref<Asset> EditorAssetPool::GetEmpty(AssetType assetType)
-    {
-        auto it = m_EmptyAssets.find(assetType);
-        DK_CORE_ASSERT(it != m_EmptyAssets.end(), "Failed to find empty asset!");
-        return it->second;
     }
 
 }

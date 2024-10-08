@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Deako/Project/Project.h"
-#include "Deako/Scene/Scene.h"
-#include "Deako/Scene/Entity.h"
+#include "Deako/Asset/Scene/Scene.h"
+#include "Deako/Asset/Scene/Entity.h"
 
 #include "Deako/Asset/Pool/ProjectAssetPool.h"
 
@@ -12,11 +12,11 @@ namespace Deako {
 
     namespace Deserialize {
 
-        Ref<Project> Project(const std::filesystem::path& path);
+        bool Project(Deako::Project& project, const std::filesystem::path& path);
 
-        void AssetRegistry(Deako::AssetRegistry& assetRegistry);
+        void AssetRegistry(Deako::AssetRegistry& assetRegistry, const std::filesystem::path& path);
 
-        Ref<Scene> Scene(const std::filesystem::path& path);
+        void Scene(Deako::Scene& scene, AssetMetadata& metadata);
 
     }
 

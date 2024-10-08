@@ -12,8 +12,6 @@ namespace Deako {
 
         static void BeginScene();
         static void EndScene();
-
-        static void Invalidate();
     };
 
 }

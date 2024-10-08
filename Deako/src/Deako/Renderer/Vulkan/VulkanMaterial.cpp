@@ -1,7 +1,7 @@
 #include "VulkanMaterial.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/Pool/AssetManager.h"
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
 
 #include "VulkanBase.h"
 
@@ -145,8 +145,8 @@ namespace Deako {
 
         for (Entity entity : vr->entities)
         {
-            auto& modelComp = entity.GetComponent<ModelComponent>();
-            Ref<Model> model = AssetManager::GetProjectAssetPool()->GetAsset<Model>(modelComp.handle);
+            auto& prefabComp = entity.GetComponent<PrefabComponent>();
+            Ref<Model> model = ProjectAssetPool::Get()->GetAsset<Model>(prefabComp.meshHandle);
 
             for (auto& material : model->materials)
             {

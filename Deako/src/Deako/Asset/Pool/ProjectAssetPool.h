@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Deako/Asset/Asset.h"
+#include "Deako/Asset/AssetManager.h"
 #include "Deako/Asset/Pool/AssetPool.h"
 
 namespace Deako {
@@ -13,8 +14,9 @@ namespace Deako {
         virtual void Init() override;
         virtual void CleanUp() override;
 
-        virtual Ref<Asset> ImportAsset(AssetHandle handle, AssetMetadata metadata) override;
-        void ImportAsset(const std::filesystem::path path);
+        void AddAssetToImported(Ref<Asset> asset);
+        void AddAssetToRegistry(Ref<Asset> asset, const AssetMetadata& metadata);
+        void AddAssetToPool(Ref<Asset> asset, const AssetMetadata& metadata);
 
         virtual bool IsAssetImported(AssetHandle handle) const override;
         virtual bool IsAssetHandleValid(AssetHandle handle) const override;
@@ -27,9 +29,14 @@ namespace Deako {
         AssetRegistry& GetAssetRegistry() { return m_AssetRegistry; }
         AssetMap& GetAssetsImported() { return m_AssetsImported; }
 
+        static Ref<ProjectAssetPool> Get() { return s_ProjectAssetPool; }
+
     private:
-        AssetRegistry m_AssetRegistry;
         AssetMap m_AssetsImported;
+        AssetRegistry m_AssetRegistry;
+        std::filesystem::path m_AssetRegistryPath;
+
+        inline static Ref<ProjectAssetPool> s_ProjectAssetPool = CreateRef<ProjectAssetPool>();
     };
 
 }

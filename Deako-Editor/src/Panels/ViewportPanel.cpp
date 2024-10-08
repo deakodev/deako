@@ -50,16 +50,15 @@ namespace Deako {
 
                 if (assetType == AssetType::Scene)
                 {
-                    EditorLayer::OpenScene(handle);
-                    Project::PrepareScene(handle);
-                    Renderer::Invalidate();
+                    SceneHandler::SetActiveScene(handle);
+                    SceneHandler::InvalidatePreviousScene();
+                    EditorLayer::InvalidateContext();
                 }
                 else if (assetType == AssetType::Prefab)
                 {
                     Entity entity = m_SceneContext->CreateEntity("New Prefab");
                     entity.AddComponent<PrefabComponent>(handle);
-                    m_SceneContext->LinkAssets();
-                    Renderer::Invalidate();
+                    SceneHandler::InvalidatePreviousScene();
                 }
                 else
                 {

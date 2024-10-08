@@ -13,16 +13,17 @@ namespace Deako {
         virtual void Init() override;
         virtual void CleanUp() override;
 
-        virtual Ref<Asset> ImportAsset(AssetHandle handle, AssetMetadata metadata) override;
+        void AddAssetToPool(Ref<Asset> asset);
 
         virtual bool IsAssetImported(AssetHandle handle) const override;
         virtual bool IsAssetHandleValid(AssetHandle handle) const override;
 
-        Ref<Asset> GetEmpty(AssetType assetType);
+        static Ref<EditorAssetPool> Get() { return s_EditorAssetPool; }
 
     private:
-        EmptyAssets m_EmptyAssets;
         AssetMap m_AssetsImported;
+
+        inline static Ref<EditorAssetPool> s_EditorAssetPool = CreateRef<EditorAssetPool>();
     };
 
 }

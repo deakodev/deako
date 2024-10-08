@@ -14,14 +14,22 @@
 
 #include "Deako/ImGui/ImGuiIcons.h"
 
-#include "Deako/Asset/Pool/AssetManager.h"
+#include "Deako/Asset/AssetManager.h"
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
+
+#include "Deako/Asset/Scene/Entity.h"
+#include "Deako/Asset/Scene/Components.h"
+#include "Deako/Asset/Scene/Scene.h"
+#include "Deako/Asset/Scene/SceneHandler.h"
+#include "Deako/Asset/Prefab/PrefabHandler.h"
+#include "Deako/Asset/Texture/TextureHandler.h"
 
 #include "Deako/Renderer/Renderer.h"
 #include "Deako/Renderer/EditorCamera.h"
 #include "Deako/Renderer/Vulkan/VulkanScene.h" // TODO: temp
 
 #include "Deako/Project/Project.h"
-#include "Deako/Scene/Scene.h"
-#include "Deako/Scene/Entity.h"
-#include "Deako/Scene/Components.h"
+#include "Deako/Project/ProjectHandler.h"
+
+
 

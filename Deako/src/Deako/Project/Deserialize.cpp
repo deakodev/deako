@@ -2,16 +2,14 @@
 #include "dkpch.h"
 
 #include "Deako/Asset/Asset.h"
-#include "Deako/Asset/Prefab.h"
+#include "Deako/Asset/Prefab/Prefab.h"
 
 #include "Serialize.h"
 
 namespace Deako {
 
-    Ref<Project> Deserialize::Project(const std::filesystem::path& path)
+    bool Deserialize::Project(Deako::Project& project, const std::filesystem::path& path)
     {
-        Ref<Deako::Project> project = CreateRef<Deako::Project>();
-
         YAML::Node data;
         try
         {
@@ -19,45 +17,49 @@ namespace Deako {
         }
         catch (YAML::ParserException e)
         {
-            DK_CORE_ERROR("Failed to load project file <{0}>\n {1}", path.string(), e.what());
-            return nullptr;
+            DK_CORE_ERROR("Could not open project from <{0}>\n {1}", path.string(), e.what());
+            return false;
         }
 
         auto projectNode = data["Project"];
-        if (!projectNode) return nullptr;
+        if (!projectNode)
+        {
+            DK_CORE_ERROR("Could not read project from <{0}>", path.string());
+            return false;
+        }
 
-        project->SetMetadata({
-            projectNode["Name"].as<std::string>(),
-            path.parent_path(),
-            projectNode["AssetDirectory"].as<std::string>(),
-            (projectNode["AssetRegistryPath"]) ? projectNode["AssetRegistryPath"].as<std::string>() : "",
-            projectNode["InitialSceneHandle"].as<uint64_t>(),
-            });
+        {
+            project.name = projectNode["Name"].as<std::string>();
 
-        DK_CORE_INFO("Deser Project '{0}'", projectNode["Name"].as<std::string>());
+            project.workingDirectory = path.parent_path();
+            project.assetDirectory = project.workingDirectory / projectNode["AssetDirectory"].as<std::string>();
 
-        return project;
+            project.projectFilename = path.filename();
+            project.assetRegistryFilename = projectNode["AssetRegistryFilename"].as<std::string>();
+
+            project.initialSceneHandle = projectNode["InitialSceneHandle"].as<uint64_t>();
+        }
+
+        return true;
     }
 
-    void Deserialize::AssetRegistry(Deako::AssetRegistry& assetRegistry)
+    void Deserialize::AssetRegistry(Deako::AssetRegistry& assetRegistry, const std::filesystem::path& path)
     {
-        std::filesystem::path assetRegistryPath = Project::GetActive()->GetAssetRegistryPath();
-
         YAML::Node data;
         try
         {
-            data = YAML::LoadFile(assetRegistryPath.string());
+            data = YAML::LoadFile(path.string());
         }
         catch (YAML::ParserException e)
         {
-            DK_CORE_ERROR("Failed to load asset registry file <{0}>\n {1}", assetRegistryPath.filename().string(), e.what());
+            DK_CORE_ERROR("Failed to load asset registry file <{0}>\n {1}", path.filename().string(), e.what());
             return;
         }
 
         auto rootNode = data["AssetRegistry"];
         if (!rootNode)
         {
-            DK_CORE_ERROR("Failed to deserialize AssetRegistry <{0}>", assetRegistryPath.filename().string());
+            DK_CORE_ERROR("Could not read asset registry from <{0}>", path.filename().string());
             return;
         }
 
@@ -69,32 +71,36 @@ namespace Deako {
             metadata.assetType = AssetTypeFromString(assetNode["AssetType"].as<std::string>());
             metadata.assetPath = assetNode["AssetPath"].as<std::string>();
 
+            std::string assetName = metadata.assetPath.filename().string();
+            assetName[0] = std::toupper(assetName[0]);
+            metadata.assetName = assetName;
+
             assetRegistry[handle] = metadata;
         }
-
-        DK_CORE_INFO("Deserialize AssetRegistry <{0}>", assetRegistryPath.filename().string());
     }
 
-    Ref<Scene> Deserialize::Scene(const std::filesystem::path& path)
+    void Deserialize::Scene(Deako::Scene& scene, AssetMetadata& metadata)
     {
-        Ref<Deako::Scene> scene = CreateRef<Deako::Scene>();
-
         YAML::Node data;
         try
         {
-            data = YAML::LoadFile(path);
+            data = YAML::LoadFile(metadata.assetPath);
         }
         catch (YAML::ParserException e)
         {
-            DK_CORE_ERROR("Failed to load scene file <{0}>\n {1}", path.string(), e.what());
-            return nullptr;
+            DK_CORE_ERROR("Failed to load scene file <{0}>\n {1}", metadata.assetPath.string(), e.what());
+            return;
         }
 
         auto sceneNode = data["Scene"];
-        if (!sceneNode) return nullptr;
+        if (!sceneNode)
+        {
+            DK_CORE_ERROR("Could not read scene from <{0}>", metadata.assetPath.filename().string());
+            return;
+        }
 
-        DK_CORE_INFO("Deser Scene '{0}' <{1}>",
-            sceneNode["Name"].as<std::string>(), path.filename().string());
+        metadata.assetName = sceneNode["Name"].as<std::string>();
+        scene.m_Handle = sceneNode["AssetHandle"].as<uint64_t>();
 
         auto yamlEntities = data["Entities"];
         if (yamlEntities)
@@ -109,7 +115,7 @@ namespace Deako {
                 if (tagCompYaml)
                     name = tagCompYaml["Tag"].as<std::string>();
 
-                Entity entity = scene->CreateEntity(name);
+                Entity entity = scene.CreateEntity(name);
 
                 auto transformCompYaml = yamlEntity["TransformComponent"];
                 if (transformCompYaml)
@@ -132,15 +138,7 @@ namespace Deako {
                 if (materialCompYaml)
                 {
                     auto& materialComp = entity.AddComponent<MaterialComponent>();
-                    auto materialHandlesNode = materialCompYaml["AssetHandles"];
-
-                    if (materialHandlesNode && materialHandlesNode.IsSequence())
-                    {
-                        for (const auto& handleNode : materialHandlesNode)
-                        {
-                            materialComp.handles.push_back(handleNode.as<uint64_t>());
-                        }
-                    }
+                    materialComp.handle = materialCompYaml["AssetHandle"].as<uint64_t>();
                 }
 
                 auto modelCompYaml = yamlEntity["ModelComponent"];
@@ -155,6 +153,16 @@ namespace Deako {
                 {
                     auto& prefabComp = entity.AddComponent<PrefabComponent>();
                     prefabComp.handle = prefabCompYaml["AssetHandle"].as<uint64_t>();
+
+                    Ref<Prefab> prefab = ProjectAssetPool::Get()->GetAsset<Prefab>(prefabComp.handle);
+
+                    prefabComp.meshHandle = prefab->model->m_Handle;
+
+                    for (const auto& [textureHandle, texture] : prefab->textures)
+                        prefabComp.textureHandles.emplace_back(textureHandle);
+
+                    for (const auto& [materialHandle, material] : prefab->materials)
+                        prefabComp.materialHandles.emplace_back(materialHandle);
                 }
 
                 auto envCompYaml = yamlEntity["EnvironmentComponent"];
@@ -167,8 +175,6 @@ namespace Deako {
                 DK_CORE_INFO("Deser Entity '{0}' [{1}]", name, uuid);
             }
         }
-
-        return scene;
     }
 
 

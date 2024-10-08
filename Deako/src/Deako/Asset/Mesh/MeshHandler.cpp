@@ -1,4 +1,4 @@
-#include "ModelImporter.h"
+#include "MeshHandler.h"
 #include "dkpch.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -7,14 +7,23 @@
 
 namespace Deako {
 
-    Ref<Model> ModelImporter::ImportModel(AssetHandle handle, AssetMetadata metadata)
+    void MeshHandler::Init()
     {
-        DK_CORE_INFO("Importing Model");
 
+    }
+
+    void MeshHandler::CleanUp()
+    {
+
+    }
+
+    Ref<Model> MeshHandler::ImportMesh(AssetHandle handle, AssetMetadata& metadata)
+    {
+        DK_CORE_INFO("Importing Mesh <{0}>", metadata.assetPath.filename().string());
         return nullptr;
     }
 
-    void ModelImporter::LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale)
+    void MeshHandler::LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale)
     {
         Node* node = new Node{};
 
@@ -348,7 +357,7 @@ namespace Deako {
         model->linearNodes.push_back(node);
     }
 
-    void ModelImporter::LoadAnimations(tinygltf::Model& tinyModel, Ref<Model> model)
+    void MeshHandler::LoadAnimations(tinygltf::Model& tinyModel, Ref<Model> model)
     {
         for (tinygltf::Animation& tinyAnimation : tinyModel.animations)
         {
@@ -472,7 +481,7 @@ namespace Deako {
         }
     }
 
-    void ModelImporter::LoadSkins(tinygltf::Model& tinyModel, Ref<Model> model)
+    void MeshHandler::LoadSkins(tinygltf::Model& tinyModel, Ref<Model> model)
     {
         for (tinygltf::Skin& source : tinyModel.skins)
         {
@@ -508,7 +517,7 @@ namespace Deako {
         }
     }
 
-    void ModelImporter::GetNodeProps(const tinygltf::Node& tinyNode, const tinygltf::Model& tinyModel, Ref<Model> model)
+    void MeshHandler::GetNodeProps(const tinygltf::Node& tinyNode, const tinygltf::Model& tinyModel, Ref<Model> model)
     {
         if (tinyNode.children.size() > 0)
         {
@@ -528,7 +537,7 @@ namespace Deako {
         }
     }
 
-    Node* ModelImporter::FindNode(Node* parent, uint32_t index)
+    Node* MeshHandler::FindNode(Node* parent, uint32_t index)
     {
         Node* nodeFound = nullptr;
         if (parent->index == index) return parent;
@@ -540,7 +549,7 @@ namespace Deako {
         return nodeFound;
     }
 
-    Node* ModelImporter::NodeFromIndex(uint32_t index, Ref<Model> model)
+    Node* MeshHandler::NodeFromIndex(uint32_t index, Ref<Model> model)
     {
         Node* nodeFound = nullptr;
         for (auto& node : model->nodes)
@@ -550,5 +559,6 @@ namespace Deako {
         }
         return nodeFound;
     }
+
 
 }

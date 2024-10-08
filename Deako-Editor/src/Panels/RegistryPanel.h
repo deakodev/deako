@@ -23,28 +23,22 @@ namespace Deako {
         std::string filename;
     };
 
-    class AssetsPanel
+    class RegistryPanel
     {
     public:
-        AssetsPanel() = default;
-        AssetsPanel(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
+        RegistryPanel() = default;
+        RegistryPanel(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
 
         void SetContext(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
 
         void OnImGuiRender();
-        void OnBrowserTabRender();
-        void OnRegistryTabRender();
+        void OnRegistryRender();
 
-        void RefreshBrowser();
-        void RefreshRegistry();
+        void Refresh();
 
     private:
         Ref<Project> m_ProjectContext;
         Ref<ProjectAssetPool> m_ProjectAssetPool;
-
-        std::filesystem::path m_AssetDirectory;
-        std::filesystem::path m_CurrentDirectory;
-        std::vector<BrowserItem> m_BrowserCache;
 
         RateLimiter m_RateLimiter;
     };
