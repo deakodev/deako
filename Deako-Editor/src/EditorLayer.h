@@ -4,6 +4,7 @@
 
 #include "Panels/ViewportPanel.h"
 #include "Panels/ScenePanel.h"
+#include "Panels/PropertiesPanel.h"
 #include "Panels/RegistryPanel.h"
 
 #include <imgui/imgui.h>
@@ -22,19 +23,13 @@ namespace Deako {
         virtual void OnEvent(Event& event) override;
         virtual void OnImGuiRender(ImTextureID textureID) override;
 
-        static void SetContext();
-        static void InvalidateContext() { m_IsContextValid = false; }
-
     private:
-        inline static Scope<ScenePanel> s_ScenePanel;
-        inline static Scope<RegistryPanel> s_RegistryPanel;
-        inline static Scope<ViewportPanel> s_ViewportPanel;
+        Scope<ScenePanel> m_ScenePanel;
+        Scope<PropertiesPanel> m_PropertiesPanel;
+        Scope<RegistryPanel> m_RegistryPanel;
+        Scope<ViewportPanel> m_ViewportPanel;
 
-        inline static Ref<Project> s_ActiveProject;
-        inline static Ref<Scene> s_ActiveScene;
-        inline static Ref<ProjectAssetPool> s_ProjectAssetPool;
-
-        inline static bool m_IsContextValid{ false };
+        Ref<EditorContext> m_EditorContext;
     };
 
 }

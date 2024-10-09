@@ -15,16 +15,9 @@ namespace Deako {
         { AssetType::Scene, &s_RegistryBins.Scene  }
     };
 
-    RegistryPanel::RegistryPanel(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool)
-        : m_RateLimiter(0, 1) // 0 counter cycle, 1-second time cycle
+    RegistryPanel::RegistryPanel(Ref<EditorContext> editorContext)
+        : m_EditorContext(editorContext), m_RateLimiter(0, 1) // 0 counter cycle, 1-second time cycle
     {
-        SetContext(project, projectAssetPool);
-    }
-
-    void RegistryPanel::SetContext(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool)
-    {
-        m_ProjectContext = project;
-        m_ProjectAssetPool = projectAssetPool;
         Refresh();
     }
 
@@ -140,7 +133,7 @@ namespace Deako {
         for (auto& [assetType, registryBin] : s_RegistryBinMap)
             registryBin->clear();
 
-        const auto& registryAssets = m_ProjectAssetPool->GetAssetRegistry();
+        const auto& registryAssets = m_EditorContext->assetPool->GetAssetRegistry();
         for (const auto& [handle, metadata] : registryAssets)
         {
             auto it = s_RegistryBinMap.find(metadata.assetType);

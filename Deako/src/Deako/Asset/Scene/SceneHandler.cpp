@@ -151,7 +151,7 @@ namespace Deako {
         return HandleUserResponse(response);
     }
 
-    void SceneHandler::InvalidatePreviousScene()
+    void SceneHandler::RefreshScene()
     {
         VulkanScene::Invalidate();
     }

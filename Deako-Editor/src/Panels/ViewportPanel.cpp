@@ -4,15 +4,9 @@
 
 namespace Deako {
 
-    ViewportPanel::ViewportPanel(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool)
+    ViewportPanel::ViewportPanel(Ref<EditorContext> editorContext)
+        : m_EditorContext(editorContext)
     {
-        SetContext(scene, projectAssetPool);
-    }
-
-    void ViewportPanel::SetContext(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool)
-    {
-        m_SceneContext = scene;
-        m_ProjectAssetPool = projectAssetPool;
     }
 
     void ViewportPanel::OnUpdate()
@@ -46,19 +40,19 @@ namespace Deako {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
             {
                 AssetHandle handle = *(AssetHandle*)payload->Data;
-                AssetType assetType = m_ProjectAssetPool->GetAssetType(handle);
+                AssetType assetType = m_EditorContext->assetPool->GetAssetType(handle);
 
                 if (assetType == AssetType::Scene)
                 {
                     SceneHandler::SetActiveScene(handle);
-                    SceneHandler::InvalidatePreviousScene();
-                    EditorLayer::InvalidateContext();
+                    SceneHandler::RefreshScene();
+                    m_EditorContext->scene.isValid = false;
                 }
                 else if (assetType == AssetType::Prefab)
                 {
-                    Entity entity = m_SceneContext->CreateEntity("New Prefab");
+                    Entity entity = m_EditorContext->scene->CreateEntity("New Prefab");
                     entity.AddComponent<PrefabComponent>(handle);
-                    SceneHandler::InvalidatePreviousScene();
+                    SceneHandler::RefreshScene();
                 }
                 else
                 {

@@ -27,7 +27,7 @@ namespace Deako {
         static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
         static Ref<Scene> GetEmptyScene() { return s_EmptyScene; }
 
-        static void InvalidatePreviousScene();
+        static void RefreshScene();
 
     private:
         static void SaveScene(AssetMetadata& metadata);

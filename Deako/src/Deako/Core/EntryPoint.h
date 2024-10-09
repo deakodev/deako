@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 
     Deako::Renderer::Init();
 
-    deakoEditor->SetContext();
+    deakoEditor->PushLayers();
     deakoEditor->Run();
 
     Deako::Renderer::Shutdown();

@@ -44,7 +44,7 @@ namespace Deako {
         static Application& Get() { return *s_Instance; }
         const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 
-        virtual void SetContext() = 0;
+        virtual void PushLayers() = 0;
 
         Window& GetWindow() { return *m_Window; }
         LayerStack& GetLayerStack() { return m_LayerStack; }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Deako.h"
+#include "../EditorContext.h"
 
 namespace Deako {
 
@@ -26,10 +27,7 @@ namespace Deako {
     class RegistryPanel
     {
     public:
-        RegistryPanel() = default;
-        RegistryPanel(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
-
-        void SetContext(Ref<Project> project, Ref<ProjectAssetPool> projectAssetPool);
+        RegistryPanel(Ref<EditorContext> editorContext);
 
         void OnImGuiRender();
         void OnRegistryRender();
@@ -37,9 +35,7 @@ namespace Deako {
         void Refresh();
 
     private:
-        Ref<Project> m_ProjectContext;
-        Ref<ProjectAssetPool> m_ProjectAssetPool;
-
+        Ref<EditorContext> m_EditorContext;
         RateLimiter m_RateLimiter;
     };
 

@@ -9,9 +9,12 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        s_RegistryPanel = CreateScope<RegistryPanel>();
-        s_ScenePanel = CreateScope<ScenePanel>();
-        s_ViewportPanel = CreateScope<ViewportPanel>();
+        m_EditorContext = CreateRef<EditorContext>();
+
+        m_ScenePanel = CreateScope<ScenePanel>(m_EditorContext);
+        m_PropertiesPanel = CreateScope<PropertiesPanel>(m_EditorContext);
+        m_RegistryPanel = CreateScope<RegistryPanel>(m_EditorContext);
+        m_ViewportPanel = CreateScope<ViewportPanel>(m_EditorContext);
     }
 
     void EditorLayer::OnDetach()
@@ -20,9 +23,11 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        s_ViewportPanel->OnUpdate();
-        s_ActiveScene->OnUpdate();
-        if (!m_IsContextValid) SetContext();
+        m_ViewportPanel->OnUpdate();
+
+        m_EditorContext->scene->OnUpdate();
+
+        m_EditorContext->OnUpdate();
     }
 
     void EditorLayer::OnImGuiRender(ImTextureID textureID)
@@ -81,26 +86,26 @@ namespace Deako {
                 if (ImGui::MenuItem("New Scene", "Cmd+N"))
                 {
                     SceneHandler::NewScene();
-                    SceneHandler::InvalidatePreviousScene();
-                    EditorLayer::InvalidateContext();
+                    SceneHandler::RefreshScene();
+                    m_EditorContext->scene.isValid = false;
                 }
                 if (ImGui::MenuItem("Open...", "Cmd+O"))
                 {
                     SceneHandler::OpenScene();
-                    SceneHandler::InvalidatePreviousScene();
-                    EditorLayer::InvalidateContext();
+                    SceneHandler::RefreshScene();
+                    m_EditorContext->scene.isValid = false;
                 }
                 if (ImGui::BeginMenu("Import", "Cmd+I"))
                 {
                     if (ImGui::MenuItem("Scene (.dscene)"))
                     {
                         SceneHandler::OpenScene();
-                        s_RegistryPanel->Refresh();
+                        m_RegistryPanel->Refresh();
                     }
                     if (ImGui::MenuItem("Prefab (.gltf)"))
                     {
                         PrefabHandler::OpenPrefab();
-                        s_RegistryPanel->Refresh();
+                        m_RegistryPanel->Refresh();
                     }
                     if (ImGui::MenuItem("Mesh (tbd)"))
                     {
@@ -114,12 +119,12 @@ namespace Deako {
                     if (ImGui::MenuItem("Texture 2D (.ktx)"))
                     {
                         TextureHandler::OpenTexture2D();
-                        s_RegistryPanel->Refresh();
+                        m_RegistryPanel->Refresh();
                     }
                     if (ImGui::MenuItem("Texture Cube Map (.ktx)"))
                     {
                         TextureHandler::OpenTextureCubeMap();
-                        s_RegistryPanel->Refresh();
+                        m_RegistryPanel->Refresh();
                     }
                     ImGui::EndMenu();
                 }
@@ -150,14 +155,17 @@ namespace Deako {
             ImGui::EndMenuBar();
         }
 
-        //// ASSETS ////
-        s_RegistryPanel->OnImGuiRender();
-
         //// SCENE ////
-        s_ScenePanel->OnImGuiRender();
+        m_ScenePanel->OnImGuiRender();
+
+        //// PROPERTIES ////
+        m_PropertiesPanel->OnImGuiRender();
+
+        //// ASSETS ////
+        m_RegistryPanel->OnImGuiRender();
 
         //// VIEWPORT ////
-        s_ViewportPanel->OnImGuiRender(textureID);
+        m_ViewportPanel->OnImGuiRender(textureID);
 
         ImGui::End();
     }
@@ -165,19 +173,5 @@ namespace Deako {
     void EditorLayer::OnEvent(Event& event)
     {
     }
-
-    void EditorLayer::SetContext()
-    {
-        s_ActiveProject = ProjectHandler::GetActiveProject();
-        s_ActiveScene = SceneHandler::GetActiveScene();
-        s_ProjectAssetPool = ProjectAssetPool::Get();
-
-        s_RegistryPanel->SetContext(s_ActiveProject, s_ProjectAssetPool);
-        s_ScenePanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
-        s_ViewportPanel->SetContext(s_ActiveScene, s_ProjectAssetPool);
-
-        m_IsContextValid = true;
-    }
-
 
 }

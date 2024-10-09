@@ -1,6 +1,7 @@
 #include <Deako.h>
 #include <Deako/Core/EntryPoint.h>
 
+#include "EditorContext.h"
 #include "EditorLayer.h"
 
 namespace Deako {
@@ -11,11 +12,6 @@ namespace Deako {
         DeakoEditor(const ApplicationSpecification& spec)
             : Application(spec)
         {
-            m_EditorLayer = CreateScope<EditorLayer>();
-            GetLayerStack().PushLayer(m_EditorLayer.get());
-
-            m_ImGuiLayer = CreateScope<ImGuiLayer>();
-            GetLayerStack().PushOverlay(m_ImGuiLayer.get());
         }
 
         ~DeakoEditor()
@@ -24,9 +20,13 @@ namespace Deako {
             GetLayerStack().PopLayer(m_EditorLayer.get());
         }
 
-        virtual void SetContext() override
+        virtual void PushLayers() override
         {
-            EditorLayer::SetContext();
+            m_EditorLayer = CreateScope<EditorLayer>();
+            GetLayerStack().PushLayer(m_EditorLayer.get());
+
+            m_ImGuiLayer = CreateScope<ImGuiLayer>();
+            GetLayerStack().PushOverlay(m_ImGuiLayer.get());
         }
 
     private:

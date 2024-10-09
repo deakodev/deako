@@ -1,16 +1,14 @@
 #pragma once
 
 #include "Deako.h"
+#include "../EditorContext.h"
 
 namespace Deako {
 
     class ViewportPanel
     {
     public:
-        ViewportPanel() = default;
-        ViewportPanel(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool);
-
-        void SetContext(Ref<Scene> scene, Ref<ProjectAssetPool> projectAssetPool);
+        ViewportPanel(Ref<EditorContext> editorContext);
 
         void OnUpdate();
         void OnImGuiRender(ImTextureID textureID);
@@ -21,8 +19,7 @@ namespace Deako {
         bool m_ViewportFocused{ false };
         bool m_ViewportHovered{ false };
 
-        Ref<Scene> m_SceneContext;
-        Ref<ProjectAssetPool> m_ProjectAssetPool;
+        Ref<EditorContext> m_EditorContext;
     };
 
 }
