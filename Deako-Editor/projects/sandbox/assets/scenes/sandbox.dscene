@@ -2,7 +2,7 @@ Scene:
   Name: Sandbox.dscene
   AssetHandle: 11821854033975738793
 Entities:
-  - Entity: 12640351551547767185
+  - Entity: 4994874523686371997
     TagComponent:
       Tag: Purple Cube
     TransformComponent:
@@ -11,7 +11,7 @@ Entities:
       Scale: [1, 1, 1]
     PrefabComponent:
       AssetHandle: 5532312814824508002
-  - Entity: 12949865752112774388
+  - Entity: 10131947750311195924
     TagComponent:
       Tag: DamagedHelmet
     TransformComponent:
@@ -22,7 +22,7 @@ Entities:
       AssetHandle: 0
     PrefabComponent:
       AssetHandle: 51418710489529541
-  - Entity: 2219529988066115162
+  - Entity: 7954714743383958282
     TagComponent:
       Tag: Skybox
     TransformComponent:
@@ -30,7 +30,7 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     TextureComponent:
-      AssetHandle: 7052072051722835223
+      AssetHandle: 0
     PrefabComponent:
       AssetHandle: 57892318812072087
     EnvironmentComponent:

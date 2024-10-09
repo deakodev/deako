@@ -34,9 +34,9 @@ namespace Deako {
     {
     }
 
-    void Renderer::EndScene()
+    void Renderer::EndScene(Ref<EditorCamera> camera)
     {
-        VulkanBase::Render();
+        VulkanBase::Render(camera);
     }
 
 }

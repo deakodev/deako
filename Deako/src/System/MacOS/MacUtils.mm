@@ -11,7 +11,8 @@ extern "C" {
 
     const char* OpenFileUsingCocoa(const char* filter, const char* title)
     {
-        NSWindow* window = (NSWindow*)glfwGetCocoaWindow((GLFWwindow*)Deako::Application::Get().GetWindow().GetNativeWindow());
+        Deako::Ref<GLFWwindow> glfwWindow = Deako::Application::Get().GetWindow().GetNativeWindow();
+        NSWindow* window = (NSWindow*)glfwGetCocoaWindow(glfwWindow.get());
 
         if (!window) return nullptr;
 
@@ -38,7 +39,8 @@ extern "C" {
 
     const char* SaveFileUsingCocoa(const char* filter, const char* title)
     {
-        NSWindow* window = (NSWindow*)glfwGetCocoaWindow((GLFWwindow*)Deako::Application::Get().GetWindow().GetNativeWindow());
+        Deako::Ref<GLFWwindow> glfwWindow = Deako::Application::Get().GetWindow().GetNativeWindow();
+        NSWindow* window = (NSWindow*)glfwGetCocoaWindow(glfwWindow.get());
 
         if (!window) return nullptr;
 

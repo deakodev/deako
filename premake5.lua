@@ -178,6 +178,7 @@ project "Deako-Editor"
         "Deako/src",
         "Deako/vendor",
         "Deako/vendor/spdlog/include",
+        "%{IncludeDir.glfw}",
         "%{IncludeDir.glm}",
         "%{IncludeDir.vulkan}",
         "%{IncludeDir.vma}",

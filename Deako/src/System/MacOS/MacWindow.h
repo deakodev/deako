@@ -26,7 +26,7 @@ namespace Deako {
 
         virtual uint32_t GetWidth() const override { return m_WindowData.width; }
         virtual uint32_t GetHeight() const override { return m_WindowData.height; }
-        virtual void* GetNativeWindow() const override { return m_Window; }
+        virtual Ref<GLFWwindow> GetNativeWindow() const override { return m_Window; }
 
         virtual std::pair<uint32_t, uint32_t> GetWindowFramebufferSize() override;
 
@@ -40,7 +40,7 @@ namespace Deako {
         void CleanUp();
 
     private:
-        GLFWwindow* m_Window;
+        Ref<GLFWwindow> m_Window;
         WindowData m_WindowData;
 
         static VkInstance m_VkInstance;

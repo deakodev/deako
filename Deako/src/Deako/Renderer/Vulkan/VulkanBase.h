@@ -167,8 +167,6 @@ namespace Deako {
         AllocatedBuffer                    shaderMaterialBuffer;
         VkDescriptorBufferInfo             shaderMaterialDescriptorInfo{ VK_NULL_HANDLE };
         VkDescriptorSet                    shaderMaterialDescriptorSet{ VK_NULL_HANDLE };
-
-        Camera                             camera;
     };
 
     class VulkanBase
@@ -178,7 +176,8 @@ namespace Deako {
         static void Idle();
         static void Shutdown();
 
-        static void Render();
+        static void Render(Ref<EditorCamera> camera);
+
         static void Draw();
         static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 

@@ -36,7 +36,7 @@ namespace Deako {
 
         EditorContext();
 
-        void OnUpdate();
+        void OnUpdate(Ref<EditorCamera> camera);
     };
 
 }

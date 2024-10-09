@@ -8,7 +8,7 @@ namespace Deako {
     class ViewportPanel
     {
     public:
-        ViewportPanel(Ref<EditorContext> editorContext);
+        ViewportPanel(Ref<EditorContext> editorContext, Ref<EditorCamera> editorCamera);
 
         void OnUpdate();
         void OnImGuiRender(ImTextureID textureID);
@@ -20,6 +20,7 @@ namespace Deako {
         bool m_ViewportHovered{ false };
 
         Ref<EditorContext> m_EditorContext;
+        Ref<EditorCamera> m_EditorCamera;
     };
 
 }

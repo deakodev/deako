@@ -14,13 +14,10 @@ namespace Deako {
         project.Set(activeProject);
     }
 
-    void EditorContext::OnUpdate()
+    void EditorContext::OnUpdate(Ref<EditorCamera> camera)
     {
-        // if (!entity.isValid)
-        // {
-        //     //Get new enetity
-        //     entity.Set(nullptr);
-        // }
+        scene->OnUpdate(camera);
+
         if (!scene.isValid)
         {
             Ref<Scene> activeScene = SceneHandler::GetActiveScene();

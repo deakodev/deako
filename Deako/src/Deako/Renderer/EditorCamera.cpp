@@ -6,38 +6,37 @@
 
 namespace Deako {
 
-    // TODO:
-    // EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
-    //     : m_Projection(glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip))
-    //     , m_View(glm::lookAt(glm::vec3(2.0f, 20.0f, 40.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)))
-    // {
-    //     m_ViewProjection = m_Projection * m_View;
-    // }
+    void EditorCamera::OnUpdate()
+    {
+        m_Controller.OnUpdate();
 
-    // void EditorCamera::UpdateProjection(float fov, float aspectRatio, float nearClip, float farClip)
-    // {
-    //     m_Projection = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
-    //     // m_Projection[1][1] *= -1;
-    //     m_ViewProjection = m_Projection * m_View;
-    // }
+        const glm::vec3& position = m_Controller.GetPosition();
+        const glm::quat& orientation = m_Controller.GetOrientation();
 
-    // void EditorCamera::UpdateView(const glm::vec3& position, const glm::quat& orientation)
-    // {
-    //     m_View = glm::translate(glm::mat4(1.0f), position) * glm::toMat4(orientation);
-    //     m_View = glm::inverse(m_View);
-    //     m_ViewProjection = m_Projection * m_View;
-    // }
+        UpdateView(position, orientation);
+    }
 
-    // void Camera::OnUpdate()
-    // {
-    //     static auto startTime = std::chrono::high_resolution_clock::now();
-    //     auto currentTime = std::chrono::high_resolution_clock::now();
-    //     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    void EditorCamera::UpdateProjection(float fov, float aspectRatio, float nearPlane, float farClip)
+    {
+        m_Projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farClip);
+    }
 
-    //     s_UBO.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    //     s_UBO.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    //     s_UBO.projection = glm::perspective(glm::radians(45.0f), s_VR->imageExtent.width / (float)s_VR->imageExtent.height, 0.1f, 10.0f);
-    //     s_UBO.projection[1][1] *= -1;
-    // }
+    void EditorCamera::UpdateView(const glm::vec3& position, const glm::quat& orientation)
+    {
+        m_View = glm::translate(glm::mat4(1.0f), position) * glm::toMat4(orientation);
+        m_View = glm::inverse(m_View);
+    }
+
+    void EditorCamera::ResizeCamera(const glm::vec2& viewportSize)
+    {
+        m_Controller.SetViewportSize(viewportSize);
+
+        float fov = m_Controller.GetFOV();
+        float aspectRatio = viewportSize.x / viewportSize.y;
+        float nearPlane = m_Controller.GetNearPlane();
+        float farPlane = m_Controller.GetFarPlane();
+
+        UpdateProjection(fov, aspectRatio, nearPlane, farPlane);
+    }
 
 }

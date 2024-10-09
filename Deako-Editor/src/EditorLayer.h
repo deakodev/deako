@@ -24,12 +24,13 @@ namespace Deako {
         virtual void OnImGuiRender(ImTextureID textureID) override;
 
     private:
+        Ref<EditorCamera> m_EditorCamera;
+        Ref<EditorContext> m_EditorContext;
+
         Scope<ScenePanel> m_ScenePanel;
         Scope<PropertiesPanel> m_PropertiesPanel;
         Scope<RegistryPanel> m_RegistryPanel;
         Scope<ViewportPanel> m_ViewportPanel;
-
-        Ref<EditorContext> m_EditorContext;
     };
 
 }

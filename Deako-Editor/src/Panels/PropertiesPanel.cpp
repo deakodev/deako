@@ -240,7 +240,6 @@ namespace Deako {
                     float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
                     if (ImGui::Button("Delete", ImVec2{ lineHeight, lineHeight }))
                     {
-                        DK_INFO("Hello");
                         component.handle = 0;
                     }
                 }

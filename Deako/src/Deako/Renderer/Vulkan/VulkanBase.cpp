@@ -37,13 +37,13 @@ namespace Deako {
 
         SetUpImGui();
 
-        vr->camera.type = Camera::CameraType::lookat;
-        vr->camera.setPerspective(45.0f, (float)vr->swapchain.extent.width / (float)vr->swapchain.extent.height, 0.01f, 256.0f);
-        vr->camera.rotationSpeed = 0.25f;
-        vr->camera.movementSpeed = 0.1f;
-        vr->camera.setPosition({ 0.0f, 0.0f, 10.0f });
-        vr->camera.setRotation({ 0.0f, 0.0f, 0.0f });
-        vr->camera.updateViewMatrix();
+        // vr->camera.type = Camera::CameraType::lookat;
+        // vr->camera.setPerspective(45.0f, (float)vr->swapchain.extent.width / (float)vr->swapchain.extent.height, 0.01f, 256.0f);
+        // vr->camera.rotationSpeed = 0.25f;
+        // vr->camera.movementSpeed = 0.1f;
+        // vr->camera.setPosition({ 0.0f, 0.0f, 10.0f });
+        // vr->camera.setRotation({ 0.0f, 0.0f, 0.0f });
+        // vr->camera.updateViewMatrix();
     }
 
     void VulkanBase::Idle()
@@ -185,8 +185,8 @@ namespace Deako {
     void VulkanBase::SetUpDevice()
     {
         /* CREATE SURFACE */
-        GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-        VkCR(glfwCreateWindowSurface(vr->instance, window, nullptr, &vr->surface));
+        Ref<GLFWwindow> window = Application::Get().GetWindow().GetNativeWindow();
+        VkCR(glfwCreateWindowSurface(vr->instance, window.get(), nullptr, &vr->surface));
 
         /* DETERMINE PHYSICAL */
         uint32_t deviceCount = 0;
@@ -511,8 +511,8 @@ namespace Deako {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
 
-        GLFWwindow* window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-        ImGui_ImplGlfw_InitForVulkan(window, true);
+        Ref<GLFWwindow> window = Application::Get().GetWindow().GetNativeWindow();
+        ImGui_ImplGlfw_InitForVulkan(window.get(), true);
 
         ImGui_ImplVulkan_InitInfo initInfo{};
         initInfo.Instance = vr->instance;
@@ -565,8 +565,11 @@ namespace Deako {
         ImGuiLayer::SetStyles();
     }
 
-    void VulkanBase::Render()
+    void VulkanBase::Render(Ref<EditorCamera> camera)
     {
+        VulkanScene::UpdateUniforms(camera);
+        VulkanScene::UpdateShaderParams();
+
         if (VulkanScene::IsInvalid())
         {
             VulkanScene::Rebuild();
@@ -574,9 +577,6 @@ namespace Deako {
         }
 
         Draw();
-
-        VulkanScene::UpdateUniforms();
-        VulkanScene::UpdateShaderParams();
     }
 
     void VulkanBase::Draw()

@@ -2,7 +2,8 @@
 
 #include "Deako/Asset/Asset.h"
 
-#include "Components.h"
+#include "Deako/Asset/Scene/Components.h"
+#include "Deako/Renderer/EditorCamera.h"
 
 #include <entt.hpp>
 #include <glm/glm.hpp>
@@ -25,7 +26,7 @@ namespace Deako {
 
         void LinkAssets();
 
-        void OnUpdate();
+        void OnUpdate(Ref<EditorCamera> camera);
 
         Entity CreateEntity(const std::string& name = std::string());
         Entity CreateEntityWithUUID(UUID uuid, const std::string& name);

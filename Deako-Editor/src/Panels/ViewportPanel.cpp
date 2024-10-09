@@ -4,8 +4,8 @@
 
 namespace Deako {
 
-    ViewportPanel::ViewportPanel(Ref<EditorContext> editorContext)
-        : m_EditorContext(editorContext)
+    ViewportPanel::ViewportPanel(Ref<EditorContext> editorContext, Ref<EditorCamera> editorCamera)
+        : m_EditorContext(editorContext), m_EditorCamera(editorCamera)
     {
     }
 
@@ -13,7 +13,7 @@ namespace Deako {
     {
         if (m_ViewportResize)
         {
-            VulkanScene::ViewportResize(m_ViewportSize); // TODO: abstract from vulkan when working on camera
+            m_EditorCamera->ResizeCamera(m_ViewportSize);
             m_ViewportResize = false;
         }
     }

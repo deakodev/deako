@@ -7,7 +7,7 @@
 #include "Deako/Core/Log.h"
 #include "Deako/Core/Layer.h"
 #include "Deako/Core/RateLimiter.h"
-// #include "Deako/Core/Input.h"
+#include "Deako/Core/Input.h"
 
 #include "Deako/Event/KeyCodes.h"
 #include "Deako/Event/MouseCodes.h"
@@ -26,7 +26,6 @@
 
 #include "Deako/Renderer/Renderer.h"
 #include "Deako/Renderer/EditorCamera.h"
-#include "Deako/Renderer/Vulkan/VulkanScene.h" // TODO: temp
 
 #include "Deako/Project/Project.h"
 #include "Deako/Project/ProjectHandler.h"

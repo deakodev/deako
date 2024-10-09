@@ -142,16 +142,16 @@ namespace Deako {
             VkCR(vkMapMemory(vr->device, uniform.params.buffer.memory, 0, sizeof(vr->shaderValuesParams), 0, &uniform.params.buffer.mapped));
         }
 
-        UpdateUniforms();
+        // UpdateUniforms();
     }
 
-    void VulkanScene::UpdateUniforms()
+    void VulkanScene::UpdateUniforms(Ref<EditorCamera> camera)
     {
         // shared scene
-        vr->uniformDataShared.projection = vr->camera.matrices.perspective;
-        vr->uniformDataShared.view = vr->camera.matrices.view;
+        vr->uniformDataShared.view = camera->GetView();
+        vr->uniformDataShared.projection = camera->GetProjection();
 
-        glm::mat4 cv = glm::inverse(vr->camera.matrices.view);
+        glm::mat4 cv = glm::inverse(camera->GetView());
         vr->uniformDataShared.camPos = glm::vec3(cv[3]);
 
         // models
@@ -671,7 +671,7 @@ namespace Deako {
         colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.clearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+        colorAttachment.clearValue.color = { {0.0065f, 0.005f, 0.0055f, 1.0f} };
 
         VkRenderingAttachmentInfo depthStencilAttachment = {};
         depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -756,11 +756,6 @@ namespace Deako {
             sin(glm::radians(vr->lightSource.rotation.y)),
             cos(glm::radians(vr->lightSource.rotation.x)) * cos(glm::radians(vr->lightSource.rotation.y)),
             0.0f);
-    }
-
-    void VulkanScene::ViewportResize(const glm::vec2& viewportSize)
-    {
-        vr->camera.updateAspectRatio((float)viewportSize.x / (float)viewportSize.y);
     }
 
 }

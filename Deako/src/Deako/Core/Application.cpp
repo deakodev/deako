@@ -2,6 +2,7 @@
 #include "dkpch.h"
 
 #include "Deako/Event/WindowEvent.h"
+#include "Deako/Core/Input.h"
 #include "Deako/Renderer/Renderer.h"
 
 namespace Deako
@@ -17,6 +18,8 @@ namespace Deako
 
         m_Window = Window::Create(WindowProps(specification.name));
         m_Window->SetEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
+
+        Input::Init();
     }
 
     Application::~Application()

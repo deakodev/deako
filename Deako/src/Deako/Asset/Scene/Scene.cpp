@@ -70,11 +70,11 @@ namespace Deako {
         return newScene;
     }
 
-    void Scene::OnUpdate()
+    void Scene::OnUpdate(Ref<EditorCamera> camera)
     {
         Renderer::BeginScene();
 
-        Renderer::EndScene();
+        Renderer::EndScene(camera);
     }
 
     Entity Scene::CreateEntity(const std::string& name)

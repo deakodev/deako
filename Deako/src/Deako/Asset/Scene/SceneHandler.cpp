@@ -154,6 +154,7 @@ namespace Deako {
     void SceneHandler::RefreshScene()
     {
         VulkanScene::Invalidate();
+        s_ActiveScene->LinkAssets();
     }
 
     bool SceneHandler::HandleUserResponse(UserResponse response)

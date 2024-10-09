@@ -25,7 +25,6 @@ namespace Deako {
 
     MacWindow::~MacWindow()
     {
-        CleanUp();
     }
 
     void MacWindow::Init(const WindowProps& props)
@@ -44,15 +43,23 @@ namespace Deako {
             glfwSetErrorCallback(GLFWErrorCallback);
         }
 
-        m_Window = glfwCreateWindow((int)props.width,
-            (int)props.height, props.title.c_str(), nullptr, nullptr);
+        GLFWwindow* rawWindow = glfwCreateWindow((int)props.width, (int)props.height, props.title.c_str(), nullptr, nullptr);
+        m_Window = std::shared_ptr<GLFWwindow>(rawWindow, [this](GLFWwindow* window)
+            {
+                glfwDestroyWindow(window);
+                m_Window.reset();
+                --s_WindowCount;
+
+                if (s_WindowCount == 0) glfwTerminate();
+            });
+
         ++s_WindowCount;
 
         // Gives easy access to the windows' data in the callbacks via a pointer
-        glfwSetWindowUserPointer(m_Window, &m_WindowData);
+        glfwSetWindowUserPointer(m_Window.get(), &m_WindowData);
 
         // GLFW Callbacks
-        glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+        glfwSetWindowSizeCallback(m_Window.get(), [](GLFWwindow* window, int width, int height)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
                 data.width = width;
@@ -62,7 +69,7 @@ namespace Deako {
                 data.EventCallback(event);
             });
 
-        glfwSetWindowIconifyCallback(m_Window, [](GLFWwindow* window, int iconified)
+        glfwSetWindowIconifyCallback(m_Window.get(), [](GLFWwindow* window, int iconified)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -78,7 +85,7 @@ namespace Deako {
                 }
             });
 
-        glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window)
+        glfwSetWindowCloseCallback(m_Window.get(), [](GLFWwindow* window)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -86,7 +93,7 @@ namespace Deako {
                 data.EventCallback(event);
             });
 
-        glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+        glfwSetKeyCallback(m_Window.get(), [](GLFWwindow* window, int key, int scancode, int action, int mods)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -113,7 +120,7 @@ namespace Deako {
                 }
             });
 
-        glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode)
+        glfwSetCharCallback(m_Window.get(), [](GLFWwindow* window, unsigned int keycode)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -121,7 +128,7 @@ namespace Deako {
                 data.EventCallback(event);
             });
 
-        glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods)
+        glfwSetMouseButtonCallback(m_Window.get(), [](GLFWwindow* window, int button, int action, int mods)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -142,7 +149,7 @@ namespace Deako {
                 }
             });
 
-        glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset)
+        glfwSetScrollCallback(m_Window.get(), [](GLFWwindow* window, double xOffset, double yOffset)
             {
                 WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
 
@@ -150,7 +157,7 @@ namespace Deako {
                 data.EventCallback(event);
             });
 
-        glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
+        glfwSetCursorPosCallback(m_Window.get(), [](GLFWwindow* window, double xPos, double yPos)
             {
                 // MacOs specific fix to prevent mouse moved event from firing when cursor is outside of window
                 if (glfwGetWindowAttrib(window, GLFW_HOVERED))
@@ -162,7 +169,7 @@ namespace Deako {
                 }
             });
 
-        glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
+        glfwSetFramebufferSizeCallback(m_Window.get(), [](GLFWwindow* window, int width, int height)
             {
                 // VulkanBase::GetState()->framebufferResized = true;
 
@@ -174,13 +181,18 @@ namespace Deako {
 
     void MacWindow::CleanUp()
     {
-        glfwDestroyWindow(m_Window);
-        --s_WindowCount;
+        // if (m_Window)
+        // {
+        //     glfwDestroyWindow(m_Window.get());
+        //     m_Window.reset();
+        //     --s_WindowCount;
+        // }
 
-        if (s_WindowCount == 0)
-        {
-            glfwTerminate();
-        }
+
+        // if (s_WindowCount == 0)
+        // {
+        //     glfwTerminate();
+        // }
     }
 
     void MacWindow::OnUpdate()
@@ -191,7 +203,7 @@ namespace Deako {
     std::pair<uint32_t, uint32_t> MacWindow::GetWindowFramebufferSize()
     {
         int width, height;
-        glfwGetFramebufferSize(m_Window, &width, &height);
+        glfwGetFramebufferSize(m_Window.get(), &width, &height);
         return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     }
 

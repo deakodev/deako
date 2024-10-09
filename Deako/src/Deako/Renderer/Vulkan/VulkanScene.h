@@ -7,6 +7,8 @@
 #include "Deako/Asset/Scene/Scene.h"
 #include "Deako/Asset/Scene/Entity.h"
 
+#include "Deako/Renderer/EditorCamera.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako {
@@ -20,9 +22,8 @@ namespace Deako {
 
         static void Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-        static void UpdateUniforms();
+        static void UpdateUniforms(Ref<EditorCamera> camera);
         static void UpdateShaderParams();
-        static void ViewportResize(const glm::vec2& viewportSize);
 
         static bool IsInvalid() { return !s_SceneValid; }
         static void Invalidate() { s_SceneValid = false; };

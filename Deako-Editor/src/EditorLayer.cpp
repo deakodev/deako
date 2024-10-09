@@ -9,12 +9,13 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
+        m_EditorCamera = CreateRef<EditorCamera>();
         m_EditorContext = CreateRef<EditorContext>();
 
         m_ScenePanel = CreateScope<ScenePanel>(m_EditorContext);
         m_PropertiesPanel = CreateScope<PropertiesPanel>(m_EditorContext);
         m_RegistryPanel = CreateScope<RegistryPanel>(m_EditorContext);
-        m_ViewportPanel = CreateScope<ViewportPanel>(m_EditorContext);
+        m_ViewportPanel = CreateScope<ViewportPanel>(m_EditorContext, m_EditorCamera);
     }
 
     void EditorLayer::OnDetach()
@@ -25,9 +26,9 @@ namespace Deako {
     {
         m_ViewportPanel->OnUpdate();
 
-        m_EditorContext->scene->OnUpdate();
+        m_EditorCamera->OnUpdate();
 
-        m_EditorContext->OnUpdate();
+        m_EditorContext->OnUpdate(m_EditorCamera);
     }
 
     void EditorLayer::OnImGuiRender(ImTextureID textureID)
@@ -172,6 +173,7 @@ namespace Deako {
 
     void EditorLayer::OnEvent(Event& event)
     {
+        m_EditorCamera->GetController().OnEvent(event);
     }
 
 }

@@ -938,7 +938,7 @@ namespace Deako {
                     break;
                 case PREFILTERED:
                     pushBlockPrefilter.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
-                    pushBlockPrefilter.roughness = (float)m / (float)(numMips - 1);
+                    pushBlockPrefilter.roughness = (float)m / (float)(numMips - 1) * 0.8;
                     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockPrefilter), &pushBlockPrefilter);
                     break;
                 };

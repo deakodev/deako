@@ -60,7 +60,7 @@ namespace Deako {
     private:
         ApplicationSpecification m_Specification;
 
-        Scope<Window> m_Window;
+        Ref<Window> m_Window;
         LayerStack m_LayerStack;
 
         bool m_Running = true;
