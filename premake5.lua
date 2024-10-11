@@ -23,6 +23,7 @@ workspace "Deako"
     IncludeDir["imgui"] = "Deako/vendor/imgui"
     IncludeDir["entt"] = "Deako/vendor/entt/include"
     IncludeDir["yaml_cpp"] = "Deako/vendor/yaml-cpp/include"
+    IncludeDir["imguizmo"] = "Deako/vendor/imguizmo"
 
     LibDir = {}
     LibDir["vulkan"] = "Deako/vendor/vulkan/1.3.280.1/macOS/lib"
@@ -63,6 +64,8 @@ project "Deako"
         "%{prj.name}/vendor/basisu/zstd/zstd.c",
         "%{prj.name}/vendor/stb_image/**.h",
 		"%{prj.name}/vendor/stb_image/**.cpp",
+        "%{prj.name}/vendor/imguizmo/Imguizmo.h",
+		"%{prj.name}/vendor/imguizmo/Imguizmo.cpp",
     }
 
     defines
@@ -86,6 +89,7 @@ project "Deako"
         "%{IncludeDir.imgui}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.yaml_cpp}",
+        "%{IncludeDir.imguizmo}"
     }
 
     libdirs
@@ -188,6 +192,7 @@ project "Deako-Editor"
         "%{IncludeDir.entt}",
         "%{IncludeDir.imgui}",
         "%{IncludeDir.yaml_cpp}",
+        "%{IncludeDir.imguizmo}"
     }
 
     libdirs

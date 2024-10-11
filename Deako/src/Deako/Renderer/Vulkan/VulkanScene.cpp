@@ -149,10 +149,13 @@ namespace Deako {
     {
         // shared scene
         vr->uniformDataShared.view = camera->GetView();
+        // vr->uniformDataShared.view = glm::inverse(vr->uniformDataShared.view);
         vr->uniformDataShared.projection = camera->GetProjection();
+        // vr->uniformDataShared.projection[1][1] *= -1;
 
-        glm::mat4 cv = glm::inverse(camera->GetView());
+        glm::mat4 cv = glm::inverse(vr->uniformDataShared.view);
         vr->uniformDataShared.camPos = glm::vec3(cv[3]);
+        // vr->uniformDataShared.camPos.y *= -1;
 
         // models
         uint32_t index = 0;

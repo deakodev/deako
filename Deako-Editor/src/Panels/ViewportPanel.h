@@ -21,6 +21,8 @@ namespace Deako {
 
         Ref<EditorContext> m_EditorContext;
         Ref<EditorCamera> m_EditorCamera;
+
+        int m_GizmoType = -1;
     };
 
 }

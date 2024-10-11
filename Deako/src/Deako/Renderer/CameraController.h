@@ -48,7 +48,7 @@ namespace Deako {
         void SetViewportSize(const glm::vec2& viewportSize);
 
         const glm::vec3& GetPosition() const { return m_CameraPosition; }
-        const glm::quat& GetOrientation() const { return m_CameraOrientation; }
+        glm::quat GetOrientation() const;
 
         float GetFOV() const { return m_FrustumProjection.fov; }
         float GetNearPlane() const { return m_FrustumProjection.nearPlane; }
@@ -56,7 +56,6 @@ namespace Deako {
 
     private:
         void UpdatePosition();
-        void UpdateOrientation();
 
         void UpdatePanSensitivity();
         float UpdateZoomSensitivity();
@@ -72,7 +71,6 @@ namespace Deako {
 
     private:
         glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
-        glm::quat m_CameraOrientation = glm::quat();
 
         FrustumTarget m_FrustumTarget;
         FrustumProjection m_FrustumProjection;

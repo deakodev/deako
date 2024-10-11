@@ -8,14 +8,12 @@ namespace Deako {
     CameraController::CameraController()
     {
         UpdatePanSensitivity();
-        UpdateOrientation();
         UpdatePosition();
     }
 
     CameraController::CameraController(const glm::vec2& viewportSize)
     {
         SetViewportSize(viewportSize);
-        UpdateOrientation();
         UpdatePosition();
     }
 
@@ -32,7 +30,6 @@ namespace Deako {
             else if (Input::IsMouseButtonPressed(Mouse::ButtonRight))
                 HandleMouseZoom(mousePositionDelta.y);
 
-            UpdateOrientation();
             UpdatePosition();
         }
     }
@@ -65,9 +62,9 @@ namespace Deako {
         m_CameraPosition = m_FrustumTarget.focalPoint - DetermineForwardDirection() * m_FrustumTarget.focalDistance;
     }
 
-    void CameraController::UpdateOrientation()
+    glm::quat CameraController::GetOrientation() const
     {
-        m_CameraOrientation = glm::quat(glm::vec3(m_ViewOrientation.pitch, m_ViewOrientation.yaw, 0.0f));
+        return glm::quat(glm::vec3(-m_ViewOrientation.pitch, -m_ViewOrientation.yaw, 0.0f));
     }
 
     void CameraController::UpdatePanSensitivity()
@@ -91,14 +88,13 @@ namespace Deako {
 
     void CameraController::HandleMousePan(const glm::vec2& mousePositionDelta)
     {
-        m_FrustumTarget.focalPoint -= DetermineRightDirection() * mousePositionDelta.x * m_Sensitivity.pan.x * m_FrustumTarget.focalDistance;
-        m_FrustumTarget.focalPoint -= DetermineUpDirection() * mousePositionDelta.y * m_Sensitivity.pan.y * m_FrustumTarget.focalDistance;
+        m_FrustumTarget.focalPoint += DetermineRightDirection() * mousePositionDelta.x * m_Sensitivity.pan.x * m_FrustumTarget.focalDistance;
+        m_FrustumTarget.focalPoint += DetermineUpDirection() * mousePositionDelta.y * m_Sensitivity.pan.y * m_FrustumTarget.focalDistance;
     }
 
     void CameraController::HandleMouseRotate(const glm::vec2& mousePositionDelta)
     {
-        float yawSign = (DetermineUpDirection().y < 0) ? 1.0f : -1.0f;
-        m_ViewOrientation.yaw += yawSign * mousePositionDelta.x * m_Sensitivity.rotation;
+        m_ViewOrientation.yaw += -mousePositionDelta.x * m_Sensitivity.rotation;
         m_ViewOrientation.pitch += mousePositionDelta.y * m_Sensitivity.rotation;
     }
 
@@ -115,7 +111,7 @@ namespace Deako {
     glm::vec2 CameraController::DetermineMousePositionDelta()
     {
         const glm::vec2& mousePosition = Input::GetMousePosition();
-        glm::vec2 mousePositionDelta = (mousePosition - m_InitialMousePosition) * 0.003f;
+        glm::vec2 mousePositionDelta = (m_InitialMousePosition - mousePosition) * 0.003f;
         m_InitialMousePosition = mousePosition;
 
         return mousePositionDelta;
@@ -123,17 +119,17 @@ namespace Deako {
 
     glm::vec3 CameraController::DetermineUpDirection() const
     {
-        return glm::rotate(m_CameraOrientation, glm::vec3(0.0f, 1.0f, 0.0f));
+        return glm::rotate(GetOrientation(), glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
     glm::vec3 CameraController::DetermineRightDirection() const
     {
-        return glm::rotate(m_CameraOrientation, glm::vec3(1.0f, 0.0f, 0.0f));
+        return glm::rotate(GetOrientation(), glm::vec3(1.0f, 0.0f, 0.0f));
     }
 
     glm::vec3 CameraController::DetermineForwardDirection() const
     {
-        return glm::rotate(m_CameraOrientation, glm::vec3(0.0f, 0.0f, -1.0f));
+        return glm::rotate(GetOrientation(), glm::vec3(0.0f, 0.0f, -1.0f));
     }
 
 }

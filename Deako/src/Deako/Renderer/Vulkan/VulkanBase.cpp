@@ -36,14 +36,6 @@ namespace Deako {
         SetUpSyncObjects();
 
         SetUpImGui();
-
-        // vr->camera.type = Camera::CameraType::lookat;
-        // vr->camera.setPerspective(45.0f, (float)vr->swapchain.extent.width / (float)vr->swapchain.extent.height, 0.01f, 256.0f);
-        // vr->camera.rotationSpeed = 0.25f;
-        // vr->camera.movementSpeed = 0.1f;
-        // vr->camera.setPosition({ 0.0f, 0.0f, 10.0f });
-        // vr->camera.setRotation({ 0.0f, 0.0f, 0.0f });
-        // vr->camera.updateViewMatrix();
     }
 
     void VulkanBase::Idle()

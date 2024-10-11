@@ -7,6 +7,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <GLFW/glfw3.h>
+#include <ImGuizmo.h>
 
 namespace Deako {
 
@@ -38,6 +39,7 @@ namespace Deako {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
     }
 
     void ImGuiLayer::End(VkCommandBuffer commandBuffer)
@@ -58,6 +60,8 @@ namespace Deako {
     void ImGuiLayer::SetStyles()
     {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+        // io.DisplayFramebufferScale = ImVec2(1.0f, -1.0f);
 
         io.Fonts->AddFontFromFileTTF("Deako/assets/fonts/roboto/Roboto-Bold.ttf", 14.0f);
         io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako/assets/fonts/roboto/Roboto-Regular.ttf", 14.0f);

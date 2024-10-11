@@ -4,13 +4,13 @@ Scene:
 Entities:
   - Entity: 63025543015532543
     TagComponent:
-      Tag: Box
+      Tag: Helmet
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     PrefabComponent:
-      AssetHandle: 57892318812072087
+      AssetHandle: 51418710489529541
   - Entity: 63025543015532544
     TagComponent:
       Tag: Skybox

@@ -120,7 +120,6 @@ namespace Deako {
                 auto transformCompYaml = yamlEntity["TransformComponent"];
                 if (transformCompYaml)
                 {
-                    // Entities always have transforms so we can use GetComponent<TransformComponent>() freely
                     auto& transformComp = entity.GetComponent<TransformComponent>();
                     transformComp.translation = transformCompYaml["Translation"].as<glm::vec3>();
                     transformComp.rotation = transformCompYaml["Rotation"].as<glm::vec3>();

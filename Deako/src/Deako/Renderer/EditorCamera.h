@@ -13,8 +13,8 @@ namespace Deako {
 
         void ResizeCamera(const glm::vec2& viewportSize);
 
-        const glm::mat4& GetView() const { return m_View; }
-        const glm::mat4& GetProjection() const { return m_Projection; }
+        glm::mat4& GetView() { return m_View; }
+        glm::mat4& GetProjection() { return m_Projection; }
         CameraController& GetController() { return m_Controller; }
 
     private:
