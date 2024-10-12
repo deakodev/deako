@@ -3,6 +3,8 @@
 #include "Deako.h"
 #include "../EditorContext.h"
 
+#include <ImGuizmo.h>
+
 namespace Deako {
 
     class ViewportPanel
@@ -13,6 +15,10 @@ namespace Deako {
         void OnUpdate();
         void OnImGuiRender(ImTextureID textureID);
 
+        void TransformWithGizmo();
+
+        void SetGizmoOperation(ImGuizmo::OPERATION operation) { m_GizmoOperation = (int)operation; };
+
     private:
         glm::vec2 m_ViewportSize{ 0.0f, 0.0f };
         bool m_ViewportResize{ false };
@@ -22,7 +28,7 @@ namespace Deako {
         Ref<EditorContext> m_EditorContext;
         Ref<EditorCamera> m_EditorCamera;
 
-        int m_GizmoType = -1;
+        int m_GizmoOperation = -1;
     };
 
 }

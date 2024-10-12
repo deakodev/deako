@@ -1,5 +1,7 @@
 #include "EditorLayer.h"
 
+#include <ImGuizmo.h>
+
 namespace Deako {
 
     EditorLayer::EditorLayer()
@@ -112,7 +114,6 @@ namespace Deako {
                     {
                         DK_INFO("Mesh import not implemented!");
                     }
-
                     if (ImGui::MenuItem("Material (tbd)"))
                     {
                         DK_INFO("Material import not implemented!");
@@ -174,6 +175,36 @@ namespace Deako {
     void EditorLayer::OnEvent(Event& event)
     {
         m_EditorCamera->GetController().OnEvent(event);
+
+        EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<KeyPressedEvent>(DK_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
+    }
+
+    bool EditorLayer::OnKeyPressed(KeyPressedEvent& event)
+    {
+        if (event.IsRepeat()) return false;
+
+        bool super = Input::IsKeyPressed(Key::LeftSuper) || Input::IsKeyPressed(Key::RightSuper); // On mac instead of Cmd
+        bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+        switch (event.GetKeyCode())
+        {
+            // File Shortcuts
+            // case Key::N: if (super) NewScene(); break;
+            // case Key::O: if (super) OpenScene(); break;
+            // case Key::S:
+            //     if (super && shift) { SaveSceneAs(); break; }
+            //     if (super && !shift) { SaveScene(); break; }
+
+        // Gizmo Shortcuts
+        case Key::Q: m_ViewportPanel->SetGizmoOperation((ImGuizmo::OPERATION)-1); break;
+        case Key::W: m_ViewportPanel->SetGizmoOperation(ImGuizmo::OPERATION::TRANSLATE); break;
+        case Key::E: m_ViewportPanel->SetGizmoOperation(ImGuizmo::OPERATION::ROTATE); break;
+        case Key::R: m_ViewportPanel->SetGizmoOperation(ImGuizmo::OPERATION::SCALE); break;
+
+        default: break;
+        }
+
+        return false;
     }
 
 }

@@ -19,7 +19,7 @@ namespace Deako {
     void EditorCamera::UpdateProjection(float fov, float aspectRatio, float nearPlane, float farPlane)
     {
         m_Projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
-        // m_Projection[1][1] *= -1;
+        // m_Projection[1][1] *= -1.0f;
     }
 
     void EditorCamera::UpdateView(const glm::vec3& position, const glm::quat& orientation)

@@ -44,6 +44,22 @@ namespace Deako {
                 glm::toMat4(glm::quat(rotation)) *
                 glm::scale(glm::mat4(1.0f), scale);
         }
+
+        glm::vec3 NormalizeRotation(const glm::vec3& rotation)
+        {
+            static float MAX_ROTATION = 2 * glm::pi<float>();
+
+            glm::vec3 normalizedRotation;
+            normalizedRotation.x = fmod(rotation.x, MAX_ROTATION);
+            normalizedRotation.y = fmod(rotation.y, MAX_ROTATION);
+            normalizedRotation.z = fmod(rotation.z, MAX_ROTATION);
+
+            if (normalizedRotation.x < 0) normalizedRotation.x += MAX_ROTATION;
+            if (normalizedRotation.y < 0) normalizedRotation.y += MAX_ROTATION;
+            if (normalizedRotation.z < 0) normalizedRotation.z += MAX_ROTATION;
+
+            return normalizedRotation;
+        }
     };
 
     struct TextureComponent

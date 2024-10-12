@@ -23,6 +23,8 @@ namespace Deako {
         virtual void OnEvent(Event& event) override;
         virtual void OnImGuiRender(ImTextureID textureID) override;
 
+        bool OnKeyPressed(KeyPressedEvent& event);
+
     private:
         Ref<EditorCamera> m_EditorCamera;
         Ref<EditorContext> m_EditorContext;
