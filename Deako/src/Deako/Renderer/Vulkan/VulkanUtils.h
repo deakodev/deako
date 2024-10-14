@@ -24,7 +24,6 @@ namespace Deako {
 ///////////////////////////////////////////////////////////////////////
 
 
-
     namespace VulkanDevice {
 
         void FindQueueFamilies(VkPhysicalDevice physicalDevice);
@@ -40,7 +39,6 @@ namespace Deako {
 ///////////////////////////////////////////////////////////////////////
 
 
-
     namespace VulkanDepth {
 
         VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -50,7 +48,6 @@ namespace Deako {
     } // end namespace VulkanDepth
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-
 
 
     namespace VulkanImage {
@@ -70,7 +67,6 @@ namespace Deako {
     } // end namespace VulkanImage
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////
-
 
 
     namespace VulkanBuffer {
@@ -96,9 +92,9 @@ namespace Deako {
 
     namespace VulkanShader {
 
-        std::vector<char> ReadShaderFile(const std::filesystem::path& path);
+        std::vector<char> ReadFile(const std::filesystem::path& path);
 
-        VkShaderModule CreateShaderModule(std::filesystem::path path);
+        VkShaderModule CreateModule(const std::filesystem::path&);
 
     } // end namespace VulkanShader
 ///////////////////////////////////////////////////////////////////////

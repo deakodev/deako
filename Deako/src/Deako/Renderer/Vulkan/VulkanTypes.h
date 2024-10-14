@@ -4,18 +4,6 @@
 
 namespace Deako {
 
-    struct FrameData
-    {
-        VkCommandPool commandPool;
-        VkCommandBuffer commandBuffer;
-
-        // DescriptorAllocatorGrowable descriptors;
-
-        VkSemaphore renderSemaphore;
-        VkSemaphore presentSemaphore;
-        VkFence waitFence;
-    };
-
     struct SwapchainDetails
     {
         VkSurfaceCapabilitiesKHR                  capabilities;

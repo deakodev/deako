@@ -14,8 +14,6 @@ namespace Deako {
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
-
-
     namespace VulkanSwapchain {
 
         SwapchainDetails QuerySupport(VkPhysicalDevice physicalDevice)
@@ -478,7 +476,7 @@ namespace Deako {
 
     namespace VulkanShader {
 
-        std::vector<char> ReadShaderFile(const std::filesystem::path& path)
+        std::vector<char> ReadFile(const std::filesystem::path& path)
         {
             // Start reading at the end of the file (ate) to determine file size and read as binary file (binary)
             std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -496,12 +494,12 @@ namespace Deako {
             return buffer;
         }
 
-        VkShaderModule CreateShaderModule(std::filesystem::path path)
+        VkShaderModule CreateModule(const std::filesystem::path& path)
         {
             DK_CORE_INFO("Reading Shader <{0}>", path.filename().string());
-            std::filesystem::path fullPath = ProjectHandler::GetActiveProject()->assetDirectory / path;
+            std::filesystem::path fullPath = "/Users/deakzach/Desktop/Deako/Deako/assets/shaders/bin" / path;
 
-            auto shaderCode = ReadShaderFile(fullPath);
+            auto shaderCode = VulkanShader::ReadFile(fullPath);
 
             VkShaderModuleCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -710,13 +708,13 @@ namespace Deako {
         shaderStages[0].pNext = nullptr;
         shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shaderStages[0].pName = "main";
-        shaderStages[0].module = VulkanShader::CreateShaderModule("shaders/bin/genbrdflut.vert.spv");
+        shaderStages[0].module = VulkanShader::CreateModule("genbrdflut.vert.spv");
 
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].pNext = nullptr;
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[1].pName = "main";
-        shaderStages[1].module = VulkanShader::CreateShaderModule("shaders/bin/genbrdflut.frag.spv");
+        shaderStages[1].module = VulkanShader::CreateModule("genbrdflut.frag.spv");
 
         // pipline info
         VkGraphicsPipelineCreateInfo pipelineInfo{};

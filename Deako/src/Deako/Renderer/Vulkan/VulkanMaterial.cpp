@@ -198,8 +198,8 @@ namespace Deako {
             }
         }
 
-        if (vr->shaderMaterialBuffer.buffer != VK_NULL_HANDLE)
-            VulkanBuffer::Destroy(vr->shaderMaterialBuffer);
+        if (vr->materialBuffer.buffer.buffer != VK_NULL_HANDLE)
+            VulkanBuffer::Destroy(vr->materialBuffer.buffer);
 
         VkDeviceSize bufferSize = shaderMaterials.size() * sizeof(ShaderMaterial);
 
@@ -210,23 +210,23 @@ namespace Deako {
         vkUnmapMemory(vr->device, staging.memory);
 
         // create shader material buffer
-        vr->shaderMaterialBuffer = VulkanBuffer::Create(bufferSize,
+        vr->materialBuffer.buffer = VulkanBuffer::Create(bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
         VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
 
         VkBufferCopy copyRegion{ };
         copyRegion.size = bufferSize;
-        vkCmdCopyBuffer(commandBuffer, staging.buffer, vr->shaderMaterialBuffer.buffer, 1, &copyRegion);
+        vkCmdCopyBuffer(commandBuffer, staging.buffer, vr->materialBuffer.buffer.buffer, 1, &copyRegion);
 
         VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(staging);
 
         // update descriptor
-        vr->shaderMaterialDescriptorInfo.buffer = vr->shaderMaterialBuffer.buffer;
-        vr->shaderMaterialDescriptorInfo.offset = 0;
-        vr->shaderMaterialDescriptorInfo.range = bufferSize;
+        vr->materialBuffer.descriptor.buffer = vr->materialBuffer.buffer.buffer;
+        vr->materialBuffer.descriptor.offset = 0;
+        vr->materialBuffer.descriptor.range = bufferSize;
     }
 
 }

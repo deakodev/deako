@@ -9,14 +9,14 @@ layout (location = 4) in vec4 inColor0;
 
 // Scene bindings
 
-layout (set = 0, binding = 0) uniform UniformDataShared 
+layout (set = 0, binding = 1) uniform UniformDataShared 
 {
 	mat4 projection;
 	mat4 view;
 	vec3 camPos;
 } uShared;
 
-layout (set = 0, binding = 1) uniform UniformParams 
+layout (set = 0, binding = 2) uniform UniformLightData 
 {
 	vec4 lightDir;
 	float exposure;
@@ -25,15 +25,13 @@ layout (set = 0, binding = 1) uniform UniformParams
 	float scaleIBLAmbient;
 	float debugViewInputs;
 	float debugViewEquation;
-} uParams;
+} uLight;
 
-layout (set = 0, binding = 2) uniform samplerCube samplerIrradiance;
-layout (set = 0, binding = 3) uniform samplerCube prefilteredMap;
-layout (set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
+layout (set = 0, binding = 3) uniform samplerCube samplerIrradiance;
+layout (set = 0, binding = 4) uniform samplerCube prefilteredMap;
+layout (set = 0, binding = 5) uniform sampler2D samplerBRDFLUT;
 
 // Material bindings
-
-// Textures
 
 layout (set = 1, binding = 0) uniform sampler2D colorMap;
 layout (set = 1, binding = 1) uniform sampler2D physicalDescriptorMap;
@@ -50,7 +48,8 @@ layout(std430, set = 3, binding = 0) buffer SSBO
    ShaderMaterial materials[ ];
 };
 
-layout (push_constant) uniform PushConstants {
+layout (push_constant) uniform PushConstants 
+{
 	int materialIndex;
 } pushConstants;
 
@@ -109,7 +108,7 @@ vec3 getNormal(ShaderMaterial material)
 // See our README.md on Environment Maps [3] for additional discussion.
 vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 {
-	float lod = (pbrInputs.perceptualRoughness * uParams.prefilteredCubeMipLevels);
+	float lod = (pbrInputs.perceptualRoughness * uLight.prefilteredCubeMipLevels);
 	// retrieve a scale and bias to F0. See [1], Figure 3
 	vec3 brdf = (texture(samplerBRDFLUT, vec2(pbrInputs.NdotV, 1.0 - pbrInputs.perceptualRoughness))).rgb;
 	vec3 diffuseLight = SRGBtoLINEAR(tonemap(texture(samplerIrradiance, n))).rgb;
@@ -121,8 +120,8 @@ vec3 getIBLContribution(PBRInfo pbrInputs, vec3 n, vec3 reflection)
 
 	// For presentation, this allows us to disable IBL terms
 	// For presentation, this allows us to disable IBL terms
-	diffuse *= uParams.scaleIBLAmbient;
-	specular *= uParams.scaleIBLAmbient;
+	diffuse *= uLight.scaleIBLAmbient;
+	specular *= uLight.scaleIBLAmbient;
 
 	return diffuse + specular;
 }
@@ -275,7 +274,7 @@ void main()
 	vec3 n = (material.normalTextureSet > -1) ? getNormal(material) : normalize(inNormal);
 	n.y *= -1.0f;
 	vec3 v = normalize(uShared.camPos - inWorldPos);    // Vector from surface point to camera
-	vec3 l = normalize(uParams.lightDir.xyz);     // Vector from surface point to light
+	vec3 l = normalize(uLight.lightDir.xyz);     // Vector from surface point to light
 	vec3 h = normalize(l+v);                        // Half vector between both l and v
 	vec3 reflection = normalize(reflect(-v, n));
 
@@ -332,8 +331,8 @@ void main()
 	outColor = vec4(color, baseColor.a);
 
 	// Shader inputs debug visualization
-	if (uParams.debugViewInputs > 0.0) {
-		int index = int(uParams.debugViewInputs);
+	if (uLight.debugViewInputs > 0.0) {
+		int index = int(uLight.debugViewInputs);
 		switch (index) {
 			case 1:
 				outColor.rgba = material.baseColorTextureSet > -1 ? texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1) : vec4(1.0f);
@@ -359,8 +358,8 @@ void main()
 
 	// PBR equation debug visualization
 	// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
-	if (uParams.debugViewEquation > 0.0) {
-		int index = int(uParams.debugViewEquation);
+	if (uLight.debugViewEquation > 0.0) {
+		int index = int(uLight.debugViewEquation);
 		switch (index) {
 			case 1:
 				outColor.rgb = diffuseContrib;

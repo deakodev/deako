@@ -6,6 +6,7 @@
 #include "VulkanTypes.h"
 #include "VulkanUtils.h"
 #include "VulkanScene.h"
+#include "VulkanDescriptor.h"
 
 #include "Deako/Asset/Scene/Entity.h"
 #include "Deako/Renderer/EditorCamera.h"
@@ -21,6 +22,20 @@ namespace Deako {
     extern PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR;
     extern PFN_vkCmdBlitImage2KHR vkCmdBlitImage2KHR;
 
+    struct FrameData
+    {
+        VkCommandPool commandPool;
+        VkCommandBuffer commandBuffer;
+
+        VulkanDescriptor::AllocatorGrowable descriptorAllocator;
+        VkDescriptorSet sceneDescriptorSet;
+        VkDescriptorSet skyboxDescriptorSet;
+
+        VkSemaphore renderSemaphore;
+        VkSemaphore presentSemaphore;
+        VkFence waitFence;
+    };
+
     struct VulkanSettings
     {
         bool                               validationEnabled{ true };
@@ -29,19 +44,20 @@ namespace Deako {
         bool                               displayBackground{ true };
         bool                               animationPaused{ false };
 
-        VkSampleCountFlagBits              sampleCount{ VK_SAMPLE_COUNT_4_BIT };
         uint32_t                           frameOverlap = 2;
+    };
+
+    struct VulkanContext
+    {
+        std::vector<FrameData>             frames;
+        uint32_t                           currentFrame{ 0 };
+        VkPipeline                         boundPipeline{ VK_NULL_HANDLE };
     };
 
     struct VulkanResources
     {
-        bool                               imguiPrepared{ false };
-
-        uint32_t                           currentFrame{ 0 };
-
         VkInstance                         instance{ VK_NULL_HANDLE };
         VkDebugUtilsMessengerEXT           debugMessenger{ VK_NULL_HANDLE };
-
         VkSurfaceKHR                       surface;
         VkDevice                           device{ VK_NULL_HANDLE };
         VkPhysicalDevice                   physicalDevice{ VK_NULL_HANDLE };
@@ -51,21 +67,16 @@ namespace Deako {
         std::optional<uint32_t>            presentFamily;
 
         VkPipelineCache                    pipelineCache;
-        VkPipelineLayout                   pipelineLayout{ VK_NULL_HANDLE };
-        std::unordered_map<std::string, VkPipeline>         pipelines;
-        VkPipeline                                          boundPipeline{ VK_NULL_HANDLE };
-
         VkCommandPool                      singleUseCommandPool;
+        VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
 
-        std::vector<FrameData>             frames;
-
-        struct MultisampleTarget
+        struct
         {
-            AllocatedImage                     color;
-            AllocatedImage                     depth;
+            AllocatedImage                 color;
+            AllocatedImage                 depth;
         } multisampleTarget;
 
-        struct Swapchain
+        struct
         {
             VkSwapchainKHR                 swapchain{ VK_NULL_HANDLE };
             SwapchainDetails               details;
@@ -77,7 +88,7 @@ namespace Deako {
             uint32_t                       imageCount;
         } swapchain;
 
-        struct Viewport
+        struct
         {
             VkSampler                      sampler{ VK_NULL_HANDLE };
             VkFormat                       format;
@@ -85,17 +96,8 @@ namespace Deako {
             std::vector<VkDescriptorSet>   textureIDs;
         } viewport;
 
-        VkDescriptorPool                   imguiDescriptorPool{ VK_NULL_HANDLE };
 
-        // assets
-        struct Textures
-        {
-            Ref<Texture2D> lutBrdf;
-        } textures;
 
-        // int32_t animationIndex{ 0 };
-        // float animationTimer{ 0.0f };
-        // bool animate{ true };
 
         struct Skybox
         {
@@ -111,26 +113,33 @@ namespace Deako {
         {
             UniformBuffer dynamic;
             UniformBuffer shared;
-            UniformBuffer params;
+            UniformBuffer light;
         };
+
+        struct
+        {
+            AllocatedBuffer buffer;
+            VkDescriptorBufferInfo descriptor;
+            VkDescriptorSet descriptorSet;
+        } materialBuffer; // shader storage buffer object (ssbo)
 
         std::vector<UniformSet>            uniforms;
 
-        struct UniformDataDynamic // per-object
+        size_t                             dynamicUniformAlignment{ 0 };
+
+        struct // per-object uniform data
         {
             glm::mat4* model{ nullptr };
-        } uniformDataDynamic;
+        } uniformDynamicData;
 
-        size_t dynamicUniformAlignment{ 0 };
-
-        struct UniformDataShared // per-scene
+        struct // per-scene uniform data
         {
             glm::mat4 projection{ 1.0f };
             glm::mat4 view{ 1.0f };
             glm::vec3 camPos{ 0.0f };
-        } uniformDataShared;
+        } uniformSharedData;
 
-        struct ShaderValuesParams
+        struct // light uniform data
         {
             glm::vec4 lightDir;
             float exposure = 4.5f;
@@ -139,12 +148,12 @@ namespace Deako {
             float scaleIBLAmbient = 1.0f;
             float debugViewInputs = 0;
             float debugViewEquation = 0;
-        } shaderValuesParams;
+        } uniformLightData;
 
         struct LightSource
         {
             glm::vec3 color = glm::vec3(1.0f);
-            glm::vec3 rotation = glm::vec3(75.0f, -40.0f, 0.0f);
+            glm::vec3 rotation = glm::vec3(1.309f, -0.698f, 0.0f);
         } lightSource;
 
         struct DescriptorSetLayouts
@@ -153,20 +162,26 @@ namespace Deako {
             VkDescriptorSetLayout material{ VK_NULL_HANDLE };
             VkDescriptorSetLayout node{ VK_NULL_HANDLE };
             VkDescriptorSetLayout materialBuffer{ VK_NULL_HANDLE };
-        } descriptorSetLayouts;
+            VkDescriptorSetLayout skybox{ VK_NULL_HANDLE };
+        } descriptorLayouts;
 
-        struct DescriptorSets
+        VkPipeline skyboxPipeline;
+        VkPipeline pbrPipeline;
+        VkPipeline pbrDoubleSidedPipeline;
+        VkPipeline pbrAlphaBlendingPipeline;
+        VkPipeline unlitPipeline;
+        VkPipeline unlitDoubleSidedPipeline;
+        VkPipeline unlitAlphaBlendingPipeline;
+
+        VulkanDescriptor::AllocatorGrowable        staticDescriptorAllocator; // vs per-frame
+
+        VkPipelineLayout                   scenePipelineLayout{ VK_NULL_HANDLE };
+        VkPipelineLayout                   skyboxPipelineLayout{ VK_NULL_HANDLE };
+
+        struct
         {
-            VkDescriptorSet scene;
-            VkDescriptorSet skybox;
-        };
-
-        std::vector<DescriptorSets>        descriptorSets;
-        VkDescriptorPool                   descriptorPool{ VK_NULL_HANDLE };
-
-        AllocatedBuffer                    shaderMaterialBuffer;
-        VkDescriptorBufferInfo             shaderMaterialDescriptorInfo{ VK_NULL_HANDLE };
-        VkDescriptorSet                    shaderMaterialDescriptorSet{ VK_NULL_HANDLE };
+            Ref<Texture2D> lutBrdf;
+        } textures;
     };
 
     class VulkanBase
@@ -184,6 +199,7 @@ namespace Deako {
         static void WindowResize();
 
         static Ref<VulkanSettings>& GetSettings() { return vs; }
+        static Ref<VulkanContext>& GetContext() { return vc; }
         static Ref<VulkanResources>& GetResources() { return vr; }
 
     private:
@@ -197,8 +213,9 @@ namespace Deako {
         static void SetUpImGui();
 
     private:
-        static Ref<VulkanResources>        vr;
         static Ref<VulkanSettings>         vs;
+        static Ref<VulkanContext>          vc;
+        static Ref<VulkanResources>        vr;
     };
 
 }

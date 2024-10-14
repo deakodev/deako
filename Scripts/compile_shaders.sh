@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SHADER_DIR="/Users/deakzach/Desktop/Deako/Deako-Editor/projects/sandbox/assets/shaders"
+SHADER_DIR="/Users/deakzach/Desktop/Deako/Deako/assets/shaders"
 OUTPUT_DIR="$SHADER_DIR/bin"
 
 # Compile shaders if source files have changed

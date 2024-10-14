@@ -104,7 +104,6 @@ namespace Deako {
         ~Node();
         glm::mat4 LocalMatrix();
         glm::mat4 GetMatrix();
-        void SetDescriptorSet();
     };
 
     struct AnimationChannel

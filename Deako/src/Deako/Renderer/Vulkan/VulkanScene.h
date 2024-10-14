@@ -23,7 +23,6 @@ namespace Deako {
         static void Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
         static void UpdateUniforms(Ref<EditorCamera> camera);
-        static void UpdateShaderParams();
 
         static bool IsInvalid() { return !s_SceneValid; }
         static void Invalidate() { s_SceneValid = false; };

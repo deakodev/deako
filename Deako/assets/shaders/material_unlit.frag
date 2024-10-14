@@ -9,14 +9,14 @@ layout (location = 4) in vec4 inColor0;
 
 // Scene bindings
 
-layout (set = 0, binding = 0) uniform UniformDataShared 
+layout (set = 0, binding = 1) uniform UniformSharedData
 {
 	mat4 projection;
 	mat4 view;
 	vec3 camPos;
 } uShared;
 
-layout (set = 0, binding = 1) uniform UniformParams 
+layout (set = 0, binding = 2) uniform UniformLightData 
 {
 	vec4 lightDir;
 	float exposure;
@@ -25,15 +25,13 @@ layout (set = 0, binding = 1) uniform UniformParams
 	float scaleIBLAmbient;
 	float debugViewInputs;
 	float debugViewEquation;
-} uParams;
+} uLight;
 
-layout (set = 0, binding = 2) uniform samplerCube samplerIrradiance;
-layout (set = 0, binding = 3) uniform samplerCube prefilteredMap;
-layout (set = 0, binding = 4) uniform sampler2D samplerBRDFLUT;
+layout (set = 0, binding = 3) uniform samplerCube samplerIrradiance;
+layout (set = 0, binding = 4) uniform samplerCube prefilteredMap;
+layout (set = 0, binding = 5) uniform sampler2D samplerBRDFLUT;
 
 // Material bindings
-
-// Textures
 
 layout (set = 1, binding = 0) uniform sampler2D colorMap;
 layout (set = 1, binding = 1) uniform sampler2D physicalDescriptorMap;
@@ -50,7 +48,8 @@ layout(std430, set = 3, binding = 0) buffer SSBO
    ShaderMaterial materials[ ];
 };
 
-layout (push_constant) uniform PushConstants {
+layout (push_constant) uniform PushConstants 
+{
 	int materialIndex;
 } pushConstants;
 
@@ -67,9 +66,11 @@ void main()
 	vec3 diffuseColor;
 	vec4 baseColor;
 
-	if (material.baseColorTextureSet > -1) {
+	if (material.baseColorTextureSet > -1) 
+	{
 		baseColor = SRGBtoLINEAR(texture(colorMap, material.baseColorTextureSet == 0 ? inUV0 : inUV1)) * material.baseColorFactor;
-	} else {
+	} else 
+	{
 		baseColor = material.baseColorFactor;
 	}
 

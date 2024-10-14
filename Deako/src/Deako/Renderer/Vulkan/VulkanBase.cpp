@@ -11,8 +11,9 @@
 
 namespace Deako {
 
-    Ref<VulkanResources> VulkanBase::vr = CreateRef<VulkanResources>();
     Ref<VulkanSettings> VulkanBase::vs = CreateRef<VulkanSettings>();
+    Ref<VulkanContext> VulkanBase::vc = CreateRef<VulkanContext>();
+    Ref<VulkanResources> VulkanBase::vr = CreateRef<VulkanResources>();
 
     PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR = nullptr;
     PFN_vkQueueSubmit2KHR vkQueueSubmit2KHR = nullptr;
@@ -56,7 +57,7 @@ namespace Deako {
         for (auto image : vr->viewport.images)
             VulkanImage::Destroy(image);
 
-        for (auto& frame : vr->frames)
+        for (auto& frame : vc->frames)
         {
             vkDestroySemaphore(vr->device, frame.renderSemaphore, nullptr);
             vkDestroySemaphore(vr->device, frame.presentSemaphore, nullptr);
@@ -67,7 +68,6 @@ namespace Deako {
         vkDestroyCommandPool(vr->device, vr->singleUseCommandPool, nullptr);
 
         vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
-        vkDestroyPipelineLayout(vr->device, vr->pipelineLayout, nullptr);
 
         for (auto imageView : vr->swapchain.views)
             vkDestroyImageView(vr->device, imageView, nullptr);
@@ -443,15 +443,15 @@ namespace Deako {
         commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferInfo.commandBufferCount = 1;
 
-        vr->frames.resize(vs->frameOverlap);
+        vc->frames.resize(vs->frameOverlap);
 
         for (int i = 0; i < vs->frameOverlap; i++)
         {
-            VkCR(vkCreateCommandPool(vr->device, &commandPoolInfo, nullptr, &vr->frames[i].commandPool));
+            VkCR(vkCreateCommandPool(vr->device, &commandPoolInfo, nullptr, &vc->frames[i].commandPool));
 
-            commandBufferInfo.commandPool = vr->frames[i].commandPool;
+            commandBufferInfo.commandPool = vc->frames[i].commandPool;
             // default command buffer that we will use for rendering
-            VkCR(vkAllocateCommandBuffers(vr->device, &commandBufferInfo, &vr->frames[i].commandBuffer));
+            VkCR(vkAllocateCommandBuffers(vr->device, &commandBufferInfo, &vc->frames[i].commandBuffer));
         }
 
         /* SINGLE-USE COMMANDS */
@@ -465,9 +465,9 @@ namespace Deako {
         VkSemaphoreCreateInfo semaphoreInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
         for (int i = 0; i < vs->frameOverlap; i++)
         {
-            VkCR(vkCreateFence(vr->device, &fenceInfo, nullptr, &vr->frames[i].waitFence));
-            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vr->frames[i].presentSemaphore));
-            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vr->frames[i].renderSemaphore));
+            VkCR(vkCreateFence(vr->device, &fenceInfo, nullptr, &vc->frames[i].waitFence));
+            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vc->frames[i].presentSemaphore));
+            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vc->frames[i].renderSemaphore));
         }
     }
 
@@ -560,7 +560,6 @@ namespace Deako {
     void VulkanBase::Render(Ref<EditorCamera> camera)
     {
         VulkanScene::UpdateUniforms(camera);
-        VulkanScene::UpdateShaderParams();
 
         if (VulkanScene::IsInvalid())
         {
@@ -575,7 +574,7 @@ namespace Deako {
     {
         auto tStart = std::chrono::high_resolution_clock::now();
 
-        FrameData& frame = vr->frames[vr->currentFrame];
+        FrameData& frame = vc->frames[vc->currentFrame];
 
         VkCR(vkWaitForFences(vr->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
 
@@ -694,7 +693,7 @@ namespace Deako {
             DK_CORE_ASSERT(result);
         }
 
-        vr->currentFrame = (vr->currentFrame + 1) % vs->frameOverlap;
+        vc->currentFrame = (vc->currentFrame + 1) % vs->frameOverlap;
 
         auto tEnd = std::chrono::high_resolution_clock::now();
         auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();

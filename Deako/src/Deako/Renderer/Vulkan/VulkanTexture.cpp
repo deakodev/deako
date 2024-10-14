@@ -826,7 +826,7 @@ namespace Deako {
         shaderStages[0].pNext = nullptr;
         shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shaderStages[0].pName = "main";
-        shaderStages[0].module = VulkanShader::CreateShaderModule("shaders/bin/filtercube.vert.spv");
+        shaderStages[0].module = VulkanShader::CreateModule("filtercube.vert.spv");
 
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].pNext = nullptr;
@@ -836,9 +836,9 @@ namespace Deako {
         switch (target)
         {
         case IRRADIANCE:
-            shaderStages[1].module = VulkanShader::CreateShaderModule("shaders/bin/irradiancecube.frag.spv"); break;
+            shaderStages[1].module = VulkanShader::CreateModule("irradiancecube.frag.spv"); break;
         case PREFILTERED:
-            shaderStages[1].module = VulkanShader::CreateShaderModule("shaders/bin/prefilterenvmap.frag.spv"); break;
+            shaderStages[1].module = VulkanShader::CreateModule("prefilterenvmap.frag.spv"); break;
         };
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -1011,7 +1011,7 @@ namespace Deako {
 
         if (target == PREFILTERED)
         {
-            vr->shaderValuesParams.prefilteredCubeMipLevels = static_cast<float>(numMips);
+            vr->uniformLightData.prefilteredCubeMipLevels = static_cast<float>(numMips);
         }
     }
 

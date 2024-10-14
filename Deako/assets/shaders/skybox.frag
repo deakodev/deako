@@ -4,13 +4,14 @@
 layout (location = 0) in vec3 inUVW;
 layout (location = 0) out vec4 outColor;
 
-layout (binding = 1) uniform UniformParams {
+layout (set = 0, binding = 1) uniform UniformLightData 
+{
 	vec4 _pad0;
 	float exposure;
 	float gamma;
-} uParams;
+} uLight;
 
-layout (binding = 2) uniform samplerCube samplerEnv;
+layout (set = 0, binding = 2) uniform samplerCube samplerEnv;
 
 #include "includes/tonemapping.glsl"
 #include "includes/srgbtolinear.glsl"

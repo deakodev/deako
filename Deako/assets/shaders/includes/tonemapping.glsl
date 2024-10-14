@@ -13,7 +13,7 @@ vec3 Uncharted2Tonemap(vec3 color)
 
 vec4 tonemap(vec4 color)
 {
-	vec3 outcol = Uncharted2Tonemap(color.rgb * uParams.exposure);
+	vec3 outcol = Uncharted2Tonemap(color.rgb * uLight.exposure);
 	outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
-	return vec4(pow(outcol, vec3(1.0f / uParams.gamma)), color.a);
+	return vec4(pow(outcol, vec3(1.0f / uLight.gamma)), color.a);
 }

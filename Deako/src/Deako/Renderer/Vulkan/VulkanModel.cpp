@@ -7,6 +7,7 @@
 namespace Deako {
 
     static Ref<VulkanResources> vr = VulkanBase::GetResources();
+    static Ref<VulkanContext> vc = VulkanBase::GetContext();
     static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
 
     void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, uint32_t dynamicOffset)
@@ -17,36 +18,34 @@ namespace Deako {
             {
                 if (primitive->material.alphaMode == alphaMode)
                 {
-                    std::string pipelineName = "pbr";
-                    std::string pipelineVariant = "";
+                    VkPipeline pipelineToUse = vr->pbrPipeline;
 
                     if (primitive->material.unlit) // KHR_materials_unlit
-                        pipelineName = "unlit";
+                        pipelineToUse = vr->unlitPipeline;
 
-                    // material properties define if we need to bind a pipeline variant with culling disabled (double sided)
                     if (alphaMode == Material::ALPHAMODE_BLEND)
-                        pipelineVariant = "_alpha_blending";
+                        pipelineToUse = vr->unlitAlphaBlendingPipeline;
                     else if (primitive->material.doubleSided)
-                        pipelineVariant = "_double_sided";
+                        pipelineToUse = primitive->material.unlit ? vr->unlitDoubleSidedPipeline : vr->pbrDoubleSidedPipeline;
 
-                    const VkPipeline pipeline = vr->pipelines[pipelineName + pipelineVariant];
-
-                    if (pipeline != vr->boundPipeline)
+                    if (pipelineToUse != vc->boundPipeline)
                     {
-                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                        vr->boundPipeline = pipeline;
+                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineToUse);
+                        vc->boundPipeline = pipelineToUse;
                     }
 
+                    FrameData& frame = vc->frames[vc->currentFrame];
+
                     const std::vector<VkDescriptorSet> descriptorSets = {
-                        vr->descriptorSets[vr->currentFrame].scene,
+                        frame.sceneDescriptorSet,
                         primitive->material.descriptorSet,
                         node->mesh->uniform.descriptorSet,
-                        vr->shaderMaterialDescriptorSet
+                        vr->materialBuffer.descriptorSet
                     };
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
+                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->scenePipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
 
-                    // pass material index for this primitive using a push constant, shader uses this to index into the material buffer
-                    vkCmdPushConstants(commandBuffer, vr->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &primitive->material.index);
+                    // pass material index for this primitive using a push constant, shader uses this to index in the material buffer
+                    vkCmdPushConstants(commandBuffer, vr->scenePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &primitive->material.index);
 
                     if (primitive->hasIndices)
                         vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -321,32 +320,6 @@ namespace Deako {
         {
             return cachedMatrix;
         }
-    }
-
-    void Node::SetDescriptorSet()
-    {
-        if (mesh)
-        {
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = vr->descriptorPool;
-            allocInfo.pSetLayouts = &vr->descriptorSetLayouts.node;
-            allocInfo.descriptorSetCount = 1;
-            VkCR(vkAllocateDescriptorSets(vr->device, &allocInfo, &mesh->uniform.descriptorSet));
-
-            VkWriteDescriptorSet write{};
-            write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.descriptorCount = 1;
-            write.dstSet = mesh->uniform.descriptorSet;
-            write.dstBinding = 0;
-            write.pBufferInfo = &mesh->uniform.descriptor;
-
-            vkUpdateDescriptorSets(vr->device, 1, &write, 0, nullptr);
-        }
-
-        for (auto& child : children)
-            child->SetDescriptorSet();
     }
 
     Mesh::Mesh(glm::mat4 matrix)
