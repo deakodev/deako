@@ -1,7 +1,6 @@
 #include "ViewportPanel.h"
 
 #include "../EditorLayer.h"
-#include "Deako/Math/Math.h"
 
 namespace Deako {
 

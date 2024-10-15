@@ -1,42 +1,43 @@
-#include "VulkanUtils.h"
+#include "VulkanResource.h"
 #include "dkpch.h"
 
 #include "Deako/Project/ProjectHandler.h"
 #include "Deako/Core/Application.h"
-#include "Deako/Renderer/RendererTypes.h"
 
 #include "VulkanBase.h"
+#include "VulkanScene.h"
 
 #include <GLFW/glfw3.h>
 
 namespace Deako {
 
-    static Ref<VulkanResources> vr = VulkanBase::GetResources();
-    static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
+    static Ref<VulkanBaseResources> vbr = VulkanBase::GetResources();
+    static Ref<VulkanBaseSettings> vbs = VulkanBase::GetSettings();
+    static Ref<VulkanSceneResources> vsr = VulkanScene::GetResources();
 
     namespace VulkanSwapchain {
 
         SwapchainDetails QuerySupport(VkPhysicalDevice physicalDevice)
         {
-            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, vr->surface, &vr->swapchain.details.capabilities);
+            vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, vbr->surface, &vbr->swapchain.details.capabilities);
 
             uint32_t formatCount;  // swap chain formats
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vr->surface, &formatCount, nullptr);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vbr->surface, &formatCount, nullptr);
             if (formatCount != 0)
             {
-                vr->swapchain.details.formats.resize(formatCount);
-                vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vr->surface, &formatCount, vr->swapchain.details.formats.data());
+                vbr->swapchain.details.formats.resize(formatCount);
+                vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vbr->surface, &formatCount, vbr->swapchain.details.formats.data());
             }
 
             uint32_t presentModeCount; // swap chain present modes
-            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vr->surface, &presentModeCount, nullptr);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vbr->surface, &presentModeCount, nullptr);
             if (presentModeCount != 0)
             {
-                vr->swapchain.details.presentModes.resize(presentModeCount);
-                vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vr->surface, &presentModeCount, vr->swapchain.details.presentModes.data());
+                vbr->swapchain.details.presentModes.resize(presentModeCount);
+                vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vbr->surface, &presentModeCount, vbr->swapchain.details.presentModes.data());
             }
 
-            return vr->swapchain.details;
+            return vbr->swapchain.details;
         }
 
         VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
@@ -58,7 +59,7 @@ namespace Deako {
 
         VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR>& presentModes)
         {
-            if (!vs->vsync)
+            if (!vbs->vsync)
             {
                 for (const auto& availablePresentMode : presentModes)
                 {
@@ -67,7 +68,7 @@ namespace Deako {
                 }
             }
 
-            return VK_PRESENT_MODE_FIFO_KHR; // guaranteed to be available, vsync
+            return VK_PRESENT_MODE_FIFO_KHR; // guaranteed to be available, vbsync
         }
 
         VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities)
@@ -111,13 +112,13 @@ namespace Deako {
             int i = 0;
             for (const auto& queueFamily : queueFamilies)  // find queue families that are supported
             {
-                if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) vr->graphicsFamily = i;
+                if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) vbr->graphicsFamily = i;
 
                 VkBool32 presentSupport = false;
-                vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, vr->surface, &presentSupport);
+                vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, vbr->surface, &presentSupport);
 
-                if (presentSupport) vr->presentFamily = i;
-                if (vr->graphicsFamily.has_value() && vr->presentFamily.has_value()) break;
+                if (presentSupport) vbr->presentFamily = i;
+                if (vbr->graphicsFamily.has_value() && vbr->presentFamily.has_value()) break;
 
                 i++;
             }
@@ -158,10 +159,10 @@ namespace Deako {
                 score += 1000;
 
             FindQueueFamilies(physicalDevice); // look for families, must have required families
-            bool queueFamiliesFound = vr->graphicsFamily.has_value() && vr->presentFamily.has_value();
+            bool queueFamiliesFound = vbr->graphicsFamily.has_value() && vbr->presentFamily.has_value();
 
             // must have adequate swap chain details
-            SwapchainDetails swapChainSupport = VulkanSwapchain::QuerySupport(physicalDevice);
+            VulkanSwapchain::SwapchainDetails swapChainSupport = VulkanSwapchain::QuerySupport(physicalDevice);
             bool swapChainAdequate = !swapChainSupport.formats.empty()
                 && !swapChainSupport.presentModes.empty();
 
@@ -172,7 +173,7 @@ namespace Deako {
         uint32_t GetMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound)
         {
             VkPhysicalDeviceMemoryProperties memProperties;
-            vkGetPhysicalDeviceMemoryProperties(vr->physicalDevice, &memProperties);
+            vkGetPhysicalDeviceMemoryProperties(vbr->physicalDevice, &memProperties);
 
             for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
             {
@@ -210,7 +211,7 @@ namespace Deako {
             for (VkFormat format : candidates)
             {
                 VkFormatProperties props;
-                vkGetPhysicalDeviceFormatProperties(vr->physicalDevice, format, &props);
+                vkGetPhysicalDeviceFormatProperties(vbr->physicalDevice, format, &props);
 
                 if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
                     return format;
@@ -255,10 +256,10 @@ namespace Deako {
             imageInfo.usage = usage;
             imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-            VkCR(vkCreateImage(vr->device, &imageInfo, nullptr, &allocImage.image));
+            VkCR(vkCreateImage(vbr->device, &imageInfo, nullptr, &allocImage.image));
 
             VkMemoryRequirements memReqs = {};
-            vkGetImageMemoryRequirements(vr->device, allocImage.image, &memReqs);
+            vkGetImageMemoryRequirements(vbr->device, allocImage.image, &memReqs);
 
             VkMemoryAllocateInfo memAllocInfo = {};
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -270,9 +271,9 @@ namespace Deako {
             if (!lazyMemTypePresent)
                 memAllocInfo.memoryTypeIndex = VulkanDevice::GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VkCR(vkAllocateMemory(vr->device, &memAllocInfo, nullptr, &allocImage.memory));
+            VkCR(vkAllocateMemory(vbr->device, &memAllocInfo, nullptr, &allocImage.memory));
 
-            vkBindImageMemory(vr->device, allocImage.image, allocImage.memory, 0);
+            vkBindImageMemory(vbr->device, allocImage.image, allocImage.memory, 0);
 
             // if format is a depth format, need the correct aspect flag
             VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -296,16 +297,16 @@ namespace Deako {
             imageViewInfo.subresourceRange.baseArrayLayer = 0;
             imageViewInfo.subresourceRange.layerCount = 1;
 
-            VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &allocImage.view));
+            VkCR(vkCreateImageView(vbr->device, &imageViewInfo, nullptr, &allocImage.view));
 
             return allocImage;
         }
 
         void Destroy(const AllocatedImage& allocImage)
         {
-            vkDestroyImageView(vr->device, allocImage.view, nullptr);
-            vkDestroyImage(vr->device, allocImage.image, nullptr);
-            vkFreeMemory(vr->device, allocImage.memory, nullptr);
+            vkDestroyImageView(vbr->device, allocImage.view, nullptr);
+            vkDestroyImage(vbr->device, allocImage.image, nullptr);
+            vkFreeMemory(vbr->device, allocImage.memory, nullptr);
         }
 
         void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout)
@@ -397,17 +398,17 @@ namespace Deako {
             bufferInfo.size = allocSize;
             bufferInfo.usage = usage;
             bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            VkCR(vkCreateBuffer(vr->device, &bufferInfo, nullptr, &allocBuffer.buffer));
+            VkCR(vkCreateBuffer(vbr->device, &bufferInfo, nullptr, &allocBuffer.buffer));
 
-            vkGetBufferMemoryRequirements(vr->device, allocBuffer.buffer, &allocBuffer.memReqs);
+            vkGetBufferMemoryRequirements(vbr->device, allocBuffer.buffer, &allocBuffer.memReqs);
 
             VkMemoryAllocateInfo memAllocInfo{};
             memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             memAllocInfo.allocationSize = allocBuffer.memReqs.size;
             memAllocInfo.memoryTypeIndex = VulkanDevice::GetMemoryType(allocBuffer.memReqs.memoryTypeBits, flags);
 
-            VkCR(vkAllocateMemory(vr->device, &memAllocInfo, nullptr, &allocBuffer.memory));
-            VkCR(vkBindBufferMemory(vr->device, allocBuffer.buffer, allocBuffer.memory, 0));
+            VkCR(vkAllocateMemory(vbr->device, &memAllocInfo, nullptr, &allocBuffer.memory));
+            VkCR(vkBindBufferMemory(vbr->device, allocBuffer.buffer, allocBuffer.memory, 0));
 
             return allocBuffer;
         }
@@ -416,12 +417,12 @@ namespace Deako {
         {
             if (buffer.buffer != VK_NULL_HANDLE)
             {
-                vkDestroyBuffer(vr->device, buffer.buffer, nullptr);
+                vkDestroyBuffer(vbr->device, buffer.buffer, nullptr);
                 buffer.buffer = VK_NULL_HANDLE;
             }
             if (buffer.memory != VK_NULL_HANDLE)
             {
-                vkFreeMemory(vr->device, buffer.memory, nullptr);
+                vkFreeMemory(vbr->device, buffer.memory, nullptr);
                 buffer.memory = VK_NULL_HANDLE;
             }
         }
@@ -443,7 +444,7 @@ namespace Deako {
             allocInfo.commandBufferCount = 1;
 
             VkCommandBuffer commandBuffer;
-            VkCR(vkAllocateCommandBuffers(vr->device, &allocInfo, &commandBuffer));
+            VkCR(vkAllocateCommandBuffers(vbr->device, &allocInfo, &commandBuffer));
 
             VkCommandBufferBeginInfo beginInfo{};
             beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -463,11 +464,11 @@ namespace Deako {
             submitInfo.commandBufferCount = 1;
             submitInfo.pCommandBuffers = &commandBuffer;
 
-            VkCR(vkQueueSubmit(vr->graphicsQueue, 1, &submitInfo, nullptr));
+            VkCR(vkQueueSubmit(vbr->graphicsQueue, 1, &submitInfo, nullptr));
 
-            vkQueueWaitIdle(vr->graphicsQueue);
+            vkQueueWaitIdle(vbr->graphicsQueue);
 
-            vkFreeCommandBuffers(vr->device, commandPool, 1, &commandBuffer);
+            vkFreeCommandBuffers(vbr->device, commandPool, 1, &commandBuffer);
         }
 
     } // end namespace VulkanImage
@@ -508,7 +509,7 @@ namespace Deako {
             createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
 
             VkShaderModule shaderModule;
-            VkResult result = vkCreateShaderModule(vr->device, &createInfo, nullptr, &shaderModule);
+            VkResult result = vkCreateShaderModule(vbr->device, &createInfo, nullptr, &shaderModule);
             DK_CORE_ASSERT(!result);
 
             return shaderModule;
@@ -557,12 +558,12 @@ namespace Deako {
         const VkFormat format = VK_FORMAT_R16G16_SFLOAT;
         const uint32_t dim = 512;
 
-        vr->textures.lutBrdf = CreateRef<Texture2D>();
+        vsr->lightSource.lutBrdf = CreateRef<Texture2D>();
 
-        VkSampler& lutBrdfSampler = vr->textures.lutBrdf->sampler;
-        VkDescriptorImageInfo& lutBrdfDescriptor = vr->textures.lutBrdf->descriptor;
+        VkSampler& lutBrdfSampler = vsr->lightSource.lutBrdf->sampler;
+        VkDescriptorImageInfo& lutBrdfDescriptor = vsr->lightSource.lutBrdf->descriptor;
 
-        vr->textures.lutBrdf->image =
+        vsr->lightSource.lutBrdf->image =
             VulkanImage::Create({ dim, dim, 1 }, format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 1);
 
         // sampler
@@ -578,7 +579,7 @@ namespace Deako {
         samplerInfo.maxLod = 1.0f;
         samplerInfo.maxAnisotropy = 1.0f;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VkCR(vkCreateSampler(vr->device, &samplerInfo, nullptr, &lutBrdfSampler));
+        VkCR(vkCreateSampler(vbr->device, &samplerInfo, nullptr, &lutBrdfSampler));
 
         // FB, Att, RP, Pipe, etc.
         VkAttachmentDescription attachment{};
@@ -626,25 +627,25 @@ namespace Deako {
         renderPassInfo.pDependencies = dependencies.data();
 
         VkRenderPass renderPass;
-        VkCR(vkCreateRenderPass(vr->device, &renderPassInfo, nullptr, &renderPass));
+        VkCR(vkCreateRenderPass(vbr->device, &renderPassInfo, nullptr, &renderPass));
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderPass;
         framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments = &vr->textures.lutBrdf->image.view;
+        framebufferInfo.pAttachments = &vsr->lightSource.lutBrdf->image.view;
         framebufferInfo.width = dim;
         framebufferInfo.height = dim;
         framebufferInfo.layers = 1;
 
         VkFramebuffer framebuffer;
-        VkCR(vkCreateFramebuffer(vr->device, &framebufferInfo, nullptr, &framebuffer));
+        VkCR(vkCreateFramebuffer(vbr->device, &framebufferInfo, nullptr, &framebuffer));
 
         // desriptors
         VkDescriptorSetLayout descriptorSetLayout;
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
         descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        VkCR(vkCreateDescriptorSetLayout(vr->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
+        VkCR(vkCreateDescriptorSetLayout(vbr->device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout));
 
         // pipeline layout
         VkPipelineLayout pipelineLayout;
@@ -652,7 +653,7 @@ namespace Deako {
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-        VkCR(vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+        VkCR(vkCreatePipelineLayout(vbr->device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
 
         // pipeline states
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -733,10 +734,10 @@ namespace Deako {
         pipelineInfo.pStages = shaderStages.data();
 
         VkPipeline pipeline;
-        VkCR(vkCreateGraphicsPipelines(vr->device, vr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+        VkCR(vkCreateGraphicsPipelines(vbr->device, vbr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
 
         for (auto shaderStage : shaderStages)
-            vkDestroyShaderModule(vr->device, shaderStage.module, nullptr);
+            vkDestroyShaderModule(vbr->device, shaderStage.module, nullptr);
 
         // render
         VkClearValue clearValues[1];
@@ -750,7 +751,7 @@ namespace Deako {
         renderPassBeginInfo.pClearValues = clearValues;
         renderPassBeginInfo.framebuffer = framebuffer;
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vr->singleUseCommandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vbr->singleUseCommandPool);
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -770,15 +771,15 @@ namespace Deako {
         vkCmdDraw(commandBuffer, 3, 1, 0, 0);
         vkCmdEndRenderPass(commandBuffer);
 
-        VulkanCommand::EndSingleTimeCommands(vr->singleUseCommandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vbr->singleUseCommandPool, commandBuffer);
 
-        vkDestroyPipeline(vr->device, pipeline, nullptr);
-        vkDestroyPipelineLayout(vr->device, pipelineLayout, nullptr);
-        vkDestroyRenderPass(vr->device, renderPass, nullptr);
-        vkDestroyFramebuffer(vr->device, framebuffer, nullptr);
-        vkDestroyDescriptorSetLayout(vr->device, descriptorSetLayout, nullptr);
+        vkDestroyPipeline(vbr->device, pipeline, nullptr);
+        vkDestroyPipelineLayout(vbr->device, pipelineLayout, nullptr);
+        vkDestroyRenderPass(vbr->device, renderPass, nullptr);
+        vkDestroyFramebuffer(vbr->device, framebuffer, nullptr);
+        vkDestroyDescriptorSetLayout(vbr->device, descriptorSetLayout, nullptr);
 
-        lutBrdfDescriptor.imageView = vr->textures.lutBrdf->image.view;
+        lutBrdfDescriptor.imageView = vsr->lightSource.lutBrdf->image.view;
         lutBrdfDescriptor.sampler = lutBrdfSampler;
         lutBrdfDescriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }

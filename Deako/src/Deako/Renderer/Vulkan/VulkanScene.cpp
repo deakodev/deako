@@ -4,13 +4,14 @@
 #include "Deako/Asset/Scene/SceneHandler.h"
 #include "Deako/Asset/Texture/TextureHandler.h"
 
+#include "VulkanBase.h"
 #include "VulkanPipeline.h"
 
 namespace Deako {
 
-    static Ref<VulkanResources> vr = VulkanBase::GetResources();
-    static Ref<VulkanContext> vc = VulkanBase::GetContext();
-    static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
+    static Ref<VulkanBaseResources> vbr = VulkanBase::GetResources();
+    static Ref<VulkanBaseContext> vbc = VulkanBase::GetContext();
+    static Ref<VulkanBaseSettings> vbs = VulkanBase::GetSettings();
 
     void VulkanScene::Build()
     {
@@ -24,49 +25,49 @@ namespace Deako {
 
         SetUpPipelines();
 
-        s_SceneValid = true;
+        vsc->sceneValid = true;
     }
 
     void VulkanScene::CleanUp()
     {
         VulkanBase::Idle();
 
-        vkDestroyPipeline(vr->device, vr->skyboxPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->pbrPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->pbrDoubleSidedPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->pbrAlphaBlendingPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->unlitPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->unlitDoubleSidedPipeline, nullptr);
-        vkDestroyPipeline(vr->device, vr->unlitAlphaBlendingPipeline, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.skybox, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.pbr, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.pbrDoubleSided, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.pbrAlphaBlending, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.unlit, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.unlitDoubleSided, nullptr);
+        vkDestroyPipeline(vbr->device, vsr->pipelines.unlitAlphaBlending, nullptr);
 
-        vkDestroyPipelineLayout(vr->device, vr->scenePipelineLayout, nullptr);
-        vkDestroyPipelineLayout(vr->device, vr->skyboxPipelineLayout, nullptr);
+        vkDestroyPipelineLayout(vbr->device, vsr->scenePipelineLayout, nullptr);
+        vkDestroyPipelineLayout(vbr->device, vsr->skyboxPipelineLayout, nullptr);
 
-        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorLayouts.scene, nullptr);
-        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorLayouts.skybox, nullptr);
-        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorLayouts.material, nullptr);
-        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorLayouts.node, nullptr);
-        vkDestroyDescriptorSetLayout(vr->device, vr->descriptorLayouts.materialBuffer, nullptr);
+        vkDestroyDescriptorSetLayout(vbr->device, vsr->descriptorLayouts.scene, nullptr);
+        vkDestroyDescriptorSetLayout(vbr->device, vsr->descriptorLayouts.skybox, nullptr);
+        vkDestroyDescriptorSetLayout(vbr->device, vsr->descriptorLayouts.material, nullptr);
+        vkDestroyDescriptorSetLayout(vbr->device, vsr->descriptorLayouts.node, nullptr);
+        vkDestroyDescriptorSetLayout(vbr->device, vsr->descriptorLayouts.materialBuffer, nullptr);
 
-        for (auto& frame : vc->frames)
+        for (auto& frame : vbc->frames)
             frame.descriptorAllocator.DestroyPools();
 
-        vr->staticDescriptorAllocator.DestroyPools();
+        vsr->staticDescriptorAllocator.DestroyPools();
 
-        for (auto& uniform : vr->uniforms)
+        for (auto& uniform : vsr->uniforms)
         {
             VulkanBuffer::Destroy(uniform.dynamic.buffer);
             VulkanBuffer::Destroy(uniform.shared.buffer);
             VulkanBuffer::Destroy(uniform.light.buffer);
         }
 
-        VulkanBuffer::Destroy(vr->materialBuffer.buffer);
+        VulkanBuffer::Destroy(vsr->materialBuffer.buffer);
 
-        vr->textures.lutBrdf->Destroy();
-        vr->skybox.irradianceCube->Destroy();
-        vr->skybox.prefilteredCube->Destroy();
+        vsr->lightSource.lutBrdf->Destroy();
+        vsr->skybox.irradianceCube->Destroy();
+        vsr->skybox.prefilteredCube->Destroy();
 
-        vr->entities.clear();
+        vsc->entities.clear();
     }
 
     void VulkanScene::Rebuild()
@@ -77,38 +78,38 @@ namespace Deako {
 
     void VulkanScene::SetUpAssets()
     {
-        s_ProjectAssetPool = ProjectAssetPool::Get();
+        vsc->projectAssetPool = ProjectAssetPool::Get();
 
         Ref<Scene> scene = SceneHandler::GetActiveScene();
-        vr->entities = scene->GetAllEntitiesWith<PrefabComponent>();
+        vsc->entities = scene->GetAllEntitiesWith<PrefabComponent>();
 
-        for (auto it = vr->entities.begin(); it != vr->entities.end(); )
+        for (auto it = vsc->entities.begin(); it != vsc->entities.end(); )
         {
             Entity entity = *it;
             std::string& tag = entity.GetComponent<TagComponent>().tag;
 
             if (tag == "Skybox")
             {
-                vs->displayBackground = true;
+                vss->displayBackground = true;
 
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> mesh = s_ProjectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> mesh = vsc->projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
 
-                vr->skybox.model = mesh;  // easy access, separate from others
-                vr->entities.erase(it);    // erase the entity and update the iterator
+                vsr->skybox.model = mesh;  // easy access, separate from others
+                vsc->entities.erase(it);    // erase the entity and update the iterator
 
                 // Handle the skybox-specific components
                 auto& textureComp = entity.GetComponent<TextureComponent>();
-                vr->skybox.environmentCube = s_ProjectAssetPool->GetAsset<TextureCubeMap>(textureComp.handle);
+                vsr->skybox.environmentCube = vsc->projectAssetPool->GetAsset<TextureCubeMap>(textureComp.handle);
 
-                if (!vr->skybox.environmentCube)
+                if (!vsr->skybox.environmentCube)
                 {
-                    vr->skybox.environmentCube = TextureHandler::GetEmptyTextureCubeMap();
-                    vs->displayBackground = false;
+                    vsr->skybox.environmentCube = TextureHandler::GetEmptyTextureCubeMap();
+                    vss->displayBackground = false;
                 }
 
-                vr->skybox.irradianceCube->GenerateCubeMap();
-                vr->skybox.prefilteredCube->GenerateCubeMap();
+                vsr->skybox.irradianceCube->GenerateCubeMap();
+                vsr->skybox.prefilteredCube->GenerateCubeMap();
 
                 break;
             }
@@ -123,57 +124,57 @@ namespace Deako {
     void VulkanScene::SetUpUniforms()
     {
         VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(vr->physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(vbr->physicalDevice, &deviceProperties);
 
         // determine required alignment based on min device offset alignment
         size_t minUniformAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
-        vr->dynamicUniformAlignment = sizeof(glm::mat4);
+        vss->dynamicUniformAlignment = sizeof(glm::mat4);
 
         if (minUniformAlignment > 0)
-            vr->dynamicUniformAlignment = (vr->dynamicUniformAlignment + minUniformAlignment - 1) & ~(minUniformAlignment - 1);
+            vss->dynamicUniformAlignment = (vss->dynamicUniformAlignment + minUniformAlignment - 1) & ~(minUniformAlignment - 1);
 
-        size_t dynamicBufferSize = vr->entities.size() * vr->dynamicUniformAlignment;
+        size_t dynamicBufferSize = vsc->entities.size() * vss->dynamicUniformAlignment;
 
-        vr->uniformDynamicData.model = (glm::mat4*)VulkanMemory::AlignedAlloc(dynamicBufferSize, vr->dynamicUniformAlignment);
-        DK_CORE_ASSERT(vr->uniformDynamicData.model);
+        vsr->uniformDynamicData.model = (glm::mat4*)VulkanMemory::AlignedAlloc(dynamicBufferSize, vss->dynamicUniformAlignment);
+        DK_CORE_ASSERT(vsr->uniformDynamicData.model);
 
         VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        vr->uniforms.resize(vr->swapchain.imageCount);
-        for (auto& uniform : vr->uniforms)
+        vsr->uniforms.resize(vbr->swapchain.imageCount);
+        for (auto& uniform : vsr->uniforms)
         {
             // dynamic uniform buffer object with model matrix
             uniform.dynamic.buffer = VulkanBuffer::Create(dynamicBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-            uniform.dynamic.descriptor = { uniform.dynamic.buffer.buffer, 0, vr->dynamicUniformAlignment };
-            VkCR(vkMapMemory(vr->device, uniform.dynamic.buffer.memory, 0, dynamicBufferSize, 0, &uniform.dynamic.buffer.mapped));
+            uniform.dynamic.descriptor = { uniform.dynamic.buffer.buffer, 0, vss->dynamicUniformAlignment };
+            VkCR(vkMapMemory(vbr->device, uniform.dynamic.buffer.memory, 0, dynamicBufferSize, 0, &uniform.dynamic.buffer.mapped));
 
             // shared uniform buffer object with projection and view matrix
-            uniform.shared.buffer = VulkanBuffer::Create(sizeof(vr->uniformSharedData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.shared.descriptor = { uniform.shared.buffer.buffer, 0, sizeof(vr->uniformSharedData) };
-            VkCR(vkMapMemory(vr->device, uniform.shared.buffer.memory, 0, sizeof(vr->uniformSharedData), 0, &uniform.shared.buffer.mapped));
+            uniform.shared.buffer = VulkanBuffer::Create(sizeof(vsr->uniformSharedData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.shared.descriptor = { uniform.shared.buffer.buffer, 0, sizeof(vsr->uniformSharedData) };
+            VkCR(vkMapMemory(vbr->device, uniform.shared.buffer.memory, 0, sizeof(vsr->uniformSharedData), 0, &uniform.shared.buffer.mapped));
 
             // uniform buffer object with light data
-            uniform.light.buffer = VulkanBuffer::Create(sizeof(vr->uniformLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
-            uniform.light.descriptor = { uniform.light.buffer.buffer, 0, sizeof(vr->uniformLightData) };
-            VkCR(vkMapMemory(vr->device, uniform.light.buffer.memory, 0, sizeof(vr->uniformLightData), 0, &uniform.light.buffer.mapped));
+            uniform.light.buffer = VulkanBuffer::Create(sizeof(vsr->uniformLightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, memoryFlags);
+            uniform.light.descriptor = { uniform.light.buffer.buffer, 0, sizeof(vsr->uniformLightData) };
+            VkCR(vkMapMemory(vbr->device, uniform.light.buffer.memory, 0, sizeof(vsr->uniformLightData), 0, &uniform.light.buffer.mapped));
         }
     }
 
     void VulkanScene::UpdateUniforms(Ref<EditorCamera> camera)
     {
         // shared scene
-        vr->uniformSharedData.view = camera->GetView();
-        vr->uniformSharedData.projection = camera->GetProjection();
+        vsr->uniformSharedData.view = camera->GetView();
+        vsr->uniformSharedData.projection = camera->GetProjection();
 
-        glm::mat4 cv = glm::inverse(vr->uniformSharedData.view);
-        vr->uniformSharedData.camPos = glm::vec3(cv[3]);
+        glm::mat4 cv = glm::inverse(vsr->uniformSharedData.view);
+        vsr->uniformSharedData.camPos = glm::vec3(cv[3]);
 
         // models
         uint32_t index = 0;
-        for (Entity entity : vr->entities)
+        for (Entity entity : vsc->entities)
         {
             // aligned offset for dynamic uniform
-            glm::mat4* modelMatrix = (glm::mat4*)(((uint64_t)vr->uniformDynamicData.model + (index * vr->dynamicUniformAlignment)));
+            glm::mat4* modelMatrix = (glm::mat4*)(((uint64_t)vsr->uniformDynamicData.model + (index * vss->dynamicUniformAlignment)));
 
             *modelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
 
@@ -197,23 +198,23 @@ namespace Deako {
             index++;
         }
 
-        vr->uniformLightData.lightDir = glm::vec4(
-            sin(vr->lightSource.rotation.x) * cos(vr->lightSource.rotation.y),
-            sin(vr->lightSource.rotation.y),
-            cos(vr->lightSource.rotation.x) * cos(vr->lightSource.rotation.y),
+        vsr->uniformLightData.lightDir = glm::vec4(
+            sin(vsr->lightSource.rotation.x) * cos(vsr->lightSource.rotation.y),
+            sin(vsr->lightSource.rotation.y),
+            cos(vsr->lightSource.rotation.x) * cos(vsr->lightSource.rotation.y),
             0.0f);
 
-        VulkanResources::UniformSet uniformSet = vr->uniforms[vc->currentFrame];
-        memcpy(uniformSet.dynamic.buffer.mapped, vr->uniformDynamicData.model, vr->dynamicUniformAlignment * vr->entities.size());
-        memcpy(uniformSet.shared.buffer.mapped, &vr->uniformSharedData, sizeof(vr->uniformSharedData));
-        memcpy(uniformSet.light.buffer.mapped, &vr->uniformLightData, sizeof(vr->uniformLightData));
+        UniformSet uniformSet = vsr->uniforms[vbc->currentFrame];
+        memcpy(uniformSet.dynamic.buffer.mapped, vsr->uniformDynamicData.model, vss->dynamicUniformAlignment * vsc->entities.size());
+        memcpy(uniformSet.shared.buffer.mapped, &vsr->uniformSharedData, sizeof(vsr->uniformSharedData));
+        memcpy(uniformSet.light.buffer.mapped, &vsr->uniformLightData, sizeof(vsr->uniformLightData));
 
         // flush dynamic uniform to make changes visible to the host
         VkMappedMemoryRange memoryRange{};
         memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         memoryRange.memory = uniformSet.dynamic.buffer.memory;
-        memoryRange.size = vr->dynamicUniformAlignment * vr->entities.size();
-        vkFlushMappedMemoryRanges(vr->device, 1, &memoryRange);
+        memoryRange.size = vss->dynamicUniformAlignment * vsc->entities.size();
+        vkFlushMappedMemoryRanges(vbr->device, 1, &memoryRange);
     }
 
     void VulkanScene::SetUpDescriptors()
@@ -227,11 +228,11 @@ namespace Deako {
                 { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (3 + 1) }, // 3 sets for scene, 1 set for skybox
             };
 
-            for (int i = 0; i < vs->frameOverlap; i++)
+            for (int i = 0; i < vbs->frameOverlap; i++)
             {
                 static uint32_t maxSets = 1000;
                 VulkanDescriptor::AllocatorGrowable descriptorAllocator{ maxSets, poolSizes };
-                vc->frames[i].descriptorAllocator = descriptorAllocator;
+                vbc->frames[i].descriptorAllocator = descriptorAllocator;
             }
         }
 
@@ -240,11 +241,11 @@ namespace Deako {
             uint32_t materialCount = 0;
             uint32_t materialSamplerCount = 0;
 
-            for (Entity entity : vr->entities)
+            for (Entity entity : vsc->entities)
             {
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
 
-                Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> model = vsc->projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
                 for (auto node : model->linearNodes)
                     if (node->mesh) meshCount++; // 1 set for mesh
 
@@ -261,7 +262,7 @@ namespace Deako {
 
             uint32_t maxSets = meshCount + materialCount + materialSamplerCount + 1;
             VulkanDescriptor::AllocatorGrowable descriptorAllocator{ maxSets, poolSizes };
-            vr->staticDescriptorAllocator = descriptorAllocator;
+            vsr->staticDescriptorAllocator = descriptorAllocator;
         }
 
         /* DESCRIPTOR SETS */
@@ -275,26 +276,26 @@ namespace Deako {
             layoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
             layoutBuilder.AddBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            vr->descriptorLayouts.scene = layoutBuilder.Build();
+            vsr->descriptorLayouts.scene = layoutBuilder.Build();
 
-            for (int i = 0; i < vs->frameOverlap; i++)
+            for (int i = 0; i < vbs->frameOverlap; i++)
             {
-                FrameData& frame = vc->frames[i];
+                FrameData& frame = vbc->frames[i];
 
-                VkDescriptorSetLayout layout = vr->descriptorLayouts.scene;
+                VkDescriptorSetLayout layout = vsr->descriptorLayouts.scene;
                 frame.sceneDescriptorSet = frame.descriptorAllocator.Allocate(layout);
                 VkDescriptorSet set = frame.sceneDescriptorSet;
 
-                VulkanResources::UniformSet& uniform = vr->uniforms[i];
+                UniformSet& uniform = vsr->uniforms[i];
 
                 VulkanDescriptor::Writer writer;
                 writer.WriteBuffer(0, set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, uniform.dynamic.descriptor);
                 writer.WriteBuffer(1, set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uniform.shared.descriptor);
                 writer.WriteBuffer(2, set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uniform.light.descriptor);
 
-                writer.WriteImage(3, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vr->skybox.irradianceCube->descriptor);
-                writer.WriteImage(4, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vr->skybox.prefilteredCube->descriptor);
-                writer.WriteImage(5, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vr->textures.lutBrdf->descriptor);
+                writer.WriteImage(3, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vsr->skybox.irradianceCube->descriptor);
+                writer.WriteImage(4, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vsr->skybox.prefilteredCube->descriptor);
+                writer.WriteImage(5, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vsr->lightSource.lutBrdf->descriptor);
 
                 writer.UpdateSets();
             }
@@ -306,22 +307,22 @@ namespace Deako {
             layoutBuilder.AddBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
             layoutBuilder.AddBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            vr->descriptorLayouts.skybox = layoutBuilder.Build();
+            vsr->descriptorLayouts.skybox = layoutBuilder.Build();
 
-            for (int i = 0; i < vs->frameOverlap; i++)
+            for (int i = 0; i < vbs->frameOverlap; i++)
             {
-                FrameData& frame = vc->frames[i];
+                FrameData& frame = vbc->frames[i];
 
-                VkDescriptorSetLayout layout = vr->descriptorLayouts.skybox;
+                VkDescriptorSetLayout layout = vsr->descriptorLayouts.skybox;
                 frame.skyboxDescriptorSet = frame.descriptorAllocator.Allocate(layout);
                 VkDescriptorSet set = frame.skyboxDescriptorSet;
 
-                VulkanResources::UniformSet& uniform = vr->uniforms[i];
+                UniformSet& uniform = vsr->uniforms[i];
 
                 VulkanDescriptor::Writer writer;
                 writer.WriteBuffer(0, set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uniform.shared.descriptor);
                 writer.WriteBuffer(1, set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, uniform.light.descriptor);
-                writer.WriteImage(2, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vr->skybox.prefilteredCube->descriptor);
+                writer.WriteImage(2, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vsr->skybox.prefilteredCube->descriptor);
 
                 writer.UpdateSets();
             }
@@ -335,14 +336,14 @@ namespace Deako {
             layoutBuilder.AddBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
             layoutBuilder.AddBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            vr->descriptorLayouts.material = layoutBuilder.Build();
+            vsr->descriptorLayouts.material = layoutBuilder.Build();
 
             Ref<Texture2D> emptyTexture = TextureHandler::GetEmptyTexture2D();
 
-            for (Entity entity : vr->entities)
+            for (Entity entity : vsc->entities)
             {
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> model = vsc->projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
 
                 for (auto& material : model->materials)
                 {
@@ -369,8 +370,8 @@ namespace Deako {
                             materialDescriptors[1] = material->extension.specularGlossinessTexture->descriptor;
                     }
 
-                    VkDescriptorSetLayout layout = vr->descriptorLayouts.material;
-                    material->descriptorSet = vr->staticDescriptorAllocator.Allocate(layout);
+                    VkDescriptorSetLayout layout = vsr->descriptorLayouts.material;
+                    material->descriptorSet = vsr->staticDescriptorAllocator.Allocate(layout);
                     VkDescriptorSet set = material->descriptorSet;
 
                     VulkanDescriptor::Writer writer;
@@ -389,14 +390,14 @@ namespace Deako {
             VulkanDescriptor::LayoutBuilder layoutBuilder;
             layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
 
-            vr->descriptorLayouts.node = layoutBuilder.Build();
+            vsr->descriptorLayouts.node = layoutBuilder.Build();
 
             auto AllocateNodeDescriptorSet = [](Node* node)
                 {
                     if (!node || !node->mesh) return;
 
-                    VkDescriptorSetLayout layout = vr->descriptorLayouts.node;
-                    node->mesh->uniform.descriptorSet = vr->staticDescriptorAllocator.Allocate(layout);
+                    VkDescriptorSetLayout layout = vsr->descriptorLayouts.node;
+                    node->mesh->uniform.descriptorSet = vsr->staticDescriptorAllocator.Allocate(layout);
                     VkDescriptorSet set = node->mesh->uniform.descriptorSet;
 
                     VulkanDescriptor::Writer writer;
@@ -405,10 +406,10 @@ namespace Deako {
                     writer.UpdateSets();
                 };
 
-            for (Entity entity : vr->entities)
+            for (Entity entity : vsc->entities)
             {
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> model = vsc->projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
 
                 for (auto& node : model->nodes) // per-node descriptor set
                 {
@@ -424,14 +425,14 @@ namespace Deako {
             VulkanDescriptor::LayoutBuilder layoutBuilder;
             layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-            vr->descriptorLayouts.materialBuffer = layoutBuilder.Build();
+            vsr->descriptorLayouts.materialBuffer = layoutBuilder.Build();
 
-            VkDescriptorSetLayout layout = vr->descriptorLayouts.materialBuffer;
-            vr->materialBuffer.descriptorSet = vr->staticDescriptorAllocator.Allocate(layout);
-            VkDescriptorSet set = vr->materialBuffer.descriptorSet;
+            VkDescriptorSetLayout layout = vsr->descriptorLayouts.materialBuffer;
+            vsr->materialBuffer.descriptorSet = vsr->staticDescriptorAllocator.Allocate(layout);
+            VkDescriptorSet set = vsr->materialBuffer.descriptorSet;
 
             VulkanDescriptor::Writer writer;
-            writer.WriteBuffer(0, set, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vr->materialBuffer.descriptor);
+            writer.WriteBuffer(0, set, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vsr->materialBuffer.descriptor);
 
             writer.UpdateSets();
         }
@@ -449,14 +450,14 @@ namespace Deako {
         /* PIPELINE LAYOUTS */
 
         std::vector<VkDescriptorSetLayout> skyboxDescriptorLayouts = {
-              vr->descriptorLayouts.skybox,
+              vsr->descriptorLayouts.skybox,
         };
 
         std::vector<VkDescriptorSetLayout> sceneDescriptorLayouts = {
-               vr->descriptorLayouts.scene,
-               vr->descriptorLayouts.material,
-               vr->descriptorLayouts.node,
-               vr->descriptorLayouts.materialBuffer,
+               vsr->descriptorLayouts.scene,
+               vsr->descriptorLayouts.material,
+               vsr->descriptorLayouts.node,
+               vsr->descriptorLayouts.materialBuffer,
         };
 
         VkPushConstantRange pushConstantRange{};
@@ -470,15 +471,15 @@ namespace Deako {
 
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(skyboxDescriptorLayouts.size());
         pipelineLayoutInfo.pSetLayouts = skyboxDescriptorLayouts.data();
-        VkCR(vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &vr->skyboxPipelineLayout));
+        VkCR(vkCreatePipelineLayout(vbr->device, &pipelineLayoutInfo, nullptr, &vsr->skyboxPipelineLayout));
 
         pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(sceneDescriptorLayouts.size());
         pipelineLayoutInfo.pSetLayouts = sceneDescriptorLayouts.data();
-        VkCR(vkCreatePipelineLayout(vr->device, &pipelineLayoutInfo, nullptr, &vr->scenePipelineLayout));
+        VkCR(vkCreatePipelineLayout(vbr->device, &pipelineLayoutInfo, nullptr, &vsr->scenePipelineLayout));
 
         /* PIPELINE */
 
-        VkSampleCountFlagBits sampleFlag = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+        VkSampleCountFlagBits sampleFlag = vbs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 
         VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
 
@@ -502,7 +503,7 @@ namespace Deako {
 
             pipelineBuilder.SetVertexInput(vertexInputBinding, vertexInputAttributes);
 
-            vr->skyboxPipeline = pipelineBuilder.Build(vr->skyboxPipelineLayout);
+            vsr->pipelines.skybox = pipelineBuilder.Build(vsr->skyboxPipelineLayout);
         }
 
         {   // pbr default pipeline
@@ -527,15 +528,15 @@ namespace Deako {
 
             pipelineBuilder.SetVertexInput(vertexInputBinding, vertexInputAttributes);
 
-            vr->pbrPipeline = pipelineBuilder.Build(vr->scenePipelineLayout);
+            vsr->pipelines.pbr = pipelineBuilder.Build(vsr->scenePipelineLayout);
 
             // pbr double sided pipeline
             pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            vr->pbrDoubleSidedPipeline = pipelineBuilder.Build(vr->scenePipelineLayout);
+            vsr->pipelines.pbrDoubleSided = pipelineBuilder.Build(vsr->scenePipelineLayout);
 
             // pbr alpha blending pipeline
             pipelineBuilder.EnableAlphaBlending();
-            vr->pbrAlphaBlendingPipeline = pipelineBuilder.Build(vr->scenePipelineLayout);
+            vsr->pipelines.pbrAlphaBlending = pipelineBuilder.Build(vsr->scenePipelineLayout);
         }
 
         {   // unlit default pipeline
@@ -560,29 +561,29 @@ namespace Deako {
 
             pipelineBuilder.SetVertexInput(vertexInputBinding, vertexInputAttributes);
 
-            vr->unlitPipeline = pipelineBuilder.Build(vr->scenePipelineLayout);
+            vsr->pipelines.unlit = pipelineBuilder.Build(vsr->scenePipelineLayout);
 
             // unlit double sided pipeline
             pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            vr->unlitDoubleSidedPipeline = pipelineBuilder.Build(vr->scenePipelineLayout);
+            vsr->pipelines.unlitDoubleSided = pipelineBuilder.Build(vsr->scenePipelineLayout);
 
             // unlit alpha blending pipeline
             pipelineBuilder.EnableAlphaBlending();
-            vr->unlitAlphaBlendingPipeline = pipelineBuilder.Build(vr->scenePipelineLayout);
+            vsr->pipelines.unlitAlphaBlending = pipelineBuilder.Build(vsr->scenePipelineLayout);
         }
 
-        vkDestroyShaderModule(vr->device, skyboxVert, nullptr);
-        vkDestroyShaderModule(vr->device, skyboxFrag, nullptr);
-        vkDestroyShaderModule(vr->device, pbrVert, nullptr);
-        vkDestroyShaderModule(vr->device, pbrMaterialFrag, nullptr);
-        vkDestroyShaderModule(vr->device, unlitMaterialFrag, nullptr);
+        vkDestroyShaderModule(vbr->device, skyboxVert, nullptr);
+        vkDestroyShaderModule(vbr->device, skyboxFrag, nullptr);
+        vkDestroyShaderModule(vbr->device, pbrVert, nullptr);
+        vkDestroyShaderModule(vbr->device, pbrMaterialFrag, nullptr);
+        vkDestroyShaderModule(vbr->device, unlitMaterialFrag, nullptr);
     }
 
     void VulkanScene::Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex)
     {
-        AllocatedImage& colorTarget = vr->multisampleTarget.color;
-        AllocatedImage& depthTarget = vr->multisampleTarget.depth;
-        AllocatedImage& viewportImage = vr->viewport.images[imageIndex];
+        VulkanImage::AllocatedImage& colorTarget = vbr->multisampleTarget.color;
+        VulkanImage::AllocatedImage& depthTarget = vbr->multisampleTarget.depth;
+        VulkanImage::AllocatedImage& viewportImage = vbr->viewport.images[imageIndex];
 
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -628,32 +629,32 @@ namespace Deako {
         scissor.extent = { colorTarget.extent.width,  colorTarget.extent.height };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        if (vs->displayBackground)
+        if (vss->displayBackground)
         {
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->skyboxPipelineLayout, 0, 1, &vc->frames[vc->currentFrame].skyboxDescriptorSet, 0, nullptr);
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vr->skyboxPipeline);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vsr->skyboxPipelineLayout, 0, 1, &vbc->frames[vbc->currentFrame].skyboxDescriptorSet, 0, nullptr);
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vsr->pipelines.skybox);
 
-            vr->skybox.model->Draw(commandBuffer);
+            vsr->skybox.model->Draw(commandBuffer);
         }
 
         VkDeviceSize vertexOffsets[1] = { 0 };
         uint32_t dynamicOffset = 0;
 
         uint32_t index = 0;
-        for (Entity entity : vr->entities)
+        for (Entity entity : vsc->entities)
         {
             auto& prefabComp = entity.GetComponent<PrefabComponent>();
-            Ref<Model> model = s_ProjectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+            Ref<Model> model = vsc->projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
 
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, vertexOffsets);
 
             if (model->indices.buffer != VK_NULL_HANDLE)
                 vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vc->boundPipeline = VK_NULL_HANDLE;
+            vsc->boundPipeline = VK_NULL_HANDLE;
 
             // one dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
-            dynamicOffset = index * static_cast<uint32_t>(vr->dynamicUniformAlignment);
+            dynamicOffset = index * static_cast<uint32_t>(vss->dynamicUniformAlignment);
 
             // opaque primitives first
             for (auto node : model->nodes)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VulkanTypes.h"
+
 #include "VulkanTexture.h"
 #include "VulkanMaterial.h"
 #include "Deako/Asset/Asset.h"
@@ -57,7 +57,7 @@ namespace Deako {
 
         struct UniformBuffer
         {
-            AllocatedBuffer buffer;
+            VulkanBuffer::AllocatedBuffer buffer;
             VkDescriptorBufferInfo descriptor;
             VkDescriptorSet descriptorSet;
             void* mapped;
@@ -166,8 +166,8 @@ namespace Deako {
             uint32_t position = 0;
         } vertexData, indexData;
 
-        AllocatedBuffer vertices;
-        AllocatedBuffer indices;
+        VulkanBuffer::AllocatedBuffer vertices;
+        VulkanBuffer::AllocatedBuffer indices;
 
         std::filesystem::path path;
 

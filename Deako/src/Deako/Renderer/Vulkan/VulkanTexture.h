@@ -1,7 +1,7 @@
 #pragma once
 
-#include "VulkanTypes.h"
 #include "Deako/Asset/Asset.h"
+#include "VulkanResource.h"
 
 #include <vulkan/vulkan.h>
 
@@ -41,7 +41,7 @@ namespace Deako {
     {
         TextureDetails details;
 
-        AllocatedImage image;
+        VulkanImage::AllocatedImage image;
         VkSampler sampler;
         VkDescriptorImageInfo descriptor;
         uint32_t mipLevels; // TODO: remove

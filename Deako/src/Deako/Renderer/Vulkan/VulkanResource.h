@@ -1,8 +1,5 @@
 #pragma once
 
-#include "VulkanTypes.h"
-#include "VulkanModel.h"
-
 #include "Deako/Renderer/RendererTypes.h"
 
 #include <vulkan/vulkan.h>
@@ -10,6 +7,13 @@
 namespace Deako {
 
     namespace VulkanSwapchain {
+
+        struct SwapchainDetails
+        {
+            VkSurfaceCapabilitiesKHR                  capabilities;
+            std::vector<VkSurfaceFormatKHR>           formats;
+            std::vector<VkPresentModeKHR>             presentModes;
+        };
 
         SwapchainDetails QuerySupport(VkPhysicalDevice physicalDevice);
 
@@ -52,6 +56,15 @@ namespace Deako {
 
     namespace VulkanImage {
 
+        struct AllocatedImage
+        {
+            VkImage                                   image;
+            VkImageView                               view;
+            VkDeviceMemory                            memory;
+            VkExtent3D                                extent;
+            VkFormat                                  format;
+        };
+
         AllocatedImage Create(VkExtent3D extent, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, uint32_t mipLevels = 1, VkImageType imageType = VK_IMAGE_TYPE_2D);
 
         void Destroy(const AllocatedImage& allocImage);
@@ -70,6 +83,20 @@ namespace Deako {
 
 
     namespace VulkanBuffer {
+
+        struct AllocatedBuffer
+        {
+            VkBuffer                                  buffer;
+            VkDeviceMemory                            memory;
+            VkMemoryRequirements                      memReqs;
+            void* /*                               */ mapped;
+        };
+
+        struct UniformBuffer
+        {
+            AllocatedBuffer                           buffer;
+            VkDescriptorBufferInfo                    descriptor;
+        };
 
         AllocatedBuffer Create(size_t allocSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags reqFlags = 0);
 

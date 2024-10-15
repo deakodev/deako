@@ -5,8 +5,7 @@
 
 namespace Deako {
 
-    static Ref<VulkanResources> vr = VulkanBase::GetResources();
-    static Ref<VulkanSettings> vs = VulkanBase::GetSettings();
+    static  Ref<VulkanBaseResources> vbr = VulkanBase::GetResources();
 
     namespace VulkanPipeline {
 
@@ -31,9 +30,9 @@ namespace Deako {
             VkPipelineRenderingCreateInfoKHR renderingInfo{};
             renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
             renderingInfo.colorAttachmentCount = 1;
-            renderingInfo.pColorAttachmentFormats = &vr->multisampleTarget.color.format;
-            renderingInfo.depthAttachmentFormat = vr->multisampleTarget.depth.format;
-            renderingInfo.stencilAttachmentFormat = vr->multisampleTarget.depth.format;
+            renderingInfo.pColorAttachmentFormats = &vbr->multisampleTarget.color.format;
+            renderingInfo.depthAttachmentFormat = vbr->multisampleTarget.depth.format;
+            renderingInfo.stencilAttachmentFormat = vbr->multisampleTarget.depth.format;
 
             VkGraphicsPipelineCreateInfo pipelineInfo{};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -53,7 +52,7 @@ namespace Deako {
             pipelineInfo.pNext = &renderingInfo;
 
             VkPipeline pipeline{};
-            VkCR(vkCreateGraphicsPipelines(vr->device, vr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+            VkCR(vkCreateGraphicsPipelines(vbr->device, vbr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
 
             return pipeline;
         }

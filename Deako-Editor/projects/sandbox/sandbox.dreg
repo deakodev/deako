@@ -1,4 +1,10 @@
 AssetRegistry:
+  - AssetHandle: 9803649518941654224
+    AssetPath: prefabs/orientationTest.gltf
+    AssetType: Prefab
+  - AssetHandle: 5532312814824508002
+    AssetPath: prefabs/BlueCube.gltf
+    AssetType: Prefab
   - AssetHandle: 11821854033975738793
     AssetPath: scenes/sandbox.dscene
     AssetType: Scene
@@ -8,14 +14,8 @@ AssetRegistry:
   - AssetHandle: 6885474818565613459
     AssetPath: environments/satara_night_cube.ktx
     AssetType: TextureCubeMap
-  - AssetHandle: 9803649518941654224
-    AssetPath: prefabs/orientationTest.gltf
-    AssetType: Prefab
   - AssetHandle: 57892318812072087
     AssetPath: prefabs/Cube.gltf
-    AssetType: Prefab
-  - AssetHandle: 5532312814824508002
-    AssetPath: prefabs/BlueCube.gltf
     AssetType: Prefab
   - AssetHandle: 51418710489529541
     AssetPath: prefabs/DamagedHelmet.gltf

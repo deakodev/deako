@@ -4,6 +4,8 @@
 #include "Deako/Core/Application.h" 
 #include "Deako/ImGui/ImGuiLayer.h"
 
+#include "VulkanScene.h"
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -11,14 +13,18 @@
 
 namespace Deako {
 
-    Ref<VulkanSettings> VulkanBase::vs = CreateRef<VulkanSettings>();
-    Ref<VulkanContext> VulkanBase::vc = CreateRef<VulkanContext>();
-    Ref<VulkanResources> VulkanBase::vr = CreateRef<VulkanResources>();
-
     PFN_vkCmdPipelineBarrier2KHR vkCmdPipelineBarrier2KHR = nullptr;
     PFN_vkQueueSubmit2KHR vkQueueSubmit2KHR = nullptr;
     PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
     PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
+
+    Ref<VulkanBaseSettings> VulkanBase::vbs = CreateRef<VulkanBaseSettings>();
+    Ref<VulkanBaseContext> VulkanBase::vbc = CreateRef<VulkanBaseContext>();
+    Ref<VulkanBaseResources> VulkanBase::vbr = CreateRef<VulkanBaseResources>();
+
+    Ref<VulkanSceneSettings> VulkanScene::vss = CreateRef<VulkanSceneSettings>();
+    Ref<VulkanSceneContext> VulkanScene::vsc = CreateRef<VulkanSceneContext>();
+    Ref<VulkanSceneResources> VulkanScene::vsr = CreateRef<VulkanSceneResources>();
 
     void VulkanBase::Init()
     {
@@ -41,7 +47,7 @@ namespace Deako {
 
     void VulkanBase::Idle()
     {
-        vkDeviceWaitIdle(vr->device);
+        vkDeviceWaitIdle(vbr->device);
     }
 
     void VulkanBase::Shutdown()
@@ -51,46 +57,46 @@ namespace Deako {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        vkDestroyDescriptorPool(vr->device, vr->imguiDescriptorPool, nullptr);
-        vkDestroySampler(vr->device, vr->viewport.sampler, nullptr);
+        vkDestroyDescriptorPool(vbr->device, vbr->imguiDescriptorPool, nullptr);
+        vkDestroySampler(vbr->device, vbr->viewport.sampler, nullptr);
 
-        for (auto image : vr->viewport.images)
+        for (auto image : vbr->viewport.images)
             VulkanImage::Destroy(image);
 
-        for (auto& frame : vc->frames)
+        for (auto& frame : vbc->frames)
         {
-            vkDestroySemaphore(vr->device, frame.renderSemaphore, nullptr);
-            vkDestroySemaphore(vr->device, frame.presentSemaphore, nullptr);
-            vkDestroyFence(vr->device, frame.waitFence, nullptr);
-            vkDestroyCommandPool(vr->device, frame.commandPool, nullptr);
+            vkDestroySemaphore(vbr->device, frame.renderSemaphore, nullptr);
+            vkDestroySemaphore(vbr->device, frame.presentSemaphore, nullptr);
+            vkDestroyFence(vbr->device, frame.waitFence, nullptr);
+            vkDestroyCommandPool(vbr->device, frame.commandPool, nullptr);
         }
 
-        vkDestroyCommandPool(vr->device, vr->singleUseCommandPool, nullptr);
+        vkDestroyCommandPool(vbr->device, vbr->singleUseCommandPool, nullptr);
 
-        vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
+        vkDestroyPipelineCache(vbr->device, vbr->pipelineCache, nullptr);
 
-        for (auto imageView : vr->swapchain.views)
-            vkDestroyImageView(vr->device, imageView, nullptr);
+        for (auto imageView : vbr->swapchain.views)
+            vkDestroyImageView(vbr->device, imageView, nullptr);
 
-        VulkanImage::Destroy(vr->swapchain.colorTarget);
-        VulkanImage::Destroy(vr->multisampleTarget.color);
-        VulkanImage::Destroy(vr->multisampleTarget.depth);
+        VulkanImage::Destroy(vbr->swapchain.colorTarget);
+        VulkanImage::Destroy(vbr->multisampleTarget.color);
+        VulkanImage::Destroy(vbr->multisampleTarget.depth);
 
-        vkDestroySwapchainKHR(vr->device, vr->swapchain.swapchain, nullptr);
+        vkDestroySwapchainKHR(vbr->device, vbr->swapchain.swapchain, nullptr);
 
-        vkDestroyDevice(vr->device, nullptr);
+        vkDestroyDevice(vbr->device, nullptr);
 
-        vkDestroySurfaceKHR(vr->instance, vr->surface, nullptr);
+        vkDestroySurfaceKHR(vbr->instance, vbr->surface, nullptr);
 
-        if (vs->validationEnabled) VulkanDebug::DestroyDebugUtilsMessengerEXT();
+        if (vbs->validationEnabled) VulkanDebug::DestroyDebugUtilsMessengerEXT();
 
-        vkDestroyInstance(vr->instance, nullptr);
+        vkDestroyInstance(vbr->instance, nullptr);
     }
 
     void VulkanBase::CreateInstance()
     {
         #if defined(VK_VALIDATION)
-        vs->validationEnabled = true;
+        vbs->validationEnabled = true;
         #endif
 
         VkApplicationInfo appInfo = {};
@@ -113,7 +119,7 @@ namespace Deako {
         instanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         instanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         #endif
-        if (vs->validationEnabled)
+        if (vbs->validationEnabled)
             instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         // check if required instanceExtensions are supported
@@ -150,7 +156,7 @@ namespace Deako {
         }
 
         std::vector<const char*> validationLayerNames;
-        if (vs->validationEnabled)
+        if (vbs->validationEnabled)
         {
             validationLayerNames.push_back("VK_LAYER_KHRONOS_validation");
             instanceInfo.enabledLayerCount = (uint32_t)validationLayerNames.size();
@@ -161,12 +167,12 @@ namespace Deako {
             instanceInfo.pNext = &debugInfo;
         }
 
-        VkCR(vkCreateInstance(&instanceInfo, nullptr, &vr->instance));
+        VkCR(vkCreateInstance(&instanceInfo, nullptr, &vbr->instance));
     }
 
     void VulkanBase::SetUpDebugMessenger()
     {
-        if (vs->validationEnabled)
+        if (vbs->validationEnabled)
         {
             VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
             VulkanDebug::PopulateDebugMessengerCreateInfo(debugInfo);
@@ -178,15 +184,15 @@ namespace Deako {
     {
         /* CREATE SURFACE */
         Ref<GLFWwindow> window = Application::Get().GetWindow().GetNativeWindow();
-        VkCR(glfwCreateWindowSurface(vr->instance, window.get(), nullptr, &vr->surface));
+        VkCR(glfwCreateWindowSurface(vbr->instance, window.get(), nullptr, &vbr->surface));
 
         /* DETERMINE PHYSICAL */
         uint32_t deviceCount = 0;
-        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(vbr->instance, &deviceCount, nullptr);
         DK_CORE_ASSERT(deviceCount);  // check if any devices are supported
 
         std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-        vkEnumeratePhysicalDevices(vr->instance, &deviceCount, physicalDevices.data());
+        vkEnumeratePhysicalDevices(vbr->instance, &deviceCount, physicalDevices.data());
 
         std::multimap<int, VkPhysicalDevice> candidates;
         for (const auto& physicalDevice : physicalDevices)
@@ -196,15 +202,15 @@ namespace Deako {
         }
 
         // determine best candidate and set as physical device
-        if (candidates.rbegin()->first > 0) vr->physicalDevice = candidates.rbegin()->second;
+        if (candidates.rbegin()->first > 0) vbr->physicalDevice = candidates.rbegin()->second;
         else DK_CORE_ASSERT(false);
 
         // set family indices of our selected physical device
-        VulkanDevice::FindQueueFamilies(vr->physicalDevice);
+        VulkanDevice::FindQueueFamilies(vbr->physicalDevice);
 
         /* CREATE LOGICAL */
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos; // obtain
-        std::set<uint32_t> queueFamilies = { vr->graphicsFamily.value(), vr->presentFamily.value() };
+        std::set<uint32_t> queueFamilies = { vbr->graphicsFamily.value(), vbr->presentFamily.value() };
 
         float queuePriority = 1.0f; // 0.0 - 1.0, influences scheduling of command buffer
         for (uint32_t queueFamily : queueFamilies)
@@ -240,7 +246,7 @@ namespace Deako {
         enabledExtensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
         enabledExtensions.push_back(VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME);
 
-        VulkanDevice::CheckExtensionSupport(vr->physicalDevice, enabledExtensions);
+        VulkanDevice::CheckExtensionSupport(vbr->physicalDevice, enabledExtensions);
 
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -255,24 +261,24 @@ namespace Deako {
             deviceInfo.ppEnabledExtensionNames = enabledExtensions.data();
         }
 
-        VkCR(vkCreateDevice(vr->physicalDevice, &deviceInfo, nullptr, &vr->device));
+        VkCR(vkCreateDevice(vbr->physicalDevice, &deviceInfo, nullptr, &vbr->device));
 
         /* GET QUEUE FAMILIES */
-        vkGetDeviceQueue(vr->device, vr->graphicsFamily.value(), 0, &vr->graphicsQueue);
-        vkGetDeviceQueue(vr->device, vr->presentFamily.value(), 0, &vr->presentQueue);
+        vkGetDeviceQueue(vbr->device, vbr->graphicsFamily.value(), 0, &vbr->graphicsQueue);
+        vkGetDeviceQueue(vbr->device, vbr->presentFamily.value(), 0, &vbr->presentQueue);
 
         // find certain extension functions since macos doesn't support 1.3
         vkCmdPipelineBarrier2KHR =
-            (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(vr->device, "vkCmdPipelineBarrier2KHR");
+            (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(vbr->device, "vkCmdPipelineBarrier2KHR");
         vkQueueSubmit2KHR =
-            (PFN_vkQueueSubmit2KHR)vkGetDeviceProcAddr(vr->device, "vkQueueSubmit2KHR");
+            (PFN_vkQueueSubmit2KHR)vkGetDeviceProcAddr(vbr->device, "vkQueueSubmit2KHR");
         if (!vkCmdPipelineBarrier2KHR || !vkQueueSubmit2KHR)
             throw std::runtime_error("Failed to load VK_KHR_synchronization2 functions!");
 
         vkCmdBeginRenderingKHR =
-            (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(vr->device, "vkCmdBeginRenderingKHR");
+            (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(vbr->device, "vkCmdBeginRenderingKHR");
         vkCmdEndRenderingKHR =
-            (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(vr->device, "vkCmdEndRenderingKHR");
+            (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(vbr->device, "vkCmdEndRenderingKHR");
         if (!vkCmdBeginRenderingKHR || !vkCmdEndRenderingKHR)
             throw std::runtime_error("Failed to load VK_KHR_dynamic_rendering functions!");
     }
@@ -280,24 +286,24 @@ namespace Deako {
     void VulkanBase::SetUpSwapchain()
     {
         /* SWAPCHAIN CREATION */
-        VkSwapchainKHR oldSwapchain = vr->swapchain.swapchain;
+        VkSwapchainKHR oldSwapchain = vbr->swapchain.swapchain;
 
-        VulkanSwapchain::QuerySupport(vr->physicalDevice);
+        VulkanSwapchain::QuerySupport(vbr->physicalDevice);
 
-        VkSurfaceCapabilitiesKHR caps = vr->swapchain.details.capabilities;
-        std::vector<VkSurfaceFormatKHR> formats = vr->swapchain.details.formats;
-        std::vector<VkPresentModeKHR> presentModes = vr->swapchain.details.presentModes;
+        VkSurfaceCapabilitiesKHR caps = vbr->swapchain.details.capabilities;
+        std::vector<VkSurfaceFormatKHR> formats = vbr->swapchain.details.formats;
+        std::vector<VkPresentModeKHR> presentModes = vbr->swapchain.details.presentModes;
 
         VkSurfaceFormatKHR surfaceFormat = VulkanSwapchain::ChooseSurfaceFormat(formats);
-        vr->swapchain.format = surfaceFormat.format;
+        vbr->swapchain.format = surfaceFormat.format;
 
         VkPresentModeKHR presentMode = VulkanSwapchain::ChoosePresentMode(presentModes);
-        vr->swapchain.extent = VulkanSwapchain::ChooseExtent(caps);
+        vbr->swapchain.extent = VulkanSwapchain::ChooseExtent(caps);
 
         // check to make sure we dont exceed the max number of possible images
-        vr->swapchain.imageCount = caps.minImageCount;
-        if (caps.maxImageCount > 0 && vr->swapchain.imageCount > caps.maxImageCount)
-            vr->swapchain.imageCount = caps.maxImageCount;
+        vbr->swapchain.imageCount = caps.minImageCount;
+        if (caps.maxImageCount > 0 && vbr->swapchain.imageCount > caps.maxImageCount)
+            vbr->swapchain.imageCount = caps.maxImageCount;
 
         // find the transformation of the surface
         VkSurfaceTransformFlagsKHR preTransform;
@@ -325,11 +331,11 @@ namespace Deako {
 
         VkSwapchainCreateInfoKHR swapchainInfo = {};
         swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainInfo.surface = vr->surface;
-        swapchainInfo.minImageCount = vr->swapchain.imageCount;
-        swapchainInfo.imageFormat = vr->swapchain.format;
+        swapchainInfo.surface = vbr->surface;
+        swapchainInfo.minImageCount = vbr->swapchain.imageCount;
+        swapchainInfo.imageFormat = vbr->swapchain.format;
         swapchainInfo.imageColorSpace = surfaceFormat.colorSpace;
-        swapchainInfo.imageExtent = vr->swapchain.extent;
+        swapchainInfo.imageExtent = vbr->swapchain.extent;
         swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         swapchainInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
         swapchainInfo.imageArrayLayers = 1;
@@ -345,8 +351,8 @@ namespace Deako {
         if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
             swapchainInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-        uint32_t queueFamilyIndices[] = { vr->graphicsFamily.value(), vr->presentFamily.value() };
-        if (vr->graphicsFamily != vr->presentFamily)
+        uint32_t queueFamilyIndices[] = { vbr->graphicsFamily.value(), vbr->presentFamily.value() };
+        if (vbr->graphicsFamily != vbr->presentFamily)
         {
             swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             swapchainInfo.queueFamilyIndexCount = 2;
@@ -359,30 +365,30 @@ namespace Deako {
             swapchainInfo.pQueueFamilyIndices = nullptr;
         }
 
-        VkCR(vkCreateSwapchainKHR(vr->device, &swapchainInfo, nullptr, &vr->swapchain.swapchain));
+        VkCR(vkCreateSwapchainKHR(vbr->device, &swapchainInfo, nullptr, &vbr->swapchain.swapchain));
 
         // if an existing swap chain is re-created, destroy the old swap chain
         if (oldSwapchain != VK_NULL_HANDLE)
         {
-            for (auto imageView : vr->swapchain.views)
-                vkDestroyImageView(vr->device, imageView, nullptr);
-            vkDestroySwapchainKHR(vr->device, oldSwapchain, nullptr);
+            for (auto imageView : vbr->swapchain.views)
+                vkDestroyImageView(vbr->device, imageView, nullptr);
+            vkDestroySwapchainKHR(vbr->device, oldSwapchain, nullptr);
         }
 
         /* SWAPCHAIN IMAGES */
-        vkGetSwapchainImagesKHR(vr->device, vr->swapchain.swapchain, &vr->swapchain.imageCount, nullptr);
-        vr->swapchain.images.resize(vr->swapchain.imageCount);
-        vkGetSwapchainImagesKHR(vr->device, vr->swapchain.swapchain, &vr->swapchain.imageCount, vr->swapchain.images.data());
+        vkGetSwapchainImagesKHR(vbr->device, vbr->swapchain.swapchain, &vbr->swapchain.imageCount, nullptr);
+        vbr->swapchain.images.resize(vbr->swapchain.imageCount);
+        vkGetSwapchainImagesKHR(vbr->device, vbr->swapchain.swapchain, &vbr->swapchain.imageCount, vbr->swapchain.images.data());
 
         /* SWAPCHAIN IMAGE VIEWS */
-        vr->swapchain.views.resize(vr->swapchain.imageCount);
-        for (size_t i = 0; i < vr->swapchain.imageCount; i++)
+        vbr->swapchain.views.resize(vbr->swapchain.imageCount);
+        for (size_t i = 0; i < vbr->swapchain.imageCount; i++)
         {
             VkImageViewCreateInfo imageViewInfo = {};
             imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            imageViewInfo.image = vr->swapchain.images[i];
-            imageViewInfo.format = vr->swapchain.format;
+            imageViewInfo.image = vbr->swapchain.images[i];
+            imageViewInfo.format = vbr->swapchain.format;
             imageViewInfo.subresourceRange.baseMipLevel = 0;
             imageViewInfo.subresourceRange.levelCount = 1;
             imageViewInfo.subresourceRange.baseArrayLayer = 0;
@@ -393,11 +399,11 @@ namespace Deako {
             imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
             imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
 
-            VkCR(vkCreateImageView(vr->device, &imageViewInfo, nullptr, &vr->swapchain.views[i]));
+            VkCR(vkCreateImageView(vbr->device, &imageViewInfo, nullptr, &vbr->swapchain.views[i]));
         }
 
         /* COLOR TARGET */ // resolves to the sc image view
-        VkExtent3D colorExtent = { vr->swapchain.extent.width, vr->swapchain.extent.height, 1 };
+        VkExtent3D colorExtent = { vbr->swapchain.extent.width, vbr->swapchain.extent.height, 1 };
         VkFormat colorFormat = VK_FORMAT_B8G8R8A8_SRGB;
         VkSampleCountFlagBits colorSamples = VK_SAMPLE_COUNT_4_BIT;
 
@@ -405,21 +411,21 @@ namespace Deako {
         colorUsages |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         colorUsages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-        vr->swapchain.colorTarget =
+        vbr->swapchain.colorTarget =
             VulkanImage::Create(colorExtent, colorFormat, colorSamples, colorUsages, 1, VK_IMAGE_TYPE_2D);
 
         /* MULTISAMPLE TARGET */ // resolves to the viewport image view
-        vr->multisampleTarget.color =
+        vbr->multisampleTarget.color =
             VulkanImage::Create(colorExtent, colorFormat, colorSamples, colorUsages, 1, VK_IMAGE_TYPE_2D);
 
-        VkExtent3D depthExtent = { vr->swapchain.extent.width, vr->swapchain.extent.height, 1 };
+        VkExtent3D depthExtent = { vbr->swapchain.extent.width, vbr->swapchain.extent.height, 1 };
         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
         VkSampleCountFlagBits depthSamples = VK_SAMPLE_COUNT_4_BIT;
 
         VkImageUsageFlags depthUsages{};
         depthUsages |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-        vr->multisampleTarget.depth =
+        vbr->multisampleTarget.depth =
             VulkanImage::Create(depthExtent, depthFormat, depthSamples, depthUsages, 1, VK_IMAGE_TYPE_2D);
     }
 
@@ -427,7 +433,7 @@ namespace Deako {
     {
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
         pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-        VkCR(vkCreatePipelineCache(vr->device, &pipelineCacheCreateInfo, nullptr, &vr->pipelineCache));
+        VkCR(vkCreatePipelineCache(vbr->device, &pipelineCacheCreateInfo, nullptr, &vbr->pipelineCache));
     }
 
     void VulkanBase::SetUpCommands()
@@ -435,7 +441,7 @@ namespace Deako {
         /* RENDERING COMMANDS */
         VkCommandPoolCreateInfo commandPoolInfo = {};
         commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolInfo.queueFamilyIndex = vr->graphicsFamily.value();
+        commandPoolInfo.queueFamilyIndex = vbr->graphicsFamily.value();
         commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         VkCommandBufferAllocateInfo commandBufferInfo{};
@@ -443,19 +449,19 @@ namespace Deako {
         commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferInfo.commandBufferCount = 1;
 
-        vc->frames.resize(vs->frameOverlap);
+        vbc->frames.resize(vbs->frameOverlap);
 
-        for (int i = 0; i < vs->frameOverlap; i++)
+        for (int i = 0; i < vbs->frameOverlap; i++)
         {
-            VkCR(vkCreateCommandPool(vr->device, &commandPoolInfo, nullptr, &vc->frames[i].commandPool));
+            VkCR(vkCreateCommandPool(vbr->device, &commandPoolInfo, nullptr, &vbc->frames[i].commandPool));
 
-            commandBufferInfo.commandPool = vc->frames[i].commandPool;
+            commandBufferInfo.commandPool = vbc->frames[i].commandPool;
             // default command buffer that we will use for rendering
-            VkCR(vkAllocateCommandBuffers(vr->device, &commandBufferInfo, &vc->frames[i].commandBuffer));
+            VkCR(vkAllocateCommandBuffers(vbr->device, &commandBufferInfo, &vbc->frames[i].commandBuffer));
         }
 
         /* SINGLE-USE COMMANDS */
-        VkCR(vkCreateCommandPool(vr->device, &commandPoolInfo, nullptr, &vr->singleUseCommandPool));
+        VkCR(vkCreateCommandPool(vbr->device, &commandPoolInfo, nullptr, &vbr->singleUseCommandPool));
     }
 
 
@@ -463,11 +469,11 @@ namespace Deako {
     {
         VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
         VkSemaphoreCreateInfo semaphoreInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
-        for (int i = 0; i < vs->frameOverlap; i++)
+        for (int i = 0; i < vbs->frameOverlap; i++)
         {
-            VkCR(vkCreateFence(vr->device, &fenceInfo, nullptr, &vc->frames[i].waitFence));
-            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vc->frames[i].presentSemaphore));
-            VkCR(vkCreateSemaphore(vr->device, &semaphoreInfo, nullptr, &vc->frames[i].renderSemaphore));
+            VkCR(vkCreateFence(vbr->device, &fenceInfo, nullptr, &vbc->frames[i].waitFence));
+            VkCR(vkCreateSemaphore(vbr->device, &semaphoreInfo, nullptr, &vbc->frames[i].presentSemaphore));
+            VkCR(vkCreateSemaphore(vbr->device, &semaphoreInfo, nullptr, &vbc->frames[i].renderSemaphore));
         }
     }
 
@@ -492,7 +498,7 @@ namespace Deako {
         poolInfo.poolSizeCount = (uint32_t)std::size(poolSizes);
         poolInfo.pPoolSizes = poolSizes;
 
-        VkCR(vkCreateDescriptorPool(vr->device, &poolInfo, nullptr, &vr->imguiDescriptorPool));
+        VkCR(vkCreateDescriptorPool(vbr->device, &poolInfo, nullptr, &vbr->imguiDescriptorPool));
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -507,16 +513,16 @@ namespace Deako {
         ImGui_ImplGlfw_InitForVulkan(window.get(), true);
 
         ImGui_ImplVulkan_InitInfo initInfo{};
-        initInfo.Instance = vr->instance;
-        initInfo.Device = vr->device;
-        initInfo.PhysicalDevice = vr->physicalDevice;
-        initInfo.DescriptorPool = vr->imguiDescriptorPool;
-        initInfo.PipelineCache = vr->pipelineCache;
-        initInfo.QueueFamily = vr->graphicsFamily.value();
-        initInfo.Queue = vr->graphicsQueue;
-        initInfo.ImageCount = vs->frameOverlap;
+        initInfo.Instance = vbr->instance;
+        initInfo.Device = vbr->device;
+        initInfo.PhysicalDevice = vbr->physicalDevice;
+        initInfo.DescriptorPool = vbr->imguiDescriptorPool;
+        initInfo.PipelineCache = vbr->pipelineCache;
+        initInfo.QueueFamily = vbr->graphicsFamily.value();
+        initInfo.Queue = vbr->graphicsQueue;
+        initInfo.ImageCount = vbs->frameOverlap;
         initInfo.MinImageCount = 2;
-        initInfo.MSAASamples = vs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+        initInfo.MSAASamples = vbs->multiSampling ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = VK_NULL_HANDLE;
 
         initInfo.UseDynamicRendering = true;
@@ -524,7 +530,7 @@ namespace Deako {
         initInfo.PipelineRenderingCreateInfo = {};
         initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vr->swapchain.colorTarget.format;
+        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vbr->swapchain.colorTarget.format;
 
         ImGui_ImplVulkan_Init(&initInfo);
 
@@ -533,13 +539,13 @@ namespace Deako {
         sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
         sampler.magFilter = VK_FILTER_LINEAR;
         sampler.minFilter = VK_FILTER_LINEAR;
-        vkCreateSampler(vr->device, &sampler, nullptr, &vr->viewport.sampler);
+        vkCreateSampler(vbr->device, &sampler, nullptr, &vbr->viewport.sampler);
 
-        vr->viewport.images.resize(vr->swapchain.imageCount);
-        vr->viewport.textureIDs.resize(vr->swapchain.imageCount);
-        for (uint32_t i = 0; i < vr->viewport.images.size(); i++)
+        vbr->viewport.images.resize(vbr->swapchain.imageCount);
+        vbr->viewport.textureIDs.resize(vbr->swapchain.imageCount);
+        for (uint32_t i = 0; i < vbr->viewport.images.size(); i++)
         {
-            vr->viewport.format = VK_FORMAT_B8G8R8A8_SRGB;
+            vbr->viewport.format = VK_FORMAT_B8G8R8A8_SRGB;
             VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
 
             VkImageUsageFlags usages{};
@@ -547,11 +553,11 @@ namespace Deako {
             usages |= VK_IMAGE_USAGE_SAMPLED_BIT;
             usages |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-            vr->viewport.images[i] =
-                VulkanImage::Create({ vr->swapchain.extent.width, vr->swapchain.extent.height, 1 }, vr->viewport.format, samples, usages, 1, VK_IMAGE_TYPE_2D);
+            vbr->viewport.images[i] =
+                VulkanImage::Create({ vbr->swapchain.extent.width, vbr->swapchain.extent.height, 1 }, vbr->viewport.format, samples, usages, 1, VK_IMAGE_TYPE_2D);
 
-            vr->viewport.textureIDs[i] =
-                ImGui_ImplVulkan_AddTexture(vr->viewport.sampler, vr->viewport.images[i].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            vbr->viewport.textureIDs[i] =
+                ImGui_ImplVulkan_AddTexture(vbr->viewport.sampler, vbr->viewport.images[i].view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
         ImGuiLayer::SetStyles();
@@ -574,12 +580,12 @@ namespace Deako {
     {
         auto tStart = std::chrono::high_resolution_clock::now();
 
-        FrameData& frame = vc->frames[vc->currentFrame];
+        FrameData& frame = vbc->frames[vbc->currentFrame];
 
-        VkCR(vkWaitForFences(vr->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
+        VkCR(vkWaitForFences(vbr->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
 
         uint32_t scImageIndex;
-        VkResult result = vkAcquireNextImageKHR(vr->device, vr->swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
+        VkResult result = vkAcquireNextImageKHR(vbr->device, vbr->swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -590,23 +596,23 @@ namespace Deako {
             DK_CORE_ASSERT(result);
         }
 
-        VkImage msColorTarget = vr->multisampleTarget.color.image;
-        VkFormat msColorTargetFormat = vr->multisampleTarget.color.format;
+        VkImage msColorTarget = vbr->multisampleTarget.color.image;
+        VkFormat msColorTargetFormat = vbr->multisampleTarget.color.format;
 
-        VkImage msDepthTarget = vr->multisampleTarget.depth.image;
-        VkFormat msDepthTargetFormat = vr->multisampleTarget.depth.format;
+        VkImage msDepthTarget = vbr->multisampleTarget.depth.image;
+        VkFormat msDepthTargetFormat = vbr->multisampleTarget.depth.format;
 
-        VkImage viewportImage = vr->viewport.images[scImageIndex].image;
-        VkFormat viewportFormat = vr->viewport.format;
+        VkImage viewportImage = vbr->viewport.images[scImageIndex].image;
+        VkFormat viewportFormat = vbr->viewport.format;
 
-        VkImage scColorTarget = vr->swapchain.colorTarget.image;
-        VkFormat scColorTargetFormat = vr->swapchain.colorTarget.format;
+        VkImage scColorTarget = vbr->swapchain.colorTarget.image;
+        VkFormat scColorTargetFormat = vbr->swapchain.colorTarget.format;
 
-        VkImage scImage = vr->swapchain.images[scImageIndex];
-        VkFormat scFormat = vr->swapchain.format;
+        VkImage scImage = vbr->swapchain.images[scImageIndex];
+        VkFormat scFormat = vbr->swapchain.format;
 
         // after acquiring image (to avoid deadlock), manually reset the fence to the unsignaled state
-        vkResetFences(vr->device, 1, &frame.waitFence);
+        vkResetFences(vbr->device, 1, &frame.waitFence);
 
         VkCR(vkResetCommandBuffer(frame.commandBuffer, 0));
 
@@ -669,19 +675,19 @@ namespace Deako {
         submitInfo.commandBufferInfoCount = 1;
         submitInfo.pCommandBufferInfos = &commandInfo;
 
-        VkCR(vkQueueSubmit2KHR(vr->graphicsQueue, 1, &submitInfo, frame.waitFence));
+        VkCR(vkQueueSubmit2KHR(vbr->graphicsQueue, 1, &submitInfo, frame.waitFence));
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = &frame.renderSemaphore;
-        VkSwapchainKHR swapChains[] = { vr->swapchain.swapchain };
+        VkSwapchainKHR swapChains[] = { vbr->swapchain.swapchain };
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &scImageIndex;
         presentInfo.pResults = nullptr; // Optional
 
-        result = vkQueuePresentKHR(vr->presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(vbr->presentQueue, &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR /*|| s_State.framebufferResized*/)
         {
@@ -693,12 +699,12 @@ namespace Deako {
             DK_CORE_ASSERT(result);
         }
 
-        vc->currentFrame = (vc->currentFrame + 1) % vs->frameOverlap;
+        vbc->currentFrame = (vbc->currentFrame + 1) % vbs->frameOverlap;
 
         auto tEnd = std::chrono::high_resolution_clock::now();
         auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
         float frameTimer = (float)tDiff / 1000.0f;
-        // vr->camera.update(frameTimer);
+        // vbr->camera.update(frameTimer);
     }
 
     void VulkanBase::DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -706,10 +712,10 @@ namespace Deako {
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = vr->swapchain.colorTarget.view;
+        colorAttachment.imageView = vbr->swapchain.colorTarget.view;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-        colorAttachment.resolveImageView = vr->swapchain.views[imageIndex];
+        colorAttachment.resolveImageView = vbr->swapchain.views[imageIndex];
         colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -717,7 +723,7 @@ namespace Deako {
         VkRenderingInfo renderInfo = {};
         renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderInfo.pNext = nullptr;
-        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vr->swapchain.extent.width, vr->swapchain.extent.height };
+        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vbr->swapchain.extent.width, vbr->swapchain.extent.height };
         renderInfo.layerCount = 1;
         renderInfo.colorAttachmentCount = 1;
         renderInfo.pColorAttachments = &colorAttachment;
@@ -730,7 +736,7 @@ namespace Deako {
 
         ImGuiLayer::Begin();
         for (Layer* layer : layerStack)
-            layer->OnImGuiRender((ImTextureID)vr->viewport.textureIDs[imageIndex]);
+            layer->OnImGuiRender((ImTextureID)vbr->viewport.textureIDs[imageIndex]);
         ImGuiLayer::End(commandBuffer);
 
         vkCmdEndRenderingKHR(commandBuffer);
@@ -743,17 +749,17 @@ namespace Deako {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        vkDestroyDescriptorPool(vr->device, vr->imguiDescriptorPool, nullptr);
-        vkDestroySampler(vr->device, vr->viewport.sampler, nullptr);
+        vkDestroyDescriptorPool(vbr->device, vbr->imguiDescriptorPool, nullptr);
+        vkDestroySampler(vbr->device, vbr->viewport.sampler, nullptr);
 
-        for (auto image : vr->viewport.images)
+        for (auto image : vbr->viewport.images)
             VulkanImage::Destroy(image);
 
-        VulkanImage::Destroy(vr->swapchain.colorTarget);
-        VulkanImage::Destroy(vr->multisampleTarget.color);
-        VulkanImage::Destroy(vr->multisampleTarget.depth);
+        VulkanImage::Destroy(vbr->swapchain.colorTarget);
+        VulkanImage::Destroy(vbr->multisampleTarget.color);
+        VulkanImage::Destroy(vbr->multisampleTarget.depth);
 
-        vkDestroyPipelineCache(vr->device, vr->pipelineCache, nullptr);
+        vkDestroyPipelineCache(vbr->device, vbr->pipelineCache, nullptr);
 
         SetUpSwapchain();
 

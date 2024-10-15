@@ -5,7 +5,7 @@
 #include "Deako/Asset/Pool/EditorAssetPool.h"
 #include "Deako/Asset/Pool/ProjectAssetPool.h"
 
-#include "Deako/Renderer/Vulkan/VulkanUtils.h"
+#include "Deako/Renderer/Vulkan/VulkanResource.h"
 #include "Deako/Renderer/RendererTypes.h"
 #include "System/MacOS/MacUtils.h" 
 
