@@ -11,8 +11,8 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        m_EditorCamera = CreateRef<EditorCamera>();
         m_EditorContext = CreateRef<EditorContext>();
+        m_EditorCamera = m_EditorContext->scene->activeCamera;
 
         m_ScenePanel = CreateScope<ScenePanel>(m_EditorContext);
         m_PropertiesPanel = CreateScope<PropertiesPanel>(m_EditorContext);
@@ -30,57 +30,31 @@ namespace Deako {
 
         m_EditorCamera->OnUpdate();
 
-        m_EditorContext->OnUpdate(m_EditorCamera);
+        m_EditorContext->OnUpdate();
     }
 
-    void EditorLayer::OnImGuiRender(ImTextureID textureID)
+    void EditorLayer::OnImGuiRender()
     {
+        static ImGuiWindowFlags dockingWindowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        ImGui::SetNextWindowViewport(viewport->ID);
+
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(300.0f, 150.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
         static bool dockingEnabled = true;
-        static bool fullscreenEnabled = true;
-        static bool paddingEnabled = false;
+        ImGui::Begin("DockSpace", &dockingEnabled, dockingWindowFlags);
 
-        static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_AutoHideTabBar;
-        static ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(3);
 
-        if (fullscreenEnabled)
-        {
-            const ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->WorkPos);
-            ImGui::SetNextWindowSize(viewport->WorkSize);
-            ImGui::SetNextWindowViewport(viewport->ID);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-            windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-        }
-        else
-        {
-            dockspaceFlags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-        }
-
-        if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
-            windowFlags |= ImGuiWindowFlags_NoBackground;
-
-        if (!paddingEnabled)
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-        ImGui::Begin("DockSpace", &dockingEnabled, windowFlags);
-
-        if (!paddingEnabled)
-            ImGui::PopStyleVar();
-        if (fullscreenEnabled)
-            ImGui::PopStyleVar(2);
-
-        // Submit the DockSpace
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuiStyle& style = ImGui::GetStyle();
-        style.WindowMinSize.x = 300.0f;
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-        {
-            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspaceFlags);
-        }
-        style.WindowMinSize.x = 32.0f;
+        ImGui::DockSpaceOverViewport(viewport, ImGuiDockNodeFlags_PassthruCentralNode);
 
         if (ImGui::BeginMenuBar())
         {
@@ -167,9 +141,13 @@ namespace Deako {
         m_RegistryPanel->OnImGuiRender();
 
         //// VIEWPORT ////
-        m_ViewportPanel->OnImGuiRender(textureID);
+        m_ViewportPanel->OnImGuiRender();
 
         ImGui::End();
+
+        ImGui::PopStyleVar();
+
+        ImGui::ShowDemoWindow();
     }
 
     void EditorLayer::OnEvent(Event& event)

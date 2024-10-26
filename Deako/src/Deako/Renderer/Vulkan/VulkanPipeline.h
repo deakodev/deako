@@ -10,7 +10,7 @@ namespace Deako {
         public:
             Builder() { Clear(); }
 
-            VkPipeline Build(VkPipelineLayout pipelineLayout);
+            VkPipeline Build(VkPipelineLayout pipelineLayout, const VkFormat* colorAttachmentFormats);
             void Clear();
 
             void SetShaders(VkShaderModule vertexModule, VkShaderModule fragmentModule);

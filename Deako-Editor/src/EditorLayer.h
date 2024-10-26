@@ -21,7 +21,7 @@ namespace Deako {
         virtual void OnDetach() override;
         virtual void OnUpdate() override;
         virtual void OnEvent(Event& event) override;
-        virtual void OnImGuiRender(ImTextureID textureID) override;
+        virtual void OnImGuiRender() override;
 
         bool OnKeyPressed(KeyPressedEvent& event);
 

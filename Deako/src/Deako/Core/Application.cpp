@@ -49,9 +49,9 @@ namespace Deako
             {
                 for (Layer* layer : m_LayerStack)
                     layer->OnUpdate();
-            }
 
-            m_Window->OnUpdate();
+                m_Window->OnUpdate();
+            }
         }
     }
 

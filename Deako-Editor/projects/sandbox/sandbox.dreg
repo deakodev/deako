@@ -1,11 +1,8 @@
 AssetRegistry:
-  - AssetHandle: 9803649518941654224
-    AssetPath: prefabs/orientationTest.gltf
-    AssetType: Prefab
   - AssetHandle: 5532312814824508002
     AssetPath: prefabs/BlueCube.gltf
     AssetType: Prefab
-  - AssetHandle: 11821854033975738793
+  - AssetHandle: 1364095540859975581
     AssetPath: scenes/sandbox.dscene
     AssetType: Scene
   - AssetHandle: 7052072051722835223
@@ -17,6 +14,12 @@ AssetRegistry:
   - AssetHandle: 57892318812072087
     AssetPath: prefabs/Cube.gltf
     AssetType: Prefab
+  - AssetHandle: 9803649518941654224
+    AssetPath: prefabs/orientationTest.gltf
+    AssetType: Prefab
+  - AssetHandle: 11821854033975738793
+    AssetPath: scenes/sandbox.dscene
+    AssetType: Scene
   - AssetHandle: 51418710489529541
     AssetPath: prefabs/DamagedHelmet.gltf
     AssetType: Prefab

@@ -15,42 +15,30 @@
 
 namespace Deako {
 
-    struct UniformBuffer
-    {
-        VulkanBuffer::AllocatedBuffer              buffer;
-        VkDescriptorBufferInfo                     descriptor;
-    };
-
     struct UniformSet
     {
         UniformBuffer                              dynamic;
         UniformBuffer                              shared;
         UniformBuffer                              light;
-    };
-
-    struct VulkanSceneSettings
-    {
-        bool                                       displayBackground{ true };
-        bool                                       animationPaused{ false };
-        size_t                                     dynamicUniformAlignment{ 0 };
-    };
-
-    struct VulkanSceneContext
-    {
-        bool                                       sceneValid{ false };
-        std::vector<Entity>                        entities;
-        Ref<ProjectAssetPool>                      projectAssetPool;
-        VkPipeline                                 boundPipeline{ VK_NULL_HANDLE };
+        UniformBuffer                              picker;
     };
 
     struct VulkanSceneResources
     {
         std::vector<UniformSet>                    uniforms;
 
+        size_t                                     dynamicUniformAlignment{ 0 };
+        size_t                                     pickerUniformAlignment{ 0 };
+
         struct
         {   // per-object uniform data
             glm::mat4* model{ nullptr };
         } uniformDynamicData;
+
+        struct
+        {   // per-object uniform data
+            glm::vec4* colorID{ nullptr };
+        } uniformPickerData;
 
         struct
         {   // per-scene uniform data
@@ -81,15 +69,18 @@ namespace Deako {
 
         struct
         {
-            VkDescriptorSetLayout                  scene{ VK_NULL_HANDLE };
-            VkDescriptorSetLayout                  material{ VK_NULL_HANDLE };
-            VkDescriptorSetLayout                  node{ VK_NULL_HANDLE };
-            VkDescriptorSetLayout                  materialBuffer{ VK_NULL_HANDLE };
-            VkDescriptorSetLayout                  skybox{ VK_NULL_HANDLE };
+            VkDescriptorSetLayout                  scene;
+            VkDescriptorSetLayout                  material;
+            VkDescriptorSetLayout                  node;
+            VkDescriptorSetLayout                  materialBuffer;
+            VkDescriptorSetLayout                  skybox;
+            VkDescriptorSetLayout                  picker;
         } descriptorLayouts;
 
-        VkPipelineLayout                           scenePipelineLayout{ VK_NULL_HANDLE };
-        VkPipelineLayout                           skyboxPipelineLayout{ VK_NULL_HANDLE };
+        VkPipelineLayout                           scenePipelineLayout;
+        VkPipelineLayout                           pickerPipelineLayout;
+        VkPipelineLayout                           skyboxPipelineLayout;
+
 
         struct
         {
@@ -100,6 +91,7 @@ namespace Deako {
             VkPipeline                             unlit;
             VkPipeline                             unlitDoubleSided;
             VkPipeline                             unlitAlphaBlending;
+            VkPipeline                             picker;
         } pipelines;
 
         struct
@@ -112,11 +104,33 @@ namespace Deako {
 
         struct
         {   // shader storage buffer object (ssbo)
-            VulkanBuffer::AllocatedBuffer          buffer;
+            AllocatedBuffer                        buffer;
             VkDescriptorBufferInfo                 descriptor;
             VkDescriptorSet                        descriptorSet;
         } materialBuffer;
 
+        struct
+        {
+            AllocatedImage                         colorTarget;
+            AllocatedImage                         depthTarget;
+            AllocatedBuffer                        stagingBuffer;
+            VkDescriptorSet                        descriptorSet;
+        } picker;
+
+        struct
+        {
+            bool                                       displayBackground{ true };
+            bool                                       animationPaused{ false };
+        } settings;
+
+        struct
+        {
+            Ref<Scene>                                 scene;
+            std::vector<Entity>                        entities;
+            Ref<ProjectAssetPool>                      projectAssetPool;
+            VkPipeline                                 boundPipeline;
+            uint32_t                                   selectedEntityID;
+        } context;
     };
 
     class VulkanScene
@@ -127,14 +141,17 @@ namespace Deako {
         static void CleanUp();
 
         static void Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void UpdateUniforms(Ref<EditorCamera> camera);
+        static void DrawPicking(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        static void UpdateUniforms();
 
-        static bool IsInvalid() { return !vsc->sceneValid; }
-        static void Invalidate() { vsc->sceneValid = false; };
+        static bool IsInvalid() { return !vs->context.scene->isValid; }
+        static void Invalidate() { vs->context.scene->isValid = false; };
 
-        static Ref<VulkanSceneSettings> GetSettings() { return vss; }
-        static Ref<VulkanSceneContext> GetContext() { return vsc; }
-        static Ref<VulkanSceneResources> GetResources() { return vsr; }
+        static void GetColorIDAtMousePosition(int32_t mouseX, int32_t mouseY);
+
+        static Ref<VulkanSceneResources> GetResources() { return vs; }
+
+        static uint32_t GetSelectedEntityID() { return vs->context.selectedEntityID; }
 
     private:
         static void SetUpAssets();
@@ -143,9 +160,7 @@ namespace Deako {
         static void SetUpPipelines();
 
     private:
-        static Ref<VulkanSceneSettings> vss;
-        static Ref<VulkanSceneContext> vsc;
-        static Ref<VulkanSceneResources> vsr;
+        static Ref<VulkanSceneResources> vs;
     };
 
 }

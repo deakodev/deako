@@ -4,6 +4,7 @@
 #include "Deako/Asset/Pool/ProjectAssetPool.h"
 #include "Deako/Asset/Prefab/Prefab.h"
 #include "Deako/Renderer/Renderer.h"
+#include "Deako/Renderer/Vulkan/VulkanScene.h"
 #include "Deako/Project/Serialize.h"
 
 namespace Deako {
@@ -70,11 +71,11 @@ namespace Deako {
         return newScene;
     }
 
-    void Scene::OnUpdate(Ref<EditorCamera> camera)
+    void Scene::OnUpdate()
     {
         Renderer::BeginScene();
 
-        Renderer::EndScene(camera);
+        Renderer::EndScene();
     }
 
     Entity Scene::CreateEntity(const std::string& name)
@@ -130,6 +131,11 @@ namespace Deako {
             return { entityMap.at(uuid), this };
 
         return {};
+    }
+
+    uint32_t Scene::GetSelectedEntity()
+    {
+        return VulkanScene::GetSelectedEntityID();
     }
 
     template<typename... Components>

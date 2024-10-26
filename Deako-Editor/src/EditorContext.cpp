@@ -14,9 +14,9 @@ namespace Deako {
         project.Set(activeProject);
     }
 
-    void EditorContext::OnUpdate(Ref<EditorCamera> camera)
+    void EditorContext::OnUpdate()
     {
-        scene->OnUpdate(camera);
+        scene->OnUpdate();
 
         if (!scene.isValid)
         {
@@ -33,6 +33,12 @@ namespace Deako {
             Ref<Project> activeProject = ProjectHandler::GetActiveProject();
             project.Set(activeProject);
         }
+        if (!entity.isValid)
+        {
+            // Ref<Entity> selectedEntity = CreateRef<Entity>((Entity)scene->GetSelectedEntity(), scene.context.get());
+            // entity.Set(selectedEntity);
+        }
+
     }
 
 }

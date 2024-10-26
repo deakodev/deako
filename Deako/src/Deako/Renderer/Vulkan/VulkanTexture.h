@@ -41,7 +41,7 @@ namespace Deako {
     {
         TextureDetails details;
 
-        VulkanImage::AllocatedImage image;
+        AllocatedImage image;
         VkSampler sampler;
         VkDescriptorImageInfo descriptor;
         uint32_t mipLevels; // TODO: remove

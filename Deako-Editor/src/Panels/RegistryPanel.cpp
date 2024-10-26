@@ -38,8 +38,6 @@ namespace Deako {
         ImGui::SameLine();
 
         ImGui::End();
-
-        ImGui::ShowDemoWindow();
     }
 
     void RegistryPanel::OnRegistryRender()

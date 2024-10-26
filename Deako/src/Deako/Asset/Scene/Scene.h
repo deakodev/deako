@@ -19,14 +19,16 @@ namespace Deako {
     {
         SceneRegistry registry;
         EntityMap entityMap;
+        Ref<EditorCamera> activeCamera;
 
         bool isSavedUpToDate{ true };
+        bool isValid{ false };
 
         static Ref<Scene> Copy(Ref<Scene> other);
 
         void LinkAssets();
 
-        void OnUpdate(Ref<EditorCamera> camera);
+        void OnUpdate();
 
         Entity CreateEntity(const std::string& name = std::string());
         Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
@@ -35,6 +37,8 @@ namespace Deako {
         Entity GetEntity(entt::entity handle);
         Entity GetEntity(const std::string& tag);
         Entity GetEntity(UUID uuid);
+
+        uint32_t GetSelectedEntity();
 
         template<typename... Components>
         std::vector<Entity> GetAllEntitiesWith();
@@ -46,9 +50,6 @@ namespace Deako {
 
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
-
-        // friend class Entity;
-        // friend class ScenePanel;
     };
 
 }

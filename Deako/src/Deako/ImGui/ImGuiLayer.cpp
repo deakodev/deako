@@ -46,22 +46,11 @@ namespace Deako {
     {
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            GLFWwindow* backupCurrentContext = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backupCurrentContext);
-        }
     }
 
     void ImGuiLayer::SetStyles()
     {
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-
-        // io.DisplayFramebufferScale = ImVec2(1.0f, -1.0f);
 
         io.Fonts->AddFontFromFileTTF("Deako/assets/fonts/roboto/Roboto-Bold.ttf", 14.0f);
         io.FontDefault = io.Fonts->AddFontFromFileTTF("Deako/assets/fonts/roboto/Roboto-Regular.ttf", 14.0f);
@@ -75,11 +64,6 @@ namespace Deako {
         io.Fonts->AddFontFromFileTTF("Deako/assets/fonts/fontawesome/FA-Regular-400.ttf", 14.0f, &iconsConfig, iconsRanges);
 
         ImGuiStyle& style = ImGui::GetStyle();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        }
 
         style.WindowMenuButtonPosition = ImGuiDir_None;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 6.0f);
@@ -97,11 +81,11 @@ namespace Deako {
 
         colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
         colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-        colors[ImGuiCol_WindowBg] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+        colors[ImGuiCol_WindowBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.70f);
         colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
         colors[ImGuiCol_PopupBg] = ImVec4(0.19f, 0.19f, 0.19f, 0.92f);
         colors[ImGuiCol_Border] = ImVec4(0.01f, 0.01f, 0.01f, 1.00f);
-        colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.24f);
+        colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.36f);
         colors[ImGuiCol_FrameBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.54f);
         colors[ImGuiCol_FrameBgHovered] = ImVec4(0.19f, 0.19f, 0.19f, 0.54f);
         colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.22f, 0.23f, 1.00f);

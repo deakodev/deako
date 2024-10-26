@@ -57,7 +57,7 @@ namespace Deako {
 
         struct UniformBuffer
         {
-            VulkanBuffer::AllocatedBuffer buffer;
+            AllocatedBuffer buffer;
             VkDescriptorBufferInfo descriptor;
             VkDescriptorSet descriptorSet;
             void* mapped;
@@ -166,8 +166,8 @@ namespace Deako {
             uint32_t position = 0;
         } vertexData, indexData;
 
-        VulkanBuffer::AllocatedBuffer vertices;
-        VulkanBuffer::AllocatedBuffer indices;
+        AllocatedBuffer vertices;
+        AllocatedBuffer indices;
 
         std::filesystem::path path;
 

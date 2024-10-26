@@ -5,7 +5,7 @@
 
 namespace Deako {
 
-    static Ref<VulkanBaseResources> vbr = VulkanBase::GetResources();
+    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
 
     namespace VulkanDebug {
 
@@ -75,10 +75,10 @@ namespace Deako {
         VkResult CreateDebugUtilsMessengerEXT(const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo)
         {
             auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
-                vkGetInstanceProcAddr(vbr->instance, "vkCreateDebugUtilsMessengerEXT");
+                vkGetInstanceProcAddr(vb->instance, "vkCreateDebugUtilsMessengerEXT");
 
             if (func != nullptr)
-                return func(vbr->instance, pCreateInfo, nullptr, &vbr->debugMessenger);
+                return func(vb->instance, pCreateInfo, nullptr, &vb->debugMessenger);
             else
                 return VK_ERROR_EXTENSION_NOT_PRESENT;
         }
@@ -86,10 +86,10 @@ namespace Deako {
         void DestroyDebugUtilsMessengerEXT()
         {
             auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)
-                vkGetInstanceProcAddr(vbr->instance, "vkDestroyDebugUtilsMessengerEXT");
+                vkGetInstanceProcAddr(vb->instance, "vkDestroyDebugUtilsMessengerEXT");
 
             if (func != nullptr)
-                func(vbr->instance, vbr->debugMessenger, nullptr);
+                func(vb->instance, vb->debugMessenger, nullptr);
         }
 
     }

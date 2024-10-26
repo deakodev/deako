@@ -13,7 +13,7 @@ namespace Deako {
         static void Shutdown();
 
         static void BeginScene();
-        static void EndScene(Ref<EditorCamera> camera);
+        static void EndScene();
     };
 
 }

@@ -12,8 +12,11 @@ namespace Deako {
 
         void Set(Ref<T> newContext)
         {
-            context = newContext;
-            isValid = true;
+            if (newContext)
+            {
+                context = newContext;
+                isValid = true;
+            }
         }
 
         void Reset()
@@ -36,7 +39,7 @@ namespace Deako {
 
         EditorContext();
 
-        void OnUpdate(Ref<EditorCamera> camera);
+        void OnUpdate();
     };
 
 }

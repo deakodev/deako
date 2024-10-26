@@ -31,61 +31,49 @@ namespace Deako {
         VkFence                                 waitFence;
     };
 
-    struct VulkanBaseSettings
-    {
-        uint32_t                                frameOverlap = 2;
-        bool                                    validationEnabled{ true };
-        bool                                    vsync{ false };
-        bool                                    multiSampling{ true };
-    };
-
-    struct VulkanBaseContext
-    {
-        std::vector<FrameData>                  frames;
-        uint32_t                                currentFrame{ 0 };
-    };
-
     struct VulkanBaseResources
     {
-        VkInstance                              instance{ VK_NULL_HANDLE };
-        VkDebugUtilsMessengerEXT                debugMessenger{ VK_NULL_HANDLE };
+        std::vector<FrameData>                  frames;
+
+        VkInstance                              instance;
+        VkDebugUtilsMessengerEXT                debugMessenger;
         VkSurfaceKHR                            surface;
-        VkDevice                                device{ VK_NULL_HANDLE };
-        VkPhysicalDevice                        physicalDevice{ VK_NULL_HANDLE };
-        VkQueue                                 graphicsQueue{ VK_NULL_HANDLE };
-        VkQueue                                 presentQueue{ VK_NULL_HANDLE };
+        VkDevice                                device;
+        VkPhysicalDevice                        physicalDevice;
+        VkQueue                                 graphicsQueue;
+        VkQueue                                 presentQueue;
         std::optional<uint32_t>                 graphicsFamily;
         std::optional<uint32_t>                 presentFamily;
 
         VkPipelineCache                         pipelineCache;
         VkCommandPool                           singleUseCommandPool;
-        VkDescriptorPool                        imguiDescriptorPool{ VK_NULL_HANDLE };
+        VkDescriptorPool                        imguiDescriptorPool;
 
         struct
         {
-            VulkanImage::AllocatedImage         color;
-            VulkanImage::AllocatedImage         depth;
-        } multisampleTarget;
-
-        struct
-        {
-            VkSwapchainKHR                      swapchain{ VK_NULL_HANDLE };
-            VulkanSwapchain::SwapchainDetails   details;
+            VkSwapchainKHR                      swapchain;
+            SwapchainDetails                    details;
             VkFormat                            format;
             VkExtent2D                          extent;
             std::vector<VkImage>                images;
             std::vector<VkImageView>            views;
-            VulkanImage::AllocatedImage         colorTarget; // resolves to sc image
+            AllocatedImage                      colorTarget; // resolves to swapchain image
+            AllocatedImage                      depthTarget;
             uint32_t                            imageCount;
         } swapchain;
 
         struct
         {
-            VkSampler                                        sampler{ VK_NULL_HANDLE };
-            VkFormat                                         format;
-            std::vector<VulkanImage::AllocatedImage>         images;
-            std::vector<VkDescriptorSet>                     textureIDs;
-        } viewport;
+            uint32_t                            frameOverlap = 2;
+            bool                                validationEnabled{ true };
+            bool                                vsync{ false };
+            VkSampleCountFlagBits               sampleCount{ VK_SAMPLE_COUNT_4_BIT };
+        } settings;
+
+        struct
+        {
+            uint32_t                            currentFrame{ 0 };
+        } context;
     };
 
     class VulkanBase
@@ -96,14 +84,12 @@ namespace Deako {
         static void Shutdown();
 
         static void Draw();
-        static void DrawImGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void Render(Ref<EditorCamera> camera);
+        static void DrawGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        static void Render();
 
-        static void WindowResize();
+        static void RecreateSwapchain();
 
-        static Ref<VulkanBaseSettings> GetSettings() { return vbs; }
-        static Ref<VulkanBaseContext> GetContext() { return vbc; }
-        static Ref<VulkanBaseResources> GetResources() { return vbr; }
+        static Ref<VulkanBaseResources> GetResources() { return vb; }
 
     private:
         static void CreateInstance();
@@ -116,9 +102,7 @@ namespace Deako {
         static void SetUpImGui();
 
     private:
-        static Ref<VulkanBaseSettings> vbs;
-        static Ref<VulkanBaseContext> vbc;
-        static Ref<VulkanBaseResources> vbr;
+        static Ref<VulkanBaseResources> vb;
     };
 
 }

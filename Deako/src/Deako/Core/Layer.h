@@ -17,7 +17,6 @@ namespace Deako {
         virtual void OnDetach() {}
         virtual void OnUpdate() {}
         virtual void OnImGuiRender() {}
-        virtual void OnImGuiRender(ImTextureID textureID) {}
         virtual void OnEvent(Event& event) {}
 
         const std::string_view GetName() const { return m_DebugName; }

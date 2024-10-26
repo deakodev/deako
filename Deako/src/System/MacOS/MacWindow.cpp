@@ -181,18 +181,7 @@ namespace Deako {
 
     void MacWindow::CleanUp()
     {
-        // if (m_Window)
-        // {
-        //     glfwDestroyWindow(m_Window.get());
-        //     m_Window.reset();
-        //     --s_WindowCount;
-        // }
 
-
-        // if (s_WindowCount == 0)
-        // {
-        //     glfwTerminate();
-        // }
     }
 
     void MacWindow::OnUpdate()

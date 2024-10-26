@@ -11,6 +11,15 @@ Entities:
       Scale: [1, 1, 1]
     PrefabComponent:
       AssetHandle: 51418710489529541
+  - Entity: 4994874523686371997
+    TagComponent:
+      Tag: Purple Cube
+    TransformComponent:
+      Translation: [2.0999999, 2, 3]
+      Rotation: [0, 1.30550635, 0]
+      Scale: [1, 1, 1]
+    PrefabComponent:
+      AssetHandle: 5532312814824508002
   - Entity: 63025543015532544
     TagComponent:
       Tag: Skybox

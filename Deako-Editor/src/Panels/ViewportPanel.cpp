@@ -18,23 +18,20 @@ namespace Deako {
         }
     }
 
-    void ViewportPanel::OnImGuiRender(ImTextureID textureID)
+    void ViewportPanel::OnImGuiRender()
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0,0 });
-        ImGui::Begin("Viewport");
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
-        m_ViewportFocused = ImGui::IsWindowFocused();
-        m_ViewportHovered = ImGui::IsWindowHovered();
-        ImGuiLayer::BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+        // m_ViewportFocused = ImGui::IsWindowFocused();
+        // m_ViewportHovered = ImGui::IsWindowHovered();
+        // ImGuiLayer::BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
 
-        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-
-        if (m_ViewportSize.x != viewportPanelSize.x || m_ViewportSize.y != viewportPanelSize.y)
+        if (m_ViewportSize.x != viewport->Size.x || m_ViewportSize.y != viewport->Size.y)
             m_ViewportResize = true;
 
-        m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+        m_ViewportOrigin = { viewport->Pos.x, viewport->Pos.y };
+        m_ViewportSize = { viewport->Size.x, viewport->Size.y };
 
-        ImGui::Image(textureID, ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2(0, 0), ImVec2(1, 1));
         if (ImGui::BeginDragDropTarget())
         {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_PATH"))
@@ -65,10 +62,6 @@ namespace Deako {
         // Gizmos
         if (m_GizmoOperation != -1 && m_EditorContext->entity)
             TransformWithGizmo();
-
-
-        ImGui::End();
-        ImGui::PopStyleVar();
     }
 
     void ViewportPanel::TransformWithGizmo()
@@ -76,9 +69,8 @@ namespace Deako {
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist();
 
-        auto [viewportOriginX, viewportOriginY] = ImGui::GetWindowPos();
-        viewportOriginY += m_ViewportSize.y; // flip origin to bottom
-        ImGuizmo::SetRect(viewportOriginX, viewportOriginY, m_ViewportSize.x, -m_ViewportSize.y);
+        m_ViewportOrigin.y += m_ViewportSize.y; // flip origin to bottom
+        ImGuizmo::SetRect(m_ViewportOrigin.x, m_ViewportOrigin.y, m_ViewportSize.x, -m_ViewportSize.y);
 
         glm::mat4 cameraView = m_EditorCamera->GetView();
         glm::mat4 cameraProjection = m_EditorCamera->GetProjection();

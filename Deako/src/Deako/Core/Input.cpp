@@ -24,10 +24,28 @@ namespace Deako {
 
     glm::vec2 Input::GetMousePosition()
     {
-        double xpos, ypos;
-        glfwGetCursorPos(m_Window.get(), &xpos, &ypos);
+        double mouseX, mouseY;
+        glfwGetCursorPos(m_Window.get(), &mouseX, &mouseY);
 
-        return { (float)xpos, (float)ypos };
+        float xscale, yscale;
+        glfwGetWindowContentScale(m_Window.get(), &xscale, &yscale);
+
+        int width, height;
+        glfwGetWindowSize(m_Window.get(), &width, &height);
+
+        mouseX *= xscale;
+        mouseY *= yscale;
+        width *= yscale;
+        height *= yscale;
+
+        if (mouseX >= 0 && mouseY >= 0 && mouseX <= width && mouseY <= height)
+            return { mouseX, mouseY }; // mouse is inside window
+        else
+            return { 0, 0 }; // mouse is outside window
     }
+
+
+
+
 
 }

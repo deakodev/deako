@@ -15,17 +15,30 @@ namespace Deako {
     {
         ImGui::Begin("Scene");
 
+        bool eventsBlocked = ImGui::IsWindowHovered();
+        ImGuiLayer::BlockEvents(eventsBlocked);
+
+        uint32_t selectedEntity = m_EditorContext->scene->GetSelectedEntity();
+
         auto view = m_EditorContext->scene->registry.view<TagComponent>();
-        bool clickedOnEntity = false;
+        bool isEntitySelected = false;
 
         for (auto entityHandle : view)
         {
             Ref<Entity> entity = CreateRef<Entity>(entityHandle, m_EditorContext->scene.context.get());
-            clickedOnEntity |= DrawEntityNode(entity);
+            isEntitySelected |= DrawEntityNode(entity) || (selectedEntity == (uint32_t)entityHandle);
+
+            if (isEntitySelected)
+            {
+                m_EditorContext->entity.Set(entity);
+                isEntitySelected = false;
+            }
         }
 
-        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && !clickedOnEntity)
+        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && !isEntitySelected)
+        {
             m_EditorContext->entity.Reset();
+        }
 
         // Popup Menu - after right click on blank space
         if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
@@ -53,10 +66,7 @@ namespace Deako {
         bool entityClicked = false;
 
         if (ImGui::IsItemClicked())
-        {
-            m_EditorContext->entity.Set(entity);
             entityClicked = true;
-        }
 
         bool entityDeleted = false;
         if (ImGui::BeginPopupContextItem())

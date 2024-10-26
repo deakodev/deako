@@ -114,6 +114,8 @@ namespace Deako {
         scene ? (s_ActiveScene = scene) : (s_ActiveScene = s_EmptyScene);
         DK_CORE_ASSERT(s_ActiveScene);
         s_ActiveScene->LinkAssets();
+
+        s_ActiveScene->activeCamera = CreateRef<EditorCamera>();
     }
 
     void SceneHandler::SaveScene(AssetMetadata& metadata)

@@ -35,19 +35,24 @@ layout (location = 2) out vec2 outUV0;
 layout (location = 3) out vec2 outUV1;
 layout (location = 4) out vec4 outColor0;
 
+mat4 CalculateSkinMatrix()
+{
+	return inWeight0.x * node.jointMatrix[inJoint0.x] +
+		inWeight0.y * node.jointMatrix[inJoint0.y] +
+		inWeight0.z * node.jointMatrix[inJoint0.z] +
+		inWeight0.w * node.jointMatrix[inJoint0.w];
+}
+
 void main() 
 {
 	vec4 locPos;
+
 	if (node.jointCount > 0) 
 	{	// mesh is skinned
-		mat4 skinMat = 
-			inWeight0.x * node.jointMatrix[inJoint0.x] +
-			inWeight0.y * node.jointMatrix[inJoint0.y] +
-			inWeight0.z * node.jointMatrix[inJoint0.z] +
-			inWeight0.w * node.jointMatrix[inJoint0.w];
+		mat4 skinMatrix = CalculateSkinMatrix();
 
-		locPos = uDynamic.model * node.matrix * skinMat * vec4(inPos, 1.0);
-		outNormal = normalize(transpose(inverse(mat3(uDynamic.model * node.matrix * skinMat))) * inNormal);
+		locPos = uDynamic.model * node.matrix * skinMatrix * vec4(inPos, 1.0);
+		outNormal = normalize(transpose(inverse(mat3(uDynamic.model * node.matrix * skinMatrix))) * inNormal);
 	} 
 	else 
 	{
@@ -61,5 +66,5 @@ void main()
 	outUV1 = inUV1;
 	outColor0 = inColor0;
 
-	gl_Position =  uShared.projection * uShared.view * vec4(outWorldPos, 1.0);
+	gl_Position = uShared.projection * uShared.view * vec4(outWorldPos, 1.0);
 }

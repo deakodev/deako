@@ -7,10 +7,8 @@
 
 namespace Deako {
 
-    static Ref<VulkanBaseResources> vbr = VulkanBase::GetResources();
-    static Ref<VulkanBaseContext> vbc = VulkanBase::GetContext();
-    static Ref<VulkanSceneResources> vsr = VulkanScene::GetResources();
-    static Ref<VulkanSceneContext> vsc = VulkanScene::GetContext();
+    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
+    static Ref<VulkanSceneResources> vs = VulkanScene::GetResources();
 
     void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, uint32_t dynamicOffset)
     {
@@ -20,32 +18,32 @@ namespace Deako {
             {
                 if (primitive->material.alphaMode == alphaMode)
                 {
-                    VkPipeline pipelineToUse = vsr->pipelines.pbr;
+                    VkPipeline pipelineToUse = vs->pipelines.pbr;
 
                     if (primitive->material.unlit) // KHR_materials_unlit
-                        pipelineToUse = vsr->pipelines.unlit;
+                        pipelineToUse = vs->pipelines.unlit;
 
                     if (alphaMode == Material::ALPHAMODE_BLEND)
-                        pipelineToUse = vsr->pipelines.unlitAlphaBlending;
+                        pipelineToUse = vs->pipelines.unlitAlphaBlending;
                     else if (primitive->material.doubleSided)
-                        pipelineToUse = primitive->material.unlit ? vsr->pipelines.unlitDoubleSided : vsr->pipelines.pbrDoubleSided;
+                        pipelineToUse = primitive->material.unlit ? vs->pipelines.unlitDoubleSided : vs->pipelines.pbrDoubleSided;
 
-                    if (pipelineToUse != vsc->boundPipeline)
+                    if (pipelineToUse != vs->context.boundPipeline)
                     {
                         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineToUse);
-                        vsc->boundPipeline = pipelineToUse;
+                        vs->context.boundPipeline = pipelineToUse;
                     }
 
                     const std::vector<VkDescriptorSet> descriptorSets = {
-                        vbc->frames[vbc->currentFrame].sceneDescriptorSet,
+                        vb->frames[vb->context.currentFrame].sceneDescriptorSet,
                         primitive->material.descriptorSet,
                         node->mesh->uniform.descriptorSet,
-                        vsr->materialBuffer.descriptorSet
+                        vs->materialBuffer.descriptorSet
                     };
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vsr->scenePipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
+                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->scenePipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
 
                     // pass material index for this primitive using a push constant, shader uses this to index in the material buffer
-                    vkCmdPushConstants(commandBuffer, vsr->scenePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &primitive->material.index);
+                    vkCmdPushConstants(commandBuffer, vs->scenePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &primitive->material.index);
 
                     if (primitive->hasIndices)
                         vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
@@ -128,24 +126,24 @@ namespace Deako {
     void Model::SetVertices()
     {
         // create host-visible staging buffers
-        VulkanBuffer::AllocatedBuffer vertexStaging =
+        AllocatedBuffer vertexStaging =
             VulkanBuffer::Create(vertexData.buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VkCR(vkMapMemory(vbr->device, vertexStaging.memory, 0, vertexStaging.memReqs.size, 0, &vertexStaging.mapped));
+        VkCR(vkMapMemory(vb->device, vertexStaging.memory, 0, vertexStaging.memReqs.size, 0, &vertexStaging.mapped));
         memcpy(vertexStaging.mapped, vertexData.buffer.data, vertexData.buffer.size);
-        vkUnmapMemory(vbr->device, vertexStaging.memory);
+        vkUnmapMemory(vb->device, vertexStaging.memory);
 
         vertices =
             VulkanBuffer::Create(vertexData.buffer.size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vbr->singleUseCommandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
 
         VkBufferCopy copyRegion = {};
         copyRegion.size = vertexData.buffer.size;
         vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, vertices.buffer, 1, &copyRegion);
 
-        VulkanCommand::EndSingleTimeCommands(vbr->singleUseCommandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(vertexStaging);
     }
@@ -155,24 +153,24 @@ namespace Deako {
         if (indexData.buffer.size > 0)
         {
             // create host-visible staging buffers
-            VulkanBuffer::AllocatedBuffer indexStaging =
+            AllocatedBuffer indexStaging =
                 VulkanBuffer::Create(indexData.buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-            VkCR(vkMapMemory(vbr->device, indexStaging.memory, 0, indexStaging.memReqs.size, 0, &indexStaging.mapped));
+            VkCR(vkMapMemory(vb->device, indexStaging.memory, 0, indexStaging.memReqs.size, 0, &indexStaging.mapped));
             memcpy(indexStaging.mapped, indexData.buffer.data, indexData.buffer.size);
-            vkUnmapMemory(vbr->device, indexStaging.memory);
+            vkUnmapMemory(vb->device, indexStaging.memory);
 
             indices =
                 VulkanBuffer::Create(indexData.buffer.size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vbr->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
 
             VkBufferCopy copyRegion = {};
             copyRegion.size = indexData.buffer.size;
             vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
 
-            VulkanCommand::EndSingleTimeCommands(vbr->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
 
             VulkanBuffer::Destroy(indexStaging);
         }
@@ -329,7 +327,7 @@ namespace Deako {
         uniform.buffer = VulkanBuffer::Create(sizeof(uniformBlock),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VkCR(vkMapMemory(vbr->device, uniform.buffer.memory, 0, sizeof(uniformBlock), 0, &uniform.mapped));
+        VkCR(vkMapMemory(vb->device, uniform.buffer.memory, 0, sizeof(uniformBlock), 0, &uniform.mapped));
         memcpy(uniform.mapped, &uniformBlock, sizeof(uniformBlock));
 
         uniform.descriptor = { uniform.buffer.buffer, 0, sizeof(uniformBlock) };

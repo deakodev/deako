@@ -5,11 +5,11 @@
 
 namespace Deako {
 
-    static  Ref<VulkanBaseResources> vbr = VulkanBase::GetResources();
+    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
 
     namespace VulkanPipeline {
 
-        VkPipeline Builder::Build(VkPipelineLayout pipelineLayout)
+        VkPipeline Builder::Build(VkPipelineLayout pipelineLayout, const VkFormat* colorAttachmentFormats)
         {
             VkPipelineViewportStateCreateInfo viewportState{};
             viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -30,9 +30,9 @@ namespace Deako {
             VkPipelineRenderingCreateInfoKHR renderingInfo{};
             renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
             renderingInfo.colorAttachmentCount = 1;
-            renderingInfo.pColorAttachmentFormats = &vbr->multisampleTarget.color.format;
-            renderingInfo.depthAttachmentFormat = vbr->multisampleTarget.depth.format;
-            renderingInfo.stencilAttachmentFormat = vbr->multisampleTarget.depth.format;
+            renderingInfo.pColorAttachmentFormats = colorAttachmentFormats;
+            renderingInfo.depthAttachmentFormat = vb->swapchain.depthTarget.format; // TODO: add depth format variable
+            renderingInfo.stencilAttachmentFormat = vb->swapchain.depthTarget.format;
 
             VkGraphicsPipelineCreateInfo pipelineInfo{};
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -52,7 +52,7 @@ namespace Deako {
             pipelineInfo.pNext = &renderingInfo;
 
             VkPipeline pipeline{};
-            VkCR(vkCreateGraphicsPipelines(vbr->device, vbr->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+            VkCR(vkCreateGraphicsPipelines(vb->device, vb->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
 
             return pipeline;
         }
