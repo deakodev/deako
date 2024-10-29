@@ -7,7 +7,7 @@ namespace Deako {
 
     void Input::Init()
     {
-        m_Window = Application::Get().GetWindow().GetNativeWindow();
+        m_Window = GetApplication().GetWindow().GetNativeWindow();
     }
 
     bool Input::IsKeyPressed(KeyCode keycode)

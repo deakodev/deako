@@ -1,29 +1,35 @@
 #include "Application.h"
 #include "dkpch.h"
 
-#include "Deako/Event/WindowEvent.h"
-#include "Deako/Core/Input.h"
-#include "Deako/Renderer/Renderer.h"
-
 namespace Deako
 {
+    static Application* s_ApplicationInstance = nullptr;
 
-    Application* Application::s_Instance = nullptr;
+    Application& InitApplication(Application* application)
+    {
+        DK_CORE_ASSERT(!s_ApplicationInstance, "Application already exists!");
+        s_ApplicationInstance = application;
+
+        return *s_ApplicationInstance;
+    }
+
+    void DestroyApplication()
+    {
+        delete s_ApplicationInstance;
+        s_ApplicationInstance = nullptr;
+    }
+
+    Application& GetApplication()
+    {
+        DK_CORE_ASSERT(s_ApplicationInstance, "Application instance not initialized!");
+        return *s_ApplicationInstance;
+    }
 
     Application::Application(const ApplicationSpecification& specification)
         : m_Specification(specification)
     {
-        DK_CORE_ASSERT(!s_Instance, "Application already exists!");
-        s_Instance = this;
-
         m_Window = Window::Create(WindowProps(specification.name));
         m_Window->SetEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
-
-        Input::Init();
-    }
-
-    Application::~Application()
-    {
     }
 
     void Application::OnEvent(Event& event)

@@ -9,9 +9,11 @@
 #include "Deako/Core/RateLimiter.h"
 #include "Deako/Core/Input.h"
 
+#include "Deako/Event/KeyEvent.h"
 #include "Deako/Event/KeyCodes.h"
 #include "Deako/Event/MouseCodes.h"
 
+#include "Deako/ImGui/ImGuiLayer.h"
 #include "Deako/ImGui/ImGuiIcons.h"
 
 #include "Deako/Asset/AssetManager.h"

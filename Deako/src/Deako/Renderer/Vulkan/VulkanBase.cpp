@@ -91,7 +91,7 @@ namespace Deako {
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = Application::Get().GetSpecification().name.c_str();
+        appInfo.pApplicationName = GetApplication().GetSpecification().name.c_str();
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "Deako Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
@@ -173,7 +173,7 @@ namespace Deako {
     void VulkanBase::SetUpDevice()
     {
         /* CREATE SURFACE */
-        Ref<GLFWwindow> window = Application::Get().GetWindow().GetNativeWindow();
+        Ref<GLFWwindow> window = GetApplication().GetWindow().GetNativeWindow();
         VkCR(glfwCreateWindowSurface(vb->instance, window.get(), nullptr, &vb->surface));
 
         /* DETERMINE PHYSICAL */
@@ -481,7 +481,7 @@ namespace Deako {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 
-        Ref<GLFWwindow> window = Application::Get().GetWindow().GetNativeWindow();
+        Ref<GLFWwindow> window = GetApplication().GetWindow().GetNativeWindow();
         ImGui_ImplGlfw_InitForVulkan(window.get(), true);
 
         ImGui_ImplVulkan_InitInfo initInfo{};
@@ -650,7 +650,7 @@ namespace Deako {
 
         vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
 
-        LayerStack& layerStack = Application::Get().GetLayerStack();
+        LayerStack& layerStack = GetApplication().GetLayerStack();
 
         ImGuiLayer::Begin();
         for (Layer* layer : layerStack)

@@ -35,14 +35,14 @@ namespace Deako {
 
     };
 
-    Application* CreateApplication(Deako::ApplicationCommandLineArgs args)
+    Application& CreateApplication(Deako::CommandLineArgs args)
     {
-        ApplicationSpecification spec;
-        spec.name = "Deako Editor";
-        spec.workingDirectory = "../Deako-Editor";
-        spec.commandLineArgs = args;
+        ApplicationSpecification specification;
+        specification.name = "Deako Editor";
+        specification.workingDirectory = "../Deako-Editor";
+        specification.commandLineArgs = args;
 
-        return new DeakoEditor(spec);
+        return InitApplication(new DeakoEditor(specification)); // Eventually have the option to switch between editor mode and gameplay mode??
     }
 
 }

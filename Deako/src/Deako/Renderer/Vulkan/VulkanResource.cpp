@@ -78,7 +78,7 @@ namespace Deako {
             }
             else
             {
-                Ref<GLFWwindow> window = Application::Get().GetWindow().GetNativeWindow();
+                Ref<GLFWwindow> window = GetApplication().GetWindow().GetNativeWindow();
 
                 int width, height;
                 glfwGetFramebufferSize(window.get(), &width, &height);

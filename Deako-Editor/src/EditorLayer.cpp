@@ -122,7 +122,7 @@ namespace Deako {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit Editor", "Cmd+Q"))
                 {
-                    Application::Get().Close();
+                    GetApplication().Close();
                 }
 
                 ImGui::EndMenu();
