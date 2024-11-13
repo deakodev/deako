@@ -2,9 +2,8 @@
 
 namespace Deako {
 
-    typedef enum class KeyCode : uint16_t
+    typedef enum class KeyCode : DkU16
     {
-        // From glfw3.h
         Space = 32,
         Apostrophe = 39, /* ' */
         Comma = 44, /* , */
@@ -139,7 +138,7 @@ namespace Deako {
 
     inline std::ostream& operator<<(std::ostream& os, KeyCode keyCode)
     {
-        os << static_cast<int32_t>(keyCode);
+        os << static_cast<DkS32>(keyCode);
         return os;
     }
 

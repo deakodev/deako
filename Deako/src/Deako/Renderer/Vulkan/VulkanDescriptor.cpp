@@ -9,7 +9,7 @@ namespace Deako {
 
     namespace VulkanDescriptor {
 
-        void LayoutBuilder::AddBinding(uint32_t bindingIndex, VkDescriptorType type, VkShaderStageFlags flags)
+        void LayoutBuilder::AddBinding(DkU32 bindingIndex, VkDescriptorType type, VkShaderStageFlags flags)
         {
             VkDescriptorSetLayoutBinding binding{};
 
@@ -27,7 +27,7 @@ namespace Deako {
 
             layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             layoutInfo.pBindings = bindings.data();
-            layoutInfo.bindingCount = (uint32_t)bindings.size();
+            layoutInfo.bindingCount = (DkU32)bindings.size();
             layoutInfo.pNext = pNext;
 
             VkDescriptorSetLayout descriptorSetLayout;
@@ -36,7 +36,7 @@ namespace Deako {
             return descriptorSetLayout;
         }
 
-        void Writer::WriteBuffer(uint32_t bindingIndex, VkDescriptorSet descriptorSet, VkDescriptorType descriptorType, VkDescriptorBufferInfo bufferInfo)
+        void Writer::WriteBuffer(DkU32 bindingIndex, VkDescriptorSet descriptorSet, VkDescriptorType descriptorType, VkDescriptorBufferInfo bufferInfo)
         {
             VkWriteDescriptorSet write{};
 
@@ -51,7 +51,7 @@ namespace Deako {
         }
 
 
-        void Writer::WriteImage(uint32_t bindingIndex, VkDescriptorSet descriptorSet, VkDescriptorType descriptorType, VkDescriptorImageInfo imageInfo)
+        void Writer::WriteImage(DkU32 bindingIndex, VkDescriptorSet descriptorSet, VkDescriptorType descriptorType, VkDescriptorImageInfo imageInfo)
         {
             VkWriteDescriptorSet write{};
 
@@ -67,10 +67,10 @@ namespace Deako {
 
         void Writer::UpdateSets()
         {
-            vkUpdateDescriptorSets(vb->device, (uint32_t)writes.size(), writes.data(), 0, nullptr);
+            vkUpdateDescriptorSets(vb->device, (DkU32)writes.size(), writes.data(), 0, nullptr);
         }
 
-        AllocatorGrowable::AllocatorGrowable(uint32_t maxSets, std::span<PoolSizeRatio> poolRatios)
+        AllocatorGrowable::AllocatorGrowable(DkU32 maxSets, std::span<PoolSizeRatio> poolRatios)
         {
             m_Ratios.reserve(poolRatios.size());
             for (auto ratio : poolRatios) m_Ratios.emplace_back(ratio);
@@ -114,7 +114,7 @@ namespace Deako {
             return descriptorSet;
         }
 
-        VkDescriptorPool AllocatorGrowable::CreatePool(uint32_t maxSets, std::span<PoolSizeRatio> poolRatios)
+        VkDescriptorPool AllocatorGrowable::CreatePool(DkU32 maxSets, std::span<PoolSizeRatio> poolRatios)
         {
             VkDescriptorPool descriptorPool{};
 
@@ -123,7 +123,7 @@ namespace Deako {
             for (auto& ratio : poolRatios)
             {
                 VkDescriptorType descriptorType = ratio.type;
-                uint32_t descriptorCount = ratio.ratio * maxSets;
+                DkU32 descriptorCount = ratio.ratio * maxSets;
                 poolSizes.emplace_back(descriptorType, descriptorCount);
             }
 
@@ -132,7 +132,7 @@ namespace Deako {
             poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             poolInfo.flags = 0;
             poolInfo.maxSets = maxSets;
-            poolInfo.poolSizeCount = (uint32_t)poolSizes.size();
+            poolInfo.poolSizeCount = (DkU32)poolSizes.size();
             poolInfo.pPoolSizes = poolSizes.data();
 
             vkCreateDescriptorPool(vb->device, &poolInfo, nullptr, &descriptorPool);

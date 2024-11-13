@@ -42,8 +42,8 @@ namespace Deako {
         VkPhysicalDevice                        physicalDevice;
         VkQueue                                 graphicsQueue;
         VkQueue                                 presentQueue;
-        std::optional<uint32_t>                 graphicsFamily;
-        std::optional<uint32_t>                 presentFamily;
+        std::optional<DkU32>                 graphicsFamily;
+        std::optional<DkU32>                 presentFamily;
 
         VkPipelineCache                         pipelineCache;
         VkCommandPool                           singleUseCommandPool;
@@ -59,12 +59,12 @@ namespace Deako {
             std::vector<VkImageView>            views;
             AllocatedImage                      colorTarget; // resolves to swapchain image
             AllocatedImage                      depthTarget;
-            uint32_t                            imageCount;
+            DkU32                            imageCount;
         } swapchain;
 
         struct
         {
-            uint32_t                            frameOverlap = 2;
+            DkU32                            frameOverlap = 2;
             bool                                validationEnabled{ true };
             bool                                vsync{ false };
             VkSampleCountFlagBits               sampleCount{ VK_SAMPLE_COUNT_4_BIT };
@@ -72,7 +72,7 @@ namespace Deako {
 
         struct
         {
-            uint32_t                            currentFrame{ 0 };
+            DkU32                            currentFrame{ 0 };
         } context;
     };
 
@@ -84,8 +84,7 @@ namespace Deako {
         static void Shutdown();
 
         static void Draw();
-        static void DrawGui(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void Render();
+        static void DrawGui(VkCommandBuffer commandBuffer, DkU32 imageIndex);
 
         static void RecreateSwapchain();
 

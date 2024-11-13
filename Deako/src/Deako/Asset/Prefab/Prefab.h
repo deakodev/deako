@@ -11,7 +11,7 @@ namespace Deako {
     using TextureMap = std::unordered_map<AssetHandle, Ref<Texture2D>>;
     using MaterialMap = std::unordered_map<AssetHandle, Ref<Material>>;
 
-    enum class PrefabType : uint16_t
+    enum class PrefabType : DkU16
     {
         None = 0,
         GLTF

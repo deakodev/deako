@@ -32,37 +32,37 @@ namespace Deako {
 
         struct
         {   // per-object uniform data
-            glm::mat4* model{ nullptr };
+            DkMat4* model{ nullptr };
         } uniformDynamicData;
 
         struct
         {   // per-object uniform data
-            glm::vec4* colorID{ nullptr };
+            DkVec4* colorID{ nullptr };
         } uniformPickerData;
 
         struct
         {   // per-scene uniform data
-            glm::mat4                              projection{ 1.0f };
-            glm::mat4                              view{ 1.0f };
-            glm::vec3                              camPos{ 0.0f };
+            DkMat4                              projection{ 1.0f };
+            DkMat4                              view{ 1.0f };
+            DkVec3                              camPos{ 0.0f };
         } uniformSharedData;
 
         struct
         {   // light params
-            glm::vec3                              color = glm::vec3(1.0f);
-            glm::vec3                              rotation = glm::vec3(1.309f, -0.698f, 0.0f);
+            DkVec3                              color = DkVec3(1.0f);
+            DkVec3                              rotation = DkVec3(1.309f, -0.698f, 0.0f);
             Ref<Texture2D>                         lutBrdf;
         } lightSource;
 
         struct
         {   // light uniform data
-            glm::vec4                              lightDir;
-            float                                   exposure = 4.5f;
-            float                                   gamma = 2.2f;
-            float                                   prefilteredCubeMipLevels;
-            float                                   scaleIBLAmbient = 1.0f;
-            float                                   debugViewInputs = 0;
-            float                                   debugViewEquation = 0;
+            DkVec4                              lightDir;
+            DkF32                                   exposure = 4.5f;
+            DkF32                                   gamma = 2.2f;
+            DkF32                                   prefilteredCubeMipLevels;
+            DkF32                                   scaleIBLAmbient = 1.0f;
+            DkF32                                   debugViewInputs = 0;
+            DkF32                                   debugViewEquation = 0;
         } uniformLightData;
 
         VulkanDescriptor::AllocatorGrowable        staticDescriptorAllocator; // vs per-frame
@@ -125,11 +125,7 @@ namespace Deako {
 
         struct
         {
-            Ref<Scene>                                 scene;
-            std::vector<Entity>                        entities;
-            Ref<ProjectAssetPool>                      projectAssetPool;
             VkPipeline                                 boundPipeline;
-            uint32_t                                   selectedEntityID;
         } context;
     };
 
@@ -140,18 +136,10 @@ namespace Deako {
         static void Rebuild();
         static void CleanUp();
 
-        static void Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void DrawPicking(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-        static void UpdateUniforms();
-
-        static bool IsInvalid() { return !vs->context.scene->isValid; }
-        static void Invalidate() { vs->context.scene->isValid = false; };
-
-        static void GetColorIDAtMousePosition(int32_t mouseX, int32_t mouseY);
+        static void OnUpdate();
+        static void Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex);
 
         static Ref<VulkanSceneResources> GetResources() { return vs; }
-
-        static uint32_t GetSelectedEntityID() { return vs->context.selectedEntityID; }
 
     private:
         static void SetUpAssets();

@@ -9,7 +9,7 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -26,27 +26,27 @@ namespace Deako {
 
     struct BoundingBox
     {
-        glm::vec3 min;
-        glm::vec3 max;
+        DkVec3 min;
+        DkVec3 max;
         bool valid{ false };
 
         BoundingBox() {}
-        BoundingBox(glm::vec3 min, glm::vec3 max);
-        BoundingBox GetAABB(glm::mat4 m);
+        BoundingBox(DkVec3 min, DkVec3 max);
+        BoundingBox GetAABB(DkMat4 m);
     };
 
     struct Primitive
     {
-        uint32_t firstIndex;
-        uint32_t indexCount;
-        uint32_t vertexCount;
+        DkU32 firstIndex;
+        DkU32 indexCount;
+        DkU32 vertexCount;
 
         Material& material;
         bool hasIndices;
         BoundingBox boundingBox;
 
-        Primitive(uint32_t firstIndex, uint32_t indexCount, uint32_t vertexCount, Material& material);
-        void SetBoundingBox(glm::vec3 min, glm::vec3 max);
+        Primitive(DkU32 firstIndex, DkU32 indexCount, DkU32 vertexCount, Material& material);
+        void SetBoundingBox(DkVec3 min, DkVec3 max);
     };
 
     struct Mesh
@@ -65,14 +65,14 @@ namespace Deako {
 
         struct UniformBlock
         {
-            glm::mat4 matrix;
-            glm::mat4 jointMatrix[MAX_NUM_JOINTS]{};
-            uint32_t jointcount{ 0 };
+            DkMat4 matrix;
+            DkMat4 jointMatrix[MAX_NUM_JOINTS]{};
+            DkU32 jointcount{ 0 };
         } uniformBlock;
 
-        Mesh(glm::mat4 matrix);
+        Mesh(DkMat4 matrix);
         ~Mesh();
-        void SetBoundingBox(glm::vec3 min, glm::vec3 max);
+        void SetBoundingBox(DkVec3 min, DkVec3 max);
     };
 
     struct Skin;
@@ -80,30 +80,30 @@ namespace Deako {
     struct Node
     {
         Node* parent;
-        uint32_t index;
+        DkU32 index;
         std::vector<Node*> children;
 
-        glm::mat4 matrix;
+        DkMat4 matrix;
         std::string name;
         Mesh* mesh;
         Skin* skin;
-        int32_t skinIndex{ -1 };
+        DkS32 skinIndex{ -1 };
 
-        glm::vec3 translation{};
-        glm::vec3 scale{ 1.0f };
+        DkVec3 translation{};
+        DkVec3 scale{ 1.0f };
         glm::quat rotation{};
 
         BoundingBox boundingVH;
         BoundingBox aaBoundingBox;
 
         bool useCachedMatrix{ false };
-        glm::mat4 cachedLocalMatrix{ glm::mat4(1.0f) };
-        glm::mat4 cachedMatrix{ glm::mat4(1.0f) };
+        DkMat4 cachedLocalMatrix{ DkMat4(1.0f) };
+        DkMat4 cachedMatrix{ DkMat4(1.0f) };
 
         void Update();
         ~Node();
-        glm::mat4 LocalMatrix();
-        glm::mat4 GetMatrix();
+        DkMat4 LocalMatrix();
+        DkMat4 GetMatrix();
     };
 
     struct AnimationChannel
@@ -111,21 +111,21 @@ namespace Deako {
         enum PathType { TRANSLATION, ROTATION, SCALE };
         PathType path;
         Node* node;
-        uint32_t samplerIndex;
+        DkU32 samplerIndex;
     };
 
     struct AnimationSampler
     {
         enum InterpolationType { LINEAR, STEP, CUBICSPLINE };
         InterpolationType interpolation;
-        std::vector<float> inputs;
-        std::vector<glm::vec4> outputsVec4;
-        std::vector<float> outputs;
+        std::vector<DkF32> inputs;
+        std::vector<DkVec4> outputsVec4;
+        std::vector<DkF32> outputs;
 
-        glm::vec4 CubicSplineInterpolation(size_t index, float time, uint32_t stride);
-        void Translate(size_t index, float time, Node* node);
-        void Scale(size_t index, float time, Node* node);
-        void Rotate(size_t index, float time, Node* node);
+        DkVec4 CubicSplineInterpolation(size_t index, DkF32 time, DkU32 stride);
+        void Translate(size_t index, DkF32 time, Node* node);
+        void Scale(size_t index, DkF32 time, Node* node);
+        void Rotate(size_t index, DkF32 time, Node* node);
     };
 
     struct Animation
@@ -134,15 +134,15 @@ namespace Deako {
         std::vector<AnimationSampler> samplers;
         std::vector<AnimationChannel> channels;
 
-        float start = std::numeric_limits<float>::max();
-        float end = std::numeric_limits<float>::min();
+        DkF32 start = std::numeric_limits<DkF32>::max();
+        DkF32 end = std::numeric_limits<DkF32>::min();
     };
 
     struct Skin
     {
         std::string name;
         Node* skeletonRoot = nullptr;
-        std::vector<glm::mat4> inverseBindMatrices;
+        std::vector<DkMat4> inverseBindMatrices;
         std::vector<Node*> joints;
     };
 
@@ -150,20 +150,20 @@ namespace Deako {
     {
         struct Vertex
         {
-            glm::vec3 pos;
-            glm::vec3 normal;
-            glm::vec2 uv0;
-            glm::vec2 uv1;
-            glm::uvec4 joint0;
-            glm::vec4 weight0;
-            glm::vec4 color;
+            DkVec3 pos;
+            DkVec3 normal;
+            DkVec2 uv0;
+            DkVec2 uv1;
+            DkUVec4 joint0;
+            DkVec4 weight0;
+            DkVec4 color;
         };
 
         struct LoaderData
         {
             Buffer buffer;
-            uint32_t count = 0;
-            uint32_t position = 0;
+            DkU32 count = 0;
+            DkU32 position = 0;
         } vertexData, indexData;
 
         AllocatedBuffer vertices;
@@ -181,18 +181,18 @@ namespace Deako {
 
         struct Dimensions
         {
-            glm::vec3 min = glm::vec3(FLT_MAX);
-            glm::vec3 max = glm::vec3(-FLT_MAX);
+            DkVec3 min = DkVec3(FLT_MAX);
+            DkVec3 max = DkVec3(-FLT_MAX);
         } dimensions;
 
-        glm::mat4 aaBoundingBox;
+        DkMat4 aaBoundingBox;
 
         Model() = default;
         virtual void Destroy() override;
 
         void Draw(VkCommandBuffer commandBuffer);
         void DrawNode(Node* node, VkCommandBuffer commandBuffer);
-        void UpdateAnimation(uint32_t index, float time);
+        void UpdateAnimation(DkU32 index, DkF32 time);
 
         void SetMaterials(const std::vector<Ref<Material>>& materials);
         void SetVertices();
@@ -205,6 +205,6 @@ namespace Deako {
         virtual AssetType GetType() const override { return GetStaticType(); }
     };
 
-    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, uint32_t dynamicOffset);
+    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, DkU32 dynamicOffset);
 
 }

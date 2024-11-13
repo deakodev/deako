@@ -5,20 +5,20 @@
 
 namespace Deako {
 
-    PropertiesPanel::PropertiesPanel(Ref<EditorContext> editorContext)
-        : m_EditorContext(editorContext)
-    {
-    }
-
     void PropertiesPanel::OnImGuiRender()
     {
+        DkContext& deako = Deako::GetContext();
+        ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
+        Scene& activeScene = Deako::GetActiveScene();
+
         ImGui::Begin("Properties");
 
-        if (m_EditorContext->entity)
+        if (deako.activeHandle != 0)
         {
-            if (m_EditorContext->entity->HasComponent<TagComponent>())
+            const Entity& entity = activeScene.GetEntity(deako.activeHandle);
+            if (entity.HasComponent<TagComponent>())
             {
-                auto& tag = m_EditorContext->entity->GetComponent<TagComponent>().tag;
+                auto& tag = entity.GetComponent<TagComponent>().tag;
 
                 char buffer[256];
                 std::memset(buffer, 0, sizeof(buffer));
@@ -37,8 +37,8 @@ namespace Deako {
             {
                 if (ImGui::MenuItem("Color"))
                 {
-                    if (!m_EditorContext->entity->HasComponent<TextureComponent>())
-                        m_EditorContext->entity->AddComponent<TextureComponent>();
+                    if (!entity.HasComponent<TextureComponent>())
+                        entity.AddComponent<TextureComponent>();
                     else
                         DK_CORE_WARN("This entity already has TextureComponent!");
                     ImGui::CloseCurrentPopup();
@@ -46,8 +46,8 @@ namespace Deako {
 
                 if (ImGui::MenuItem("Sprite Renderer"))
                 {
-                    if (!m_EditorContext->entity->HasComponent<ModelComponent>())
-                        m_EditorContext->entity->AddComponent<ModelComponent>();
+                    if (!entity.HasComponent<ModelComponent>())
+                        entity.AddComponent<ModelComponent>();
                     else
                         DK_CORE_WARN("This entity already has ModelComponent!");
                     ImGui::CloseCurrentPopup();
@@ -58,13 +58,13 @@ namespace Deako {
 
             ImGui::PopItemWidth();
 
-            DrawComponents();
+            DrawComponents(entity, projectAssetPool);
         }
 
         ImGui::End();
     }
 
-    void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 90.0f)
+    void DrawVec3Control(const std::string& label, DkVec3& values, DkF32 resetValue = 0.0f, DkF32 columnWidth = 90.0f)
     {
         ImGuiIO& io = ImGui::GetIO();
         auto boldFont = io.Fonts->Fonts[0];
@@ -78,7 +78,7 @@ namespace Deako {
         ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 4, 4 });
 
-        float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y + 2.0f;
+        DkF32 lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y + 2.0f;
         ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
 
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
@@ -129,7 +129,7 @@ namespace Deako {
     }
 
     template<typename T, typename UIFunction>
-    void PropertiesPanel::DrawComponent(const std::string& name, UIFunction uiFunction)
+    void PropertiesPanel::DrawComponent(const std::string& name, const Entity& entity, ProjectAssetPool& assetPool, UIFunction uiFunction)
     {
         const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen
             | ImGuiTreeNodeFlags_AllowItemOverlap
@@ -137,13 +137,13 @@ namespace Deako {
             | ImGuiTreeNodeFlags_FramePadding
             | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-        if (m_EditorContext->entity->HasComponent<T>())
+        if (entity.HasComponent<T>())
         {
-            auto& component = m_EditorContext->entity->GetComponent<T>();
+            auto& component = entity.GetComponent<T>();
 
             ImVec2 contentRegionAvail = ImGui::GetContentRegionAvail();
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
-            float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+            DkF32 lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 
             bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
             ImGui::PopStyleVar();
@@ -169,30 +169,30 @@ namespace Deako {
             }
 
             if (removeComponent)
-                m_EditorContext->entity->RemoveComponent<T>();
+                entity.RemoveComponent<T>();
         }
     }
 
-    void PropertiesPanel::DrawComponents()
+    void PropertiesPanel::DrawComponents(const Entity& entity, ProjectAssetPool& assetPool)
     {
-        DrawComponent<TransformComponent>("Transform", [](auto& component)
+        DrawComponent<TransformComponent>("Transform", entity, assetPool, [](auto& component)
             {
                 DrawVec3Control("Translation", component.translation);
 
-                glm::vec3 rotation = glm::degrees(component.rotation);
+                DkVec3 rotation = glm::degrees(component.rotation);
                 DrawVec3Control("Rotation", rotation);
                 component.rotation = glm::radians(rotation);
 
                 DrawVec3Control("Scale", component.scale, 1.0f);
             });
 
-        DrawComponent<TextureComponent>("Texture", [this](auto& component)
+        DrawComponent<TextureComponent>("Texture", entity, assetPool, [&assetPool](auto& component)
             {
                 bool isTextureValid = false;
                 std::string label = "None";
                 if (component.handle != 0)
                 {
-                    const AssetMetadata& metadata = m_EditorContext->assetPool->GetAssetMetadata(component.handle);
+                    const AssetMetadata& metadata = assetPool.GetAssetMetadata(component.handle);
                     if (metadata.assetType == AssetType::Texture2D)
                     {
                         label = metadata.assetPath.filename().string() + " (Texture2D)";
@@ -211,7 +211,7 @@ namespace Deako {
 
                 ImVec2 buttonSize = ImGui::CalcTextSize(label.c_str());
                 buttonSize.x += 20.0f; // padding
-                float buttonWidth = glm::max<float>(100.0f, buttonSize.x);
+                DkF32 buttonWidth = glm::max<DkF32>(100.0f, buttonSize.x);
 
                 ImGui::Button(label.c_str(), ImVec2(buttonWidth, 0.0f));
                 if (ImGui::BeginDragDropTarget())
@@ -220,7 +220,7 @@ namespace Deako {
                     {
                         AssetHandle newHandle = *(AssetHandle*)payload->Data;
 
-                        AssetType newAssetType = m_EditorContext->assetPool->GetAssetType(newHandle);
+                        AssetType newAssetType = assetPool.GetAssetType(newHandle);
                         if (newAssetType == AssetType::Texture2D || newAssetType == AssetType::TextureCubeMap)
                         {
                             component.handle = newHandle;
@@ -237,7 +237,7 @@ namespace Deako {
                 if (isTextureValid)
                 {
                     ImGui::SameLine(0.0f, 10.0f);
-                    float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+                    DkF32 lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
                     if (ImGui::Button("Delete", ImVec2{ lineHeight, lineHeight }))
                     {
                         component.handle = 0;
@@ -245,9 +245,9 @@ namespace Deako {
                 }
             });
 
-        DrawComponent<MaterialComponent>("Material", [this](auto& component)
+        DrawComponent<MaterialComponent>("Material", entity, assetPool, [&assetPool](auto& component)
             {
-                Ref<Material> material = m_EditorContext->assetPool->GetAsset<Material>(component.handle);
+                Ref<Material> material = assetPool.GetAsset<Material>(component.handle);
 
                 if (material)
                 {
@@ -261,14 +261,14 @@ namespace Deako {
 
                     ImGui::Text("Base Color");
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("##BaseColor", (float*)&material->baseColorFactor, ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoLabel);
+                    ImGui::ColorEdit4("##BaseColor", (DkF32*)&material->baseColorFactor, ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoLabel);
 
                     if (ImGui::IsItemDeactivatedAfterEdit()) // detect when user stops dragging
                         SceneHandler::RefreshScene();
 
                     // metallicFactor
-                    static float minFactor = 0.0f;
-                    static float maxFactor = 1.0f;
+                    static DkF32 minFactor = 0.0f;
+                    static DkF32 maxFactor = 1.0f;
 
                     ImGui::Text("Metallic Factor");
                     ImGui::SameLine();
@@ -286,7 +286,7 @@ namespace Deako {
                 }
             });
 
-        DrawComponent<ModelComponent>("Model", [](auto& component)
+        DrawComponent<ModelComponent>("Model", entity, assetPool, [](auto& component)
             {
                 ImGui::Button("Model", ImVec2(100.0f, 0.0f));
             });

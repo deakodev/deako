@@ -1,21 +1,23 @@
 #pragma once
 
+#include "Deako/Math/Math.h"
+
 namespace Deako {
 
 	// non-owning raw buffer class
 	struct Buffer
 	{
-		uint8_t* data{ nullptr };
-		uint64_t size{ 0 };
+		DkU8* data{ nullptr };
+		DkU64 size{ 0 };
 
 		Buffer() = default;
 
-		Buffer(uint64_t bufferSize)
+		Buffer(DkU64 bufferSize)
 		{
 		}
 
-		Buffer(const void* data, uint64_t bufferSize)
-			:data((uint8_t*)data), size(bufferSize)
+		Buffer(const void* data, DkU64 bufferSize)
+			:data((DkU8*)data), size(bufferSize)
 		{
 		}
 
@@ -28,11 +30,11 @@ namespace Deako {
 			return result;
 		}
 
-		void Allocate(uint64_t bufferSize)
+		void Allocate(DkU64 bufferSize)
 		{
 			Release();
 
-			data = (uint8_t*)malloc(bufferSize);
+			data = (DkU8*)malloc(bufferSize);
 			size = bufferSize;
 		}
 

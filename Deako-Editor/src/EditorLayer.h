@@ -27,7 +27,6 @@ namespace Deako {
 
     private:
         Ref<EditorCamera> m_EditorCamera;
-        Ref<EditorContext> m_EditorContext;
 
         Scope<ScenePanel> m_ScenePanel;
         Scope<PropertiesPanel> m_PropertiesPanel;

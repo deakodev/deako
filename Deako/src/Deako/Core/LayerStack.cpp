@@ -8,7 +8,25 @@ namespace Deako {
         for (Layer* layer : m_Layers)
         {
             layer->OnDetach();
+
             delete layer;
+            layer = nullptr;
+        }
+    }
+
+    void LayerStack::OnUpdate()
+    {
+        for (Layer* layer : m_Layers)
+            layer->OnUpdate();
+    }
+
+    void LayerStack::OnEvent(Event& event)
+    {
+        for (Layer* layer : m_Layers)
+        {
+            if (event.Handled)
+                break;
+            layer->OnEvent(event);
         }
     }
 
@@ -25,24 +43,23 @@ namespace Deako {
         overlay->OnAttach();
     }
 
-    void LayerStack::PopLayer(Layer* layer)
+    void LayerStack::PopLayer(int count)
     {
-        auto it = std::find(m_Layers.begin(), m_Layers.begin() + m_LayerInsertIndex, layer);
-        if (it != m_Layers.end())
+        for (int i = 0; i < count && m_LayerInsertIndex > 0; ++i)
         {
+            auto layer = m_Layers[m_LayerInsertIndex - 1];
             layer->OnDetach();
-            m_Layers.erase(it);
-            --m_LayerInsertIndex;
+            m_Layers.erase(m_Layers.begin() + --m_LayerInsertIndex);
         }
     }
 
-    void LayerStack::PopOverlay(Layer* overlay)
+    void LayerStack::PopOverlay(int count)
     {
-        auto it = std::find(m_Layers.begin() + m_LayerInsertIndex, m_Layers.end(), overlay);
-        if (it != m_Layers.end())
+        for (int i = 0; i < count && !m_Layers.empty(); ++i)
         {
+            auto overlay = m_Layers.back();
             overlay->OnDetach();
-            m_Layers.erase(it);
+            m_Layers.pop_back();
         }
     }
 

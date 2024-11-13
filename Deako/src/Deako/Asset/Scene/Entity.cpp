@@ -3,8 +3,8 @@
 
 namespace Deako {
 
-    Entity::Entity(entt::entity handle, Scene* scene)
-        : m_EntityHandle(handle), m_Scene(scene)
+    Entity::Entity(EntityHandle handle, entt::entity enttEntity, const DkVec4& pickerColor, Scene* scene)
+        : m_EntityHandle(handle), m_EnttEntity(enttEntity), m_PickerColor(pickerColor), m_Scene(scene)
     {
     }
 

@@ -4,7 +4,6 @@
 #include "Deako/Asset/Scene/SceneHandler.h"
 #include "Deako/Asset/Texture/TextureHandler.h"
 #include "Deako/Core/Input.h" 
-#include "Deako/ImGui/ImGuiLayer.h" 
 
 #include "VulkanBase.h"
 #include "VulkanPipeline.h"
@@ -15,7 +14,7 @@ namespace Deako {
 
     void VulkanScene::Build()
     {
-        VulkanBase::Idle();
+        Scene& activeScene = Deako::GetActiveScene();
 
         SetUpAssets();
 
@@ -23,30 +22,9 @@ namespace Deako {
 
         SetUpDescriptors();
 
-        VkExtent3D targetExtent = { vb->swapchain.extent.width, vb->swapchain.extent.height, 1 };
-        VkSampleCountFlagBits targetSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        VkFormat colorFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
-        VkImageUsageFlags colorUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        vs->picker.colorTarget =
-            VulkanImage::Create(targetExtent, colorFormat, targetSamples, colorUsages, 1, VK_IMAGE_TYPE_2D);
-
-        VkFormat depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
-        VkImageUsageFlags depthUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-
-        vs->picker.depthTarget =
-            VulkanImage::Create(targetExtent, depthFormat, targetSamples, depthUsages, 1, VK_IMAGE_TYPE_2D);
-
-        vs->picker.stagingBuffer = VulkanBuffer::Create(sizeof(glm::vec4), VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-        VkCR(vkMapMemory(vb->device, vs->picker.stagingBuffer.memory, 0, sizeof(glm::vec4), 0, &vs->picker.stagingBuffer.mapped));
-
         SetUpPipelines();
 
-        vs->context.scene->activeCamera->ResizeCamera({ vb->swapchain.extent.width, vb->swapchain.extent.height });
-
-        vs->context.scene->isValid = true;
+        activeScene.isValid = true;
     }
 
     void VulkanScene::CleanUp()
@@ -80,6 +58,7 @@ namespace Deako {
             VulkanBuffer::Destroy(uniform.dynamic.buffer);
             VulkanBuffer::Destroy(uniform.shared.buffer);
             VulkanBuffer::Destroy(uniform.light.buffer);
+            VulkanBuffer::Destroy(uniform.picker.buffer);
         }
 
         VulkanBuffer::Destroy(vs->materialBuffer.buffer);
@@ -87,8 +66,6 @@ namespace Deako {
         vs->lightSource.lutBrdf->Destroy();
         vs->skybox.irradianceCube->Destroy();
         vs->skybox.prefilteredCube->Destroy();
-
-        vs->context.entities.clear();
     }
 
     void VulkanScene::Rebuild()
@@ -99,30 +76,27 @@ namespace Deako {
 
     void VulkanScene::SetUpAssets()
     {
-        vs->context.projectAssetPool = ProjectAssetPool::Get();
+        ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
+        Scene& activeScene = Deako::GetActiveScene();
 
-        vs->context.scene = SceneHandler::GetActiveScene();
-
-        vs->context.entities = vs->context.scene->GetAllEntitiesWith<PrefabComponent>();
-
-        for (auto it = vs->context.entities.begin(); it != vs->context.entities.end(); )
+        for (auto it = activeScene.entities.begin(); it != activeScene.entities.end(); )
         {
             Entity entity = *it;
-            std::string& tag = entity.GetComponent<TagComponent>().tag;
 
+            std::string& tag = entity.GetComponent<TagComponent>().tag;
             if (tag == "Skybox")
             {
                 vs->settings.displayBackground = true;
 
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> mesh = vs->context.projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> mesh = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
                 vs->skybox.model = mesh; // easy access, separate from others
-                vs->context.entities.erase(it); // erase the entity and update the iterator
+                activeScene.entities.erase(it); // erase the entity and update the iterator
 
                 // Handle the skybox-specific components
                 auto& textureComp = entity.GetComponent<TextureComponent>();
-                vs->skybox.environmentCube = vs->context.projectAssetPool->GetAsset<TextureCubeMap>(textureComp.handle);
+                vs->skybox.environmentCube = projectAssetPool.GetAsset<TextureCubeMap>(textureComp.handle);
 
                 if (!vs->skybox.environmentCube)
                 {
@@ -145,14 +119,16 @@ namespace Deako {
 
     void VulkanScene::SetUpUniforms()
     {
+        Scene& activeScene = Deako::GetActiveScene();
+
         // dynamic uniform alignments
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(vb->physicalDevice, &deviceProperties);
 
         // determine required alignment based on min device offset alignment
         size_t minUniformAlignment = deviceProperties.limits.minUniformBufferOffsetAlignment;
-        vs->dynamicUniformAlignment = sizeof(glm::mat4);
-        vs->pickerUniformAlignment = sizeof(glm::vec4);
+        vs->dynamicUniformAlignment = sizeof(DkMat4);
+        vs->pickerUniformAlignment = sizeof(DkVec4);
 
         if (minUniformAlignment > 0)
         {
@@ -160,14 +136,14 @@ namespace Deako {
             vs->pickerUniformAlignment = (vs->pickerUniformAlignment + minUniformAlignment - 1) & ~(minUniformAlignment - 1);
         }
 
-        size_t dynamicBufferSize = vs->context.entities.size() * vs->dynamicUniformAlignment;
-        size_t pickerBufferSize = vs->context.entities.size() * vs->pickerUniformAlignment;
+        size_t dynamicBufferSize = activeScene.entities.size() * vs->dynamicUniformAlignment;
+        size_t pickerBufferSize = activeScene.entities.size() * vs->pickerUniformAlignment;
 
-        vs->uniformDynamicData.model = (glm::mat4*)VulkanMemory::AlignedAlloc(dynamicBufferSize, vs->dynamicUniformAlignment);
-        vs->uniformPickerData.colorID = (glm::vec4*)VulkanMemory::AlignedAlloc(pickerBufferSize, vs->pickerUniformAlignment);
+        vs->uniformDynamicData.model = (DkMat4*)VulkanMemory::AlignedAlloc(dynamicBufferSize, vs->dynamicUniformAlignment);
+        vs->uniformPickerData.colorID = (DkVec4*)VulkanMemory::AlignedAlloc(pickerBufferSize, vs->pickerUniformAlignment);
 
-        DK_CORE_ASSERT(vs->uniformDynamicData.model);
-        DK_CORE_ASSERT(vs->uniformPickerData.colorID);
+        DK_CORE_ASSERT(vs->uniformDynamicData.model, "Failed to allocate model uniform dynamic data!");
+        DK_CORE_ASSERT(vs->uniformPickerData.colorID, "Failed to allocate colorID uniform dynamic data!");
 
         VkMemoryPropertyFlags memoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -195,46 +171,40 @@ namespace Deako {
         }
     }
 
-    void VulkanScene::UpdateUniforms()
+    void VulkanScene::OnUpdate()
     {
-        Ref<EditorCamera> camera = vs->context.scene->activeCamera;
+        Scene& activeScene = Deako::GetActiveScene();
+        Ref<EditorCamera> camera = activeScene.activeCamera;
         // shared scene
         vs->uniformSharedData.view = camera->GetView();
         vs->uniformSharedData.projection = camera->GetProjection();
 
-        glm::mat4 cv = glm::inverse(vs->uniformSharedData.view);
-        vs->uniformSharedData.camPos = glm::vec3(cv[3]);
+        DkMat4 cv = glm::inverse(vs->uniformSharedData.view);
+        vs->uniformSharedData.camPos = DkVec3(cv[3]);
 
         // models
-        uint32_t index = 0;
-        for (Entity entity : vs->context.entities)
+        DkU32 index = 0;
+        for (auto& entity : activeScene.entities)
         {
             // aligned offset for dynamic uniform (model and colorID separately)
-            glm::mat4* modelMatrix = (glm::mat4*)(((uint64_t)vs->uniformDynamicData.model) + (index * vs->dynamicUniformAlignment));
+            DkMat4* modelMatrix = (DkMat4*)(((DkU64)vs->uniformDynamicData.model) + (index * vs->dynamicUniformAlignment));
             *modelMatrix = entity.GetComponent<TransformComponent>().GetTransform();
 
-            glm::vec4* colorID = (glm::vec4*)(((uint64_t)vs->uniformPickerData.colorID) + (index * vs->pickerUniformAlignment));
-
-            uint32_t entityID = static_cast<uint32_t>(entity);
-
-            float r = ((entityID >> 16) & 0x0FF) / 255.0f;
-            float g = ((entityID >> 8) & 0x0FF) / 255.0f;
-            float b = ((entityID) & 0x0FF) / 255.0f;
-
-            *colorID = glm::vec4(r, g, b, 1.0f);
+            DkVec4* colorID = (DkVec4*)(((DkU64)vs->uniformPickerData.colorID) + (index * vs->pickerUniformAlignment));
+            *colorID = entity.GetPickerColor();
 
             index++;
         }
 
-        vs->uniformLightData.lightDir = glm::vec4(
+        vs->uniformLightData.lightDir = DkVec4(
             sin(vs->lightSource.rotation.x) * cos(vs->lightSource.rotation.y),
             sin(vs->lightSource.rotation.y),
             cos(vs->lightSource.rotation.x) * cos(vs->lightSource.rotation.y),
             0.0f);
 
         UniformSet uniformSet = vs->uniforms[vb->context.currentFrame];
-        memcpy(uniformSet.dynamic.buffer.mapped, vs->uniformDynamicData.model, vs->dynamicUniformAlignment * vs->context.entities.size());
-        memcpy(uniformSet.picker.buffer.mapped, vs->uniformPickerData.colorID, vs->pickerUniformAlignment * vs->context.entities.size());
+        memcpy(uniformSet.dynamic.buffer.mapped, vs->uniformDynamicData.model, vs->dynamicUniformAlignment * activeScene.entities.size());
+        memcpy(uniformSet.picker.buffer.mapped, vs->uniformPickerData.colorID, vs->pickerUniformAlignment * activeScene.entities.size());
         memcpy(uniformSet.shared.buffer.mapped, &vs->uniformSharedData, sizeof(vs->uniformSharedData));
         memcpy(uniformSet.light.buffer.mapped, &vs->uniformLightData, sizeof(vs->uniformLightData));
 
@@ -242,17 +212,20 @@ namespace Deako {
         VkMappedMemoryRange memoryRange{};
         memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         memoryRange.memory = uniformSet.dynamic.buffer.memory;
-        memoryRange.size = vs->dynamicUniformAlignment * vs->context.entities.size();
+        memoryRange.size = vs->dynamicUniformAlignment * activeScene.entities.size();
         vkFlushMappedMemoryRanges(vb->device, 1, &memoryRange);
 
         memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         memoryRange.memory = uniformSet.picker.buffer.memory;
-        memoryRange.size = vs->pickerUniformAlignment * vs->context.entities.size();
+        memoryRange.size = vs->pickerUniformAlignment * activeScene.entities.size();
         vkFlushMappedMemoryRanges(vb->device, 1, &memoryRange);
     }
 
     void VulkanScene::SetUpDescriptors()
     {
+        ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
+        Scene& activeScene = Deako::GetActiveScene();
+
         /* DESCRIPTOR POOLS */
         {   // per-frame descriptor pool allocators
             std::vector<VulkanDescriptor::PoolSizeRatio> poolSizes = {
@@ -263,38 +236,38 @@ namespace Deako {
 
             for (int i = 0; i < vb->settings.frameOverlap; i++)
             {
-                static uint32_t maxSets = 1000;
+                static DkU32 maxSets = 1000;
                 VulkanDescriptor::AllocatorGrowable descriptorAllocator{ maxSets, poolSizes };
                 vb->frames[i].descriptorAllocator = descriptorAllocator;
             }
         }
 
         {   // static descriptor pool allocator
-            uint32_t meshCount = 0;
-            uint32_t materialCount = 0;
-            uint32_t materialSamplerCount = 0;
+            DkU32 meshCount = 0;
+            DkU32 materialCount = 0;
+            DkU32 materialSamplerCount = 0;
 
-            for (Entity entity : vs->context.entities)
+            for (auto& entity : activeScene.entities)
             {
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
 
-                Ref<Model> model = vs->context.projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
                 for (auto node : model->linearNodes)
                     if (node->mesh) meshCount++; // 1 set for mesh
 
-                uint32_t entityMaterialCount = prefabComp.materialHandles.size();
+                DkU32 entityMaterialCount = prefabComp.materialHandles.size();
                 materialCount += entityMaterialCount;
                 materialSamplerCount += (entityMaterialCount * 5); // 5 sets for material samplers
             }
 
             std::vector<VulkanDescriptor::PoolSizeRatio> poolSizes = {
                 { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1 }, // 1 set for picker
-                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (float)materialSamplerCount },
-                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,(float)meshCount },
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (DkF32)materialSamplerCount },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,(DkF32)meshCount },
                 { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 }, // 1 set for material buffer
             };
 
-            uint32_t maxSets = meshCount + materialCount + materialSamplerCount + 1;
+            DkU32 maxSets = meshCount + materialCount + materialSamplerCount + 1;
             VulkanDescriptor::AllocatorGrowable descriptorAllocator{ maxSets, poolSizes };
             vs->staticDescriptorAllocator = descriptorAllocator;
         }
@@ -373,10 +346,10 @@ namespace Deako {
 
             Ref<Texture2D> emptyTexture = TextureHandler::GetEmptyTexture2D();
 
-            for (Entity entity : vs->context.entities)
+            for (auto& entity : activeScene.entities)
             {
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> model = vs->context.projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
                 for (auto& material : model->materials)
                 {
@@ -439,10 +412,10 @@ namespace Deako {
                     writer.UpdateSets();
                 };
 
-            for (Entity entity : vs->context.entities)
+            for (auto& entity : activeScene.entities)
             {
                 auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> model = vs->context.projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
                 for (auto& node : model->nodes) // per-node descriptor set
                 {
@@ -523,7 +496,7 @@ namespace Deako {
         };
 
         VkPushConstantRange pushConstantRange{};
-        pushConstantRange.size = sizeof(uint32_t);
+        pushConstantRange.size = sizeof(DkU32);
         pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -531,15 +504,15 @@ namespace Deako {
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(skyboxDescriptorLayouts.size());
+        pipelineLayoutInfo.setLayoutCount = static_cast<DkU32>(skyboxDescriptorLayouts.size());
         pipelineLayoutInfo.pSetLayouts = skyboxDescriptorLayouts.data();
         VkCR(vkCreatePipelineLayout(vb->device, &pipelineLayoutInfo, nullptr, &vs->skyboxPipelineLayout));
 
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(sceneDescriptorLayouts.size());
+        pipelineLayoutInfo.setLayoutCount = static_cast<DkU32>(sceneDescriptorLayouts.size());
         pipelineLayoutInfo.pSetLayouts = sceneDescriptorLayouts.data();
         VkCR(vkCreatePipelineLayout(vb->device, &pipelineLayoutInfo, nullptr, &vs->scenePipelineLayout));
 
-        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(pickerDescriptorLayouts.size());
+        pipelineLayoutInfo.setLayoutCount = static_cast<DkU32>(pickerDescriptorLayouts.size());
         pipelineLayoutInfo.pSetLayouts = pickerDescriptorLayouts.data();
         VkCR(vkCreatePipelineLayout(vb->device, &pipelineLayoutInfo, nullptr, &vs->pickerPipelineLayout));
 
@@ -595,7 +568,7 @@ namespace Deako {
 
             vs->pipelines.pbr = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
 
-            // pbr double sided pipeline
+            // pbr DkF64 sided pipeline
             pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
             vs->pipelines.pbrDoubleSided = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
 
@@ -628,7 +601,7 @@ namespace Deako {
 
             vs->pipelines.unlit = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
 
-            // unlit double sided pipeline
+            // unlit DkF64 sided pipeline
             pipelineBuilder.SetCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
             vs->pipelines.unlitDoubleSided = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
 
@@ -667,7 +640,7 @@ namespace Deako {
         vkDestroyShaderModule(vb->device, pickerFrag, nullptr);
     }
 
-    void VulkanScene::Draw(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    void VulkanScene::Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex)
     {
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -719,13 +692,16 @@ namespace Deako {
         }
 
         VkDeviceSize vertexOffsets[1] = { 0 };
-        uint32_t dynamicOffset = 0;
+        DkU32 dynamicOffset = 0;
 
-        uint32_t index = 0;
-        for (Entity entity : vs->context.entities)
+        Scene& activeScene = Deako::GetActiveScene();
+        ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
+
+        DkU32 index = 0;
+        for (auto& entity : activeScene.entities)
         {
             auto& prefabComp = entity.GetComponent<PrefabComponent>();
-            Ref<Model> model = vs->context.projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
+            Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, vertexOffsets);
 
@@ -735,7 +711,7 @@ namespace Deako {
             vs->context.boundPipeline = VK_NULL_HANDLE;
 
             // one dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
-            dynamicOffset = index * static_cast<uint32_t>(vs->dynamicUniformAlignment);
+            dynamicOffset = index * static_cast<DkU32>(vs->dynamicUniformAlignment);
 
             for (auto node : model->nodes) // opaque primitives first
                 RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE, dynamicOffset);
@@ -748,153 +724,6 @@ namespace Deako {
         }
 
         vkCmdEndRenderingKHR(commandBuffer);
-    }
-
-    void VulkanScene::DrawPicking(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-    {   // offscreen color picking draw
-
-        if (ImGuiLayer::AreEventsBlocked() || !Input::IsMouseButtonPressed(Mouse::ButtonLeft)) return;
-
-        glm::vec2 mousePosition = Input::GetMousePosition();
-        int32_t mouseX = static_cast<int32_t>(mousePosition.x);
-        int32_t mouseY = static_cast<int32_t>(mousePosition.y);
-
-        VulkanImage::Transition(commandBuffer, vs->picker.colorTarget.image, vs->picker.colorTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-        VulkanImage::Transition(commandBuffer, vs->picker.depthTarget.image, vs->picker.depthTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-        VkRenderingAttachmentInfo colorAttachment = {};
-        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = vs->picker.colorTarget.view;
-        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.clearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-
-        VkRenderingAttachmentInfo depthStencilAttachment = {};
-        depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        depthStencilAttachment.pNext = nullptr;
-        depthStencilAttachment.imageView = vs->picker.depthTarget.view;
-        depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        depthStencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthStencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depthStencilAttachment.clearValue.depthStencil = { 1.0f,  0 };
-
-        VkRenderingInfo renderInfo = {};
-        renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-        renderInfo.pNext = nullptr;
-        renderInfo.renderArea = { VkOffset2D{ mouseX, mouseY}, { 1, 1 } }; // 1 pixel render region
-        renderInfo.layerCount = 1;
-        renderInfo.colorAttachmentCount = 1;
-        renderInfo.pColorAttachments = &colorAttachment;
-        renderInfo.pDepthAttachment = &depthStencilAttachment;
-        renderInfo.pStencilAttachment = &depthStencilAttachment;
-
-        vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
-
-        VkViewport viewport{};
-        viewport.width = vb->swapchain.extent.width;
-        viewport.height = vb->swapchain.extent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = { vb->swapchain.extent.width, vb->swapchain.extent.height };
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->pipelines.picker);
-
-        uint32_t index = 0;
-        auto DrawPrimitive = [&](Node* node)
-            {
-                if (!node->mesh) return;
-                for (Primitive* primitive : node->mesh->primitives)
-                {
-                    if (primitive->material.alphaMode == Material::ALPHAMODE_OPAQUE)
-                    {
-                        uint32_t dynamicOffsets[2] = {
-                            index * static_cast<uint32_t>(vs->pickerUniformAlignment),
-                            index * static_cast<uint32_t>(vs->dynamicUniformAlignment)
-                        };
-
-                        const std::vector<VkDescriptorSet> descriptorSets = {
-                            vs->picker.descriptorSet,
-                            node->mesh->uniform.descriptorSet,
-                        };
-
-                        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->pickerPipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 2, dynamicOffsets);
-
-                        if (primitive->hasIndices)
-                            vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-                        else
-                            vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-                    }
-                }
-            };
-
-        for (Entity entity : vs->context.entities)
-        {
-            auto& prefabComp = entity.GetComponent<PrefabComponent>();
-            Ref<Model> model = vs->context.projectAssetPool->GetAsset<Model>(prefabComp.meshHandle);
-
-            VkDeviceSize vertexOffset = 0;
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, &vertexOffset);
-
-            if (model->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            // render each node with picking color
-            for (auto node : model->nodes)
-            {
-                DrawPrimitive(node);
-
-                for (auto child : node->children)
-                    DrawPrimitive(child);
-            }
-
-            index++;
-        }
-
-        vkCmdEndRenderingKHR(commandBuffer);
-
-        VulkanScene::GetColorIDAtMousePosition(mouseX, mouseY);
-    }
-
-    void VulkanScene::GetColorIDAtMousePosition(int32_t mouseX, int32_t mouseY)
-    {
-        VkBufferImageCopy copyRegion{};
-        copyRegion.bufferOffset = 0;
-        copyRegion.bufferRowLength = 0;
-        copyRegion.bufferImageHeight = 0;
-        copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        copyRegion.imageSubresource.mipLevel = 0;
-        copyRegion.imageSubresource.baseArrayLayer = 0;
-        copyRegion.imageSubresource.layerCount = 1;
-        copyRegion.imageOffset = { mouseX, mouseY, 0 }; // copy from exact pixel position
-        copyRegion.imageExtent = { 1, 1, 1 };
-
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
-
-        VulkanImage::Transition(commandBuffer, vs->picker.colorTarget.image, vs->picker.colorTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-        vkCmdCopyImageToBuffer(commandBuffer, vs->picker.colorTarget.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vs->picker.stagingBuffer.buffer, 1, &copyRegion);
-
-        VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
-
-        glm::vec4* pixelData = static_cast<glm::vec4*>(vs->picker.stagingBuffer.mapped);
-
-        uint8_t red = static_cast<uint8_t>(pixelData->r * 255.0f);
-        uint8_t green = static_cast<uint8_t>(pixelData->g * 255.0f);
-        uint8_t blue = static_cast<uint8_t>(pixelData->b * 255.0f);
-
-        uint32_t colorID = ((red & 0xFF) << 16) | ((green & 0xFF) << 8) | (blue & 0xFF);
-
-        DK_CORE_WARN("Color ID: {0}, mouse: {1}, {2}", colorID, mouseX, mouseY);
-
-        vs->context.selectedEntityID = colorID;
     }
 
 }

@@ -1,48 +1,46 @@
 #include <Deako.h>
 #include <Deako/Core/EntryPoint.h>
 
-#include "EditorContext.h"
 #include "EditorLayer.h"
 
 namespace Deako {
 
-    class DeakoEditor : public Application
+    class DeakoEditor : public DkApplication
     {
     public:
-        DeakoEditor(const ApplicationSpecification& spec)
-            : Application(spec)
+        DeakoEditor(DkContext* context, DkApplicationConfig& config)
+            : DkApplication(context, config)
         {
+            this->layerStack.PushLayer(m_EditorLayer.get());
+            this->layerStack.PushOverlay(m_ImGuiLayer.get());
         }
 
         ~DeakoEditor()
         {
-            GetLayerStack().PopOverlay(m_ImGuiLayer.get());
-            GetLayerStack().PopLayer(m_EditorLayer.get());
         }
 
-        virtual void PushLayers() override
-        {
-            m_EditorLayer = CreateScope<EditorLayer>();
-            GetLayerStack().PushLayer(m_EditorLayer.get());
-
-            m_ImGuiLayer = CreateScope<ImGuiLayer>();
-            GetLayerStack().PushOverlay(m_ImGuiLayer.get());
-        }
-
-    private:
-        Scope<EditorLayer> m_EditorLayer;
-        Scope<ImGuiLayer> m_ImGuiLayer;
-
+        private:
+         Scope<EditorLayer> m_EditorLayer = CreateScope<EditorLayer>();
+         Scope<ImGuiLayer> m_ImGuiLayer = CreateScope<ImGuiLayer>();
     };
 
-    Application& CreateApplication(Deako::CommandLineArgs args)
+    Scope<DkWindow> ConfigureWindow(DkContext* context)
     {
-        ApplicationSpecification specification;
-        specification.name = "Deako Editor";
-        specification.workingDirectory = "../Deako-Editor";
-        specification.commandLineArgs = args;
+        DkWindowConfig config;
+        config.windowName = "Deako Editor";
+        config.size = { 1600, 900 };
 
-        return InitApplication(new DeakoEditor(specification)); // Eventually have the option to switch between editor mode and gameplay mode??
+        return CreateScope<DkWindow>(context, config);
+    }
+
+    Scope<DkApplication> ConfigureApplication(DkContext* context)
+    {
+        DkApplicationConfig config;
+        config.appName = "Deako Editor";
+        config.workingDirectory = "../Deako-Editor";
+
+        return CreateScope<DeakoEditor>(context, config);
     }
 
 }
+ 

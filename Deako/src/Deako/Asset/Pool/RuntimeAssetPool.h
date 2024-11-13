@@ -16,8 +16,6 @@ namespace Deako {
 
     private:
         AssetMap m_AssetsImported;
-
-        inline static Ref<RuntimeAssetPool> s_RuntimeAssetPool = CreateRef<RuntimeAssetPool>();;
     };
 
 }

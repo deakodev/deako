@@ -1,26 +1,123 @@
 #include "Context.h"
 #include "dkpch.h"
 
+#include "Deako/Renderer/Vulkan/VulkanPicker.h"
+
 namespace Deako {
 
-    static DeakoContext* s_DeakoContext = nullptr;
+    static DkContext* Gdeako = nullptr;
 
-    DeakoContext& GetContext()
+    DkContext& CreateContext(DkContextFlags flags)
     {
-        DK_CORE_ASSERT(s_DeakoContext, "DeakoContext not initialized!");
-        return *s_DeakoContext;
+        Gdeako = new DkContext();
+        DkContext& deako = *Gdeako;
+
+        DK_CORE_ASSERT(!deako.initialized, "DkContext already initialized!");
+
+        deako.configFlags = flags;
+
+        deako.window = ConfigureWindow(Gdeako); // defined/configured on the client side
+        deako.application = ConfigureApplication(Gdeako); // defined/configured on the client side
+        deako.input = CreateScope<DkInput>();
+        deako.activeProject = CreateScope<Project>();
+        deako.projectAssetPool = CreateScope<ProjectAssetPool>();
+        deako.editorAssetPool = CreateScope<EditorAssetPool>();
+
+        if (flags & DkContextFlags_ImplVulkan)
+            Renderer::Init();
+
+        deako.initialized = true;
+
+        return deako;
     }
 
     void DestroyContext()
     {
-        delete s_DeakoContext;
-        s_DeakoContext = nullptr;
+        DkContext& deako = *Gdeako;
+
+        if (deako.configFlags & DkContextFlags_ImplVulkan)
+            Renderer::Shutdown();
+
+        delete Gdeako;
+        Gdeako = nullptr;
     }
 
-    DeakoContext::DeakoContext()
+    DkContext& GetContext()
     {
-        DK_CORE_ASSERT(!s_DeakoContext, "DeakoContext already exists!");
-        s_DeakoContext = this;
+        return *Gdeako;
+    }
+
+    DkApplication& GetApplication()
+    {
+        return *Gdeako->application;
+    }
+
+    DkWindow& GetWindow()
+    {
+        return *Gdeako->window;
+    }
+
+    DkInput& GetInput()
+    {
+        return *Gdeako->input;
+    }
+
+    Scene& GetActiveScene()
+    {
+        DK_CORE_ASSERT(Gdeako->activeSceneHandle != 0, "No active scene!");
+        return *Gdeako->projectAssetPool->GetAsset<Scene>(Gdeako->activeSceneHandle);
+    }
+
+    void SetActiveScene(DkHandle handle)
+    {
+        Ref<Scene> scene = Gdeako->projectAssetPool->GetAsset<Scene>(handle);
+        SetActiveScene(scene);
+    }
+
+    void SetActiveScene(Ref<Scene> scene)
+    {
+        Gdeako->activeSceneHandle = scene ? scene->m_Handle : s_EmptyScene->m_Handle;
+
+        DK_CORE_ASSERT(scene != 0, "No active scene!");
+        scene->LinkAssets();
+    }
+
+    void SetHoveredHandle(DkHandle handle)
+    {
+        Gdeako->hoveredHandle = handle;
+    }
+
+    ProjectAssetPool& GetProjectAssetPool()
+    {
+        return *Gdeako->projectAssetPool;
+    }
+
+    void NewFrame()
+    {
+        DkContext& deako = *Gdeako;
+
+        deako.hoveredHandlePreviousFrame = deako.hoveredHandle;
+
+        const DkVec4& pickerColor = VulkanPicker::GetPixelColor();
+        deako.hoveredHandle = GetActiveScene().GetEntityHandle(pickerColor);
+
+        DK_CORE_WARN("EntityHandle: {0}", (DkU64)deako.hoveredHandle);
+
+        deako.activeHandlePreviousFrame = deako.activeHandle;
+
+        if (IsMousePressed(Mouse::ButtonLeft) && !AreEventsBlocked())
+        {
+            deako.activeHandle = deako.hoveredHandle;
+        }
+
+        GetInput().OnUpdate();
+
+        GetActiveScene().OnUpdate();
+    }
+
+    void Render()
+    {
+        Renderer::Render();
     }
 
 }

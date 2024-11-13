@@ -26,7 +26,7 @@ namespace Deako {
 
     void ImGuiLayer::OnEvent(Event& event)
     {
-        if (s_BlockEvents)
+        if (AreEventsBlocked())
         {
             ImGuiIO& io = ImGui::GetIO();
             event.Handled |= event.IsInCategory(EventCategoryMouse) & io.WantCaptureMouse;

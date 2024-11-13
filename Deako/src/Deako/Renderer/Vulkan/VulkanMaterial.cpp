@@ -31,12 +31,12 @@ namespace Deako {
 
         if (tinyMaterial.values.find("roughnessFactor") != tinyMaterial.values.end())
         {
-            roughnessFactor = static_cast<float>(tinyMaterial.values["roughnessFactor"].Factor());
+            roughnessFactor = static_cast<DkF32>(tinyMaterial.values["roughnessFactor"].Factor());
         }
 
         if (tinyMaterial.values.find("metallicFactor") != tinyMaterial.values.end())
         {
-            metallicFactor = static_cast<float>(tinyMaterial.values["metallicFactor"].Factor());
+            metallicFactor = static_cast<DkF32>(tinyMaterial.values["metallicFactor"].Factor());
         }
 
         if (tinyMaterial.values.find("baseColorFactor") != tinyMaterial.values.end())
@@ -77,12 +77,12 @@ namespace Deako {
 
         if (tinyMaterial.additionalValues.find("alphaCutoff") != tinyMaterial.additionalValues.end())
         {
-            alphaCutoff = static_cast<float>(tinyMaterial.additionalValues["alphaCutoff"].Factor());
+            alphaCutoff = static_cast<DkF32>(tinyMaterial.additionalValues["alphaCutoff"].Factor());
         }
 
         if (tinyMaterial.additionalValues.find("emissiveFactor") != tinyMaterial.additionalValues.end())
         {
-            emissiveFactor = glm::vec4(glm::make_vec3(tinyMaterial.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
+            emissiveFactor = DkVec4(glm::make_vec3(tinyMaterial.additionalValues["emissiveFactor"].ColorFactor().data()), 1.0);
         }
 
         // extensions
@@ -106,21 +106,21 @@ namespace Deako {
             if (ext->second.Has("diffuseFactor"))
             {
                 auto factor = ext->second.Get("diffuseFactor");
-                for (uint32_t i = 0; i < factor.ArrayLen(); i++)
+                for (DkU32 i = 0; i < factor.ArrayLen(); i++)
                 {
                     auto val = factor.Get(i);
                     extension.diffuseFactor[i] = val.IsNumber() ?
-                        (float)val.Get<double>() : (float)val.Get<int>();
+                        (DkF32)val.Get<DkF64>() : (DkF32)val.Get<int>();
                 }
             }
             if (ext->second.Has("specularFactor"))
             {
                 auto factor = ext->second.Get("specularFactor");
-                for (uint32_t i = 0; i < factor.ArrayLen(); i++)
+                for (DkU32 i = 0; i < factor.ArrayLen(); i++)
                 {
                     auto val = factor.Get(i);
                     extension.specularFactor[i] = val.IsNumber() ?
-                        (float)val.Get<double>() : (float)val.Get<int>();
+                        (DkF32)val.Get<DkF64>() : (DkF32)val.Get<int>();
                 }
             }
         }
@@ -134,21 +134,24 @@ namespace Deako {
             if (ext->second.Has("emissiveStrength"))
             {
                 auto value = ext->second.Get("emissiveStrength");
-                emissiveStrength = (float)value.Get<double>();
+                emissiveStrength = (DkF32)value.Get<DkF64>();
             }
         }
     }
 
     void CreateMaterialBuffer()
     {
+        Scene& activeScene = Deako::GetActiveScene();
+        ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
+
         std::vector<ShaderMaterial> shaderMaterials{};
 
-        uint32_t materialBufferIndex = 0;
+        DkU32 materialBufferIndex = 0;
 
-        for (Entity entity : vs->context.entities)
+        for (auto& entity : activeScene.entities)
         {
             auto& prefabComp = entity.GetComponent<PrefabComponent>();
-            Ref<Model> model = ProjectAssetPool::Get()->GetAsset<Model>(prefabComp.meshHandle);
+            Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
             for (auto& material : model->materials)
             {
@@ -169,7 +172,7 @@ namespace Deako {
                 shaderMaterial.emissiveTextureSet = material->emissiveTexture != nullptr ?
                     material->texCoordSets.emissive : -1;
 
-                shaderMaterial.alphaMask = static_cast<float>(material->alphaMode == Material::ALPHAMODE_MASK);
+                shaderMaterial.alphaMask = static_cast<DkF32>(material->alphaMode == Material::ALPHAMODE_MASK);
 
                 shaderMaterial.alphaMaskCutoff = material->alphaCutoff;
 
@@ -177,7 +180,7 @@ namespace Deako {
 
                 if (material->pbrWorkflows.metallicRoughness)
                 {   // metallic roughness workflow
-                    shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
+                    shaderMaterial.workflow = static_cast<DkF32>(PBR_WORKFLOW_METALLIC_ROUGHNESS);
                     shaderMaterial.baseColorFactor = material->baseColorFactor;
                     shaderMaterial.metallicFactor = material->metallicFactor;
                     shaderMaterial.roughnessFactor = material->roughnessFactor;
@@ -186,11 +189,11 @@ namespace Deako {
                 }
                 else if (material->pbrWorkflows.specularGlossiness)
                 {   // specular glossiness workflow
-                    shaderMaterial.workflow = static_cast<float>(PBR_WORKFLOW_SPECULAR_GLOSSINESS);
+                    shaderMaterial.workflow = static_cast<DkF32>(PBR_WORKFLOW_SPECULAR_GLOSSINESS);
                     shaderMaterial.PhysicalDescriptorTextureSet = material->extension.specularGlossinessTexture != nullptr ? material->texCoordSets.specularGlossiness : -1;
                     shaderMaterial.colorTextureSet = material->extension.diffuseTexture != nullptr ? material->texCoordSets.baseColor : -1;
                     shaderMaterial.diffuseFactor = material->extension.diffuseFactor;
-                    shaderMaterial.specularFactor = glm::vec4(material->extension.specularFactor, 1.0f);
+                    shaderMaterial.specularFactor = DkVec4(material->extension.specularFactor, 1.0f);
                 }
 
                 shaderMaterials.push_back(shaderMaterial);

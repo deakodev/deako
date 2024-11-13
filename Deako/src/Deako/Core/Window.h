@@ -1,45 +1,47 @@
 #pragma once
 
-#include "dkpch.h"
-#include "Deako/Core/Base.h"
+#include "Deako/Core/LayerStack.h"
 #include "Deako/Event/Event.h"
+#include "Deako/Event/WindowEvent.h"
 
 #include <GLFW/glfw3.h>
+
 
 namespace Deako {
 
     using EventCallbackFn = std::function<void(Event&)>;
 
-    struct WindowProps
+    struct DkWindowConfig
     {
-        std::string title;
-        uint32_t width;
-        uint32_t height;
-
-        WindowProps(const std::string& title = "Deako",
-            uint32_t width = 1600,
-            uint32_t height = 900)
-            : title(title), width(width), height(height)
-        {
-        }
+        const char* windowName = "Deako Window";
+        DkVec2 size = { 1600, 900 };
     };
 
-    class Window
+    struct DkWindow
     {
-    public:
-        static Scope<Window> Create(const WindowProps& props = WindowProps());
-        virtual ~Window() = default;
+        const char* name;
+        DkVec2 size;
+        DkVec2 dpiScale;
 
-        virtual void OnUpdate() = 0;
+        GLFWwindow* glfwWindow; // owned by window
+        DkContext* context; // not owned, parent context 
 
-        virtual uint32_t GetWidth() const = 0;
-        virtual uint32_t GetHeight() const = 0;
-        // Useful to obtain GLFW window pointer
-        virtual Ref<GLFWwindow> GetNativeWindow() const = 0;
+        bool active; // set to true on unless window minimized or closed
 
-        virtual std::pair<uint32_t, uint32_t> GetWindowFramebufferSize() = 0;
+        EventCallbackFn EventCallback = [](Event&) {};
 
-        virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
+        DkWindow(DkContext* context, DkWindowConfig& config);
+        ~DkWindow();
+
+        void OnUpdate();
+        void OnEvent(Event& event);
+        bool OnClose(WindowCloseEvent& event);
+        bool OnMinimized(WindowMinimizedEvent& event);
+        bool OnRestored(WindowRestoredEvent& event);
+
+        DkVec2 GetScaledSize();
     };
+
+    Scope<DkWindow> ConfigureWindow(DkContext* context);  // defined/configured on the client side
 
 }

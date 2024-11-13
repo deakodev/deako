@@ -16,8 +16,11 @@ namespace Deako {
         static void SaveProject();
         static void SaveAsProject();
 
-        static Ref<Project> GetActiveProject() { return s_ActiveProject; }
-        static bool IsProjectSaved() { return s_ActiveProject->isSavedUpToDate; }
+        static bool IsProjectSaved()
+        {
+            DkContext& deako = Deako::GetContext();
+            return deako.activeProject->isSavedUpToDate;
+        }
 
     private:
         static void OpenProject(std::filesystem::path path);
@@ -26,9 +29,6 @@ namespace Deako {
         static bool PromptToSaveProject();
 
         static bool HandleUserResponse(UserResponse response);
-
-    private:
-        inline static Ref<Project> s_ActiveProject = CreateRef<Project>();
     };
 
 }

@@ -29,14 +29,10 @@ namespace Deako {
         AssetRegistry& GetAssetRegistry() { return m_AssetRegistry; }
         AssetMap& GetAssetsImported() { return m_AssetsImported; }
 
-        static Ref<ProjectAssetPool> Get() { return s_ProjectAssetPool; }
-
     private:
         AssetMap m_AssetsImported;
         AssetRegistry m_AssetRegistry;
         std::filesystem::path m_AssetRegistryPath;
-
-        inline static Ref<ProjectAssetPool> s_ProjectAssetPool = CreateRef<ProjectAssetPool>();
     };
 
 }

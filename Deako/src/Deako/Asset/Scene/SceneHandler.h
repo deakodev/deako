@@ -22,11 +22,6 @@ namespace Deako {
         static void ImportScene(std::filesystem::path path);
         static Ref<Scene> ImportScene(AssetHandle handle, AssetMetadata& metadata);
 
-        static void SetActiveScene(AssetHandle handle);
-        static void SetActiveScene(Ref<Scene> scene);
-        static Ref<Scene> GetActiveScene() { return s_ActiveScene; }
-        static Ref<Scene> GetEmptyScene() { return s_EmptyScene; }
-
         static void RefreshScene();
 
     private:
@@ -35,10 +30,6 @@ namespace Deako {
         static bool PromptToSaveScene();
 
         static bool HandleUserResponse(UserResponse response);
-
-    private:
-        inline static Ref<Scene> s_ActiveScene;
-        inline static Ref<Scene> s_EmptyScene;
     };
 
 

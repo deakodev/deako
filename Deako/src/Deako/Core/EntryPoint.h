@@ -1,20 +1,16 @@
 #pragma once
 
-extern Deako::Application& Deako::CreateApplication(Deako::CommandLineArgs args);
+extern Deako::DkContext& Deako::CreateContext(DkContextFlags flags);
+extern void Deako::DestroyContext();
 
 int main(int argc, char** argv)
 {
-    Deako::Log::Init();
+    Deako::DkLogger::Init();
 
-    Deako::Application& deakoEditor = Deako::CreateApplication({ argc, argv });
+    Deako::DkContext& deako = Deako::CreateContext();
 
-    Deako::Input::Init();
-    Deako::Renderer::Init();
+    deako.application->Run();
 
-    deakoEditor.PushLayers();
-    deakoEditor.Run();
-
-    Deako::Renderer::Shutdown();
-
-    Deako::DestroyApplication();
+    Deako::DestroyContext();
 }
+

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Deako/Core/Base.h"
 #include "Deako/Event/Event.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 
 namespace Deako {
@@ -10,7 +10,7 @@ namespace Deako {
     class Layer
     {
     public:
-        Layer(std::string_view name = "Layer");
+        Layer(const char* name = "Layer");
         virtual ~Layer() = default;
 
         virtual void OnAttach() {}
@@ -19,10 +19,10 @@ namespace Deako {
         virtual void OnImGuiRender() {}
         virtual void OnEvent(Event& event) {}
 
-        const std::string_view GetName() const { return m_DebugName; }
+        const char* GetName() const { return m_DebugName; }
 
     protected:
-        std::string_view m_DebugName;
+        const char* m_DebugName;
     };
 
 }

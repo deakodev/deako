@@ -1,29 +1,32 @@
 #pragma once
 
-#include "Base.h"
 #include "Deako/Event/KeyCodes.h"
 #include "Deako/Event/MouseCodes.h"
 
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+
 
 namespace Deako {
 
-    class Input
+    struct DkInput
     {
-    public:
-        static void Init();
+        DkVec2 mousePosition = { -FLT_MAX, -FLT_MAX };
+        DkVec2 mousePositionPrevious = { -FLT_MAX, -FLT_MAX };
+        DkVec2 mousePositionDelta = { 0.0f, 0.0f };
+        bool eventsBlocked{ false };
 
-        static bool IsKeyPressed(KeyCode keycode);
-        static bool IsMouseButtonPressed(MouseCode button);
-
-        static void BlockEvents(bool block) { s_BlockEvents = block; }
-
-        static glm::vec2 GetMousePosition();
-
-    private:
-        inline static Ref<GLFWwindow> m_Window;
-        inline static bool s_BlockEvents{ false };
+        void OnUpdate();
+        void UpdateMouse();
     };
+
+    bool IsKeyPressed(KeyCode key);
+    bool IsMousePressed(MouseCode button);
+    bool IsMouseStationary();
+
+    bool IsMousePositionValid(const DkVec2& position);
+    DkVec2 ScaleMousePosition();
+
+    void BlockEvents(bool blocked);
+    bool AreEventsBlocked();
 
 }

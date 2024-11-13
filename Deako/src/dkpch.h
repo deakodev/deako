@@ -20,5 +20,7 @@
 #include <algorithm>
 #include <deque>
 
-#include "Deako/Core/Log.h"
+#include "Deako/Core/Logger.h"
 #include "Deako/Core/Buffer.h"
+#include "Deako/Math/Math.h"
+#include "Deako/Core/Context.h"

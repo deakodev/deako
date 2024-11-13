@@ -16,10 +16,10 @@ namespace Deako {
 
     void ProjectAssetPool::Init()
     {
-        Ref<Project> activeProject = ProjectHandler::GetActiveProject();
+        DkContext& deako = Deako::GetContext();
 
-        m_AssetRegistryPath = activeProject->workingDirectory /
-            activeProject->assetRegistryFilename;
+        m_AssetRegistryPath = deako.activeProject->workingDirectory /
+            deako.activeProject->assetRegistryFilename;
 
         Deserialize::AssetRegistry(m_AssetRegistry, m_AssetRegistryPath);
     }
@@ -72,6 +72,8 @@ namespace Deako {
     template <typename T>
     Ref<T> ProjectAssetPool::GetAsset(AssetHandle handle)
     {
+        DkContext& deako = Deako::GetContext();
+
         if (!IsAssetHandleValid(handle)) return nullptr;
 
         Ref<Asset> asset;
@@ -82,7 +84,7 @@ namespace Deako {
         else
         {
             AssetMetadata metadata = GetAssetMetadata(handle);
-            metadata.assetPath = ProjectHandler::GetActiveProject()->assetDirectory / metadata.assetPath;
+            metadata.assetPath = deako.activeProject->assetDirectory / metadata.assetPath;
             asset = AssetManager::ImportAsset(handle, metadata);
         }
 

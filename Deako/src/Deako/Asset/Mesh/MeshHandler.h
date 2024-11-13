@@ -12,7 +12,7 @@ namespace Deako {
 
         static Ref<Model> ImportMesh(AssetHandle handle, AssetMetadata& metadata);
 
-        static void LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale);
+        static void LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, DkF32 globalscale);
         static void LoadAnimations(tinygltf::Model& tinyModel, Ref<Model> model);
         static void LoadSkins(tinygltf::Model& tinyModel, Ref<Model> model);
 

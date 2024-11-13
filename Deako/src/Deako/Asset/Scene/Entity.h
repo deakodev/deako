@@ -1,74 +1,102 @@
 #pragma once
 
 #include "Deako/Asset/Scene/Scene.h"
-
-#include "Deako/Core/UUID.h"
+#include "Deako/Core/Handle.h"
 
 #include <entt.hpp>
 
 namespace Deako {
 
-    using EntityID = UUID;
+    using EntityHandle = DkHandle;
 
     class Entity
     {
     public:
         Entity() = default;
-        Entity(entt::entity handle, Scene* scene);
+        Entity(EntityHandle handle, entt::entity enttEntity, const DkVec4& pickerColor, Scene* scene);
         Entity(const Entity& other) = default;
 
         template<typename T, typename... Args>
-        T& AddComponent(Args&&... args)
+        T& AddComponent(Args&&... args) const
         {
             DK_CORE_ASSERT(!HasComponent<T>(), "Entity already has component!");
-            T& component = m_Scene->registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+            DK_CORE_ASSERT(m_Scene, "Scene is expired or null!1");
+
+            T& component = m_Scene->registry.emplace<T>(m_EnttEntity, std::forward<Args>(args)...);
+
             m_Scene->OnComponentAdded<T>(*this, component);
             return component;
         }
 
         template<typename T, typename... Args>
-        T& AddOrReplaceComponent(Args&&... args)
+        T& AddOrReplaceComponent(Args&&... args) const
         {
-            T& component = m_Scene->registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
+            DK_CORE_ASSERT(m_Scene, "Scene is expired or null!2");
+
+            T& component = m_Scene->registry.emplace_or_replace<T>(m_EnttEntity, std::forward<Args>(args)...);
             m_Scene->OnComponentAdded<T>(*this, component);
+
             return component;
         }
 
         template<typename T>
-        T& GetComponent()
+        T& GetComponent() const
         {
             DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
-            return m_Scene->registry.get<T>(m_EntityHandle);
+            DK_CORE_ASSERT(m_Scene, "Scene is expired or null!3");
+
+            return m_Scene->registry.get<T>(m_EnttEntity);
         }
 
         template<typename T>
-        bool HasComponent()
+        static T& GetComponent(EntityHandle handle)
         {
-            return m_Scene->registry.all_of<T>(m_EntityHandle);
+            DK_CORE_ASSERT(HasComponent<T>(handle), "Entity does not have component!");
+
+            entt::entity enttEntity = Deako::GetActiveScene().entityMap.at(handle);
+            return Deako::GetActiveScene().registry.get<T>(enttEntity);
         }
 
         template<typename T>
-        void RemoveComponent()
+        bool HasComponent() const
         {
-            DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
-            m_Scene->registry.remove<T>(m_EntityHandle);
+            DK_CORE_ASSERT(m_Scene, "Scene is expired or null!4");
+            return m_Scene->registry.all_of<T>(m_EnttEntity);
         }
 
-        UUID GetUUID() { return GetComponent<IDComponent>().id; }
+        template<typename T>
+        static bool HasComponent(EntityHandle handle)
+        {
+            entt::entity enttEntity = Deako::GetActiveScene().entityMap.at(handle);
+            return Deako::GetActiveScene().registry.all_of<T>(enttEntity);
+        }
+
+        template<typename T>
+        void RemoveComponent() const
+        {
+            DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
+            DK_CORE_ASSERT(m_Scene, "Scene is expired or null!5");
+
+            m_Scene->registry.remove<T>(m_EnttEntity);
+        }
+
+        EntityHandle GetHandle() { return m_EntityHandle; }
+        const DkVec4& GetPickerColor() { return m_PickerColor; }
         const std::string& GetName() { return GetComponent<TagComponent>().tag; }
 
         // allows us to check if entity is valid, e.g., if(entity)
-        operator bool() const { return m_EntityHandle != entt::null; }
-        operator entt::entity() const { return m_EntityHandle; }
-        operator uint32_t() const { return (uint32_t)m_EntityHandle; }
-        bool operator==(const Entity& other) const { return m_EntityHandle == other.m_EntityHandle && m_Scene == other.m_Scene; }
+        operator bool() const { return m_EnttEntity != entt::null; }
+        operator entt::entity() const { return m_EnttEntity; }
+        operator DkU32() const { return (DkU32)m_EnttEntity; }
+        bool operator==(const Entity& other) const { return m_EnttEntity == other.m_EnttEntity; }
         bool operator!=(const Entity& other) const { return !(*this == other); }
 
     private:
-        entt::entity m_EntityHandle{ entt::null };
+        EntityHandle m_EntityHandle = 0;
+        entt::entity m_EnttEntity{ entt::null };
+        DkVec4 m_PickerColor;
 
-        // we dont want the Scene to be owned by Entity, could potentially use a weak_ref too
-        Scene* m_Scene = nullptr;
+        Scene* m_Scene;
     };
 
 }

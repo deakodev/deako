@@ -3,8 +3,8 @@
 
 namespace Deako {
 
-    Layer::Layer(std::string_view debugName)
-        : m_DebugName(debugName)
+    Layer::Layer(const char* name)
+        : m_DebugName(name)
     {
     }
 

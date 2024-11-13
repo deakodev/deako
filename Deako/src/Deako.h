@@ -1,13 +1,16 @@
 #pragma once
 
-// This header to be included by Deako apps
+// to be included by Deako applications
 
+#include "Deako/Math/Math.h"
+#include "Deako/Core/Base.h"
 #include "Deako/Core/Application.h"
-
-#include "Deako/Core/Log.h"
+#include "Deako/Core/Logger.h"
+#include "Deako/Core/Window.h"
 #include "Deako/Core/Layer.h"
 #include "Deako/Core/RateLimiter.h"
 #include "Deako/Core/Input.h"
+#include "Deako/Core/Context.h"
 
 #include "Deako/Event/KeyEvent.h"
 #include "Deako/Event/KeyCodes.h"
@@ -31,6 +34,4 @@
 
 #include "Deako/Project/Project.h"
 #include "Deako/Project/ProjectHandler.h"
-
-
 

@@ -7,7 +7,8 @@ namespace Deako {
 
     void RuntimeAssetPool::Init()
     {
-        m_AssetsImported = ProjectAssetPool::Get()->GetAssetsImported();
+        DkContext& deako = Deako::GetContext();
+        m_AssetsImported = deako.projectAssetPool->GetAssetsImported();
     }
 
     void RuntimeAssetPool::CleanUp()

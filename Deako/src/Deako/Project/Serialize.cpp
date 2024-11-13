@@ -7,14 +7,14 @@
 
 namespace Deako {
 
-    YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
+    YAML::Emitter& operator<<(YAML::Emitter& out, const DkVec3& v)
     {
         out << YAML::Flow;
         out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
         return out;
     }
 
-    YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
+    YAML::Emitter& operator<<(YAML::Emitter& out, const DkVec4& v)
     {
         out << YAML::Flow;
         out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
@@ -101,13 +101,8 @@ namespace Deako {
 
         out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
-        for (auto entityHandle : scene.registry.view<entt::entity>())
-        {
-            Deako::Entity entity{ entityHandle, &scene };
-            if (!entity) return false;
-
-            Serialize::Entity(out, entity);
-        }
+        for (auto& [entityHandle, enttEntity] : scene.GetEntityMap())
+            Serialize::Entity(out, entityHandle);
 
         out << YAML::EndSeq;
         out << YAML::EndMap;
@@ -118,28 +113,28 @@ namespace Deako {
         return true;
     }
 
-    void Serialize::Entity(YAML::Emitter& out, Deako::Entity entity)
+    void Serialize::Entity(YAML::Emitter& out, EntityHandle handle)
     {
         out << YAML::BeginMap; // Entity
-        out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
+        out << YAML::Key << "Entity" << YAML::Value << handle;
 
-        if (entity.HasComponent<TagComponent>())
+        if (Entity::HasComponent<TagComponent>(handle))
         {
             out << YAML::Key << "TagComponent";
             out << YAML::BeginMap; // TagComponent
 
-            auto& tag = entity.GetComponent<TagComponent>().tag;
+            auto& tag = Entity::GetComponent<TagComponent>(handle).tag;
             out << YAML::Key << "Tag" << YAML::Value << tag;
 
             out << YAML::EndMap; // TagComponent
         }
 
-        if (entity.HasComponent<TransformComponent>())
+        if (Entity::HasComponent<TransformComponent>(handle))
         {
             out << YAML::Key << "TransformComponent";
             out << YAML::BeginMap; // TransformComponent
 
-            auto& transformComp = entity.GetComponent<TransformComponent>();
+            auto& transformComp = Entity::GetComponent<TransformComponent>(handle);
             out << YAML::Key << "Translation" << YAML::Value << transformComp.translation;
             out << YAML::Key << "Rotation" << YAML::Value << transformComp.rotation;
             out << YAML::Key << "Scale" << YAML::Value << transformComp.scale;
@@ -147,57 +142,57 @@ namespace Deako {
             out << YAML::EndMap; // TransformComponent
         }
 
-        if (entity.HasComponent<TextureComponent>())
+        if (Entity::HasComponent<TextureComponent>(handle))
         {
             out << YAML::Key << "TextureComponent";
             out << YAML::BeginMap; // TextureComponent
 
-            auto& textureComp = entity.GetComponent<TextureComponent>();
+            auto& textureComp = Entity::GetComponent<TextureComponent>(handle);
             out << YAML::Key << "AssetHandle" << YAML::Value << textureComp.handle;
 
             out << YAML::EndMap; // TextureComponent
         }
 
-        if (entity.HasComponent<MaterialComponent>())
+        if (Entity::HasComponent<MaterialComponent>(handle))
         {
             out << YAML::Key << "MaterialComponent";
             out << YAML::BeginMap; // MaterialComponent
 
-            auto& materialComp = entity.GetComponent<MaterialComponent>();
+            auto& materialComp = Entity::GetComponent<MaterialComponent>(handle);
             out << YAML::Key << "AssetHandle" << YAML::Value << materialComp.handle;
 
             out << YAML::EndSeq;
             out << YAML::EndMap; // MaterialComponent
         }
 
-        if (entity.HasComponent<ModelComponent>())
+        if (Entity::HasComponent<ModelComponent>(handle))
         {
             out << YAML::Key << "ModelComponent";
             out << YAML::BeginMap; // ModelComponent
 
-            auto& modelComp = entity.GetComponent<ModelComponent>();
+            auto& modelComp = Entity::GetComponent<ModelComponent>(handle);
             out << YAML::Key << "AssetHandle" << YAML::Value << modelComp.handle;
 
             out << YAML::EndMap; // ModelComponent
         }
 
-        if (entity.HasComponent<PrefabComponent>())
+        if (Entity::HasComponent<PrefabComponent>(handle))
         {
             out << YAML::Key << "PrefabComponent";
             out << YAML::BeginMap; // PrefabComponent
 
-            auto& prefabComp = entity.GetComponent<PrefabComponent>();
+            auto& prefabComp = Entity::GetComponent<PrefabComponent>(handle);
             out << YAML::Key << "AssetHandle" << YAML::Value << prefabComp.handle;
 
             out << YAML::EndMap; // PrefabComponent
         }
 
-        if (entity.HasComponent<EnvironmentComponent>())
+        if (Entity::HasComponent<EnvironmentComponent>(handle))
         {
             out << YAML::Key << "EnvironmentComponent";
             out << YAML::BeginMap; // EnvironmentComponent
 
-            auto& envComp = entity.GetComponent<EnvironmentComponent>();
+            auto& envComp = Entity::GetComponent<EnvironmentComponent>(handle);
             out << YAML::Key << "Active" << YAML::Value << envComp.active;
 
             out << YAML::EndMap; // EnvironmentComponent

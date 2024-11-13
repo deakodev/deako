@@ -10,14 +10,14 @@ namespace Deako {
         using Duration = std::chrono::seconds;
 
 
-        RateLimiter(uint32_t counterCycle = 0, uint32_t timeCycle = 1)
+        RateLimiter(DkU32 counterCycle = 0, DkU32 timeCycle = 1)
             : m_CounterCycle(counterCycle), m_TimeCycle(timeCycle)
         {
             Reset();
         }
 
-        void SetCounterCycle(uint32_t counterCycle) { m_CounterCycle = counterCycle; }
-        void SetTimeCycle(uint32_t timeCycle) { m_TimeCycle = Duration(timeCycle); }
+        void SetCounterCycle(DkU32 counterCycle) { m_CounterCycle = counterCycle; }
+        void SetTimeCycle(DkU32 timeCycle) { m_TimeCycle = Duration(timeCycle); }
 
         void Reset()
         {
@@ -28,7 +28,7 @@ namespace Deako {
         void ResetCounter() { m_Counter = 0; }
         void ResetTime() { m_Time = Clock::now(); m_TimeAtNegativeInfinity = true; }
 
-        void SetCounter(uint32_t counter) { m_Counter = counter; }
+        void SetCounter(DkU32 counter) { m_Counter = counter; }
         void SetTime(TimePoint time) { m_Time = time; m_TimeAtNegativeInfinity = false; }
 
         bool Trigger(TimePoint time = TimePoint())
@@ -67,8 +67,8 @@ namespace Deako {
         }
 
     private:
-        uint32_t m_CounterCycle;
-        uint32_t m_Counter;
+        DkU32 m_CounterCycle;
+        DkU32 m_Counter;
 
         Duration m_TimeCycle;
         TimePoint m_Time;

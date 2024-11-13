@@ -3,7 +3,6 @@
 
 #include "Deako/Asset/AssetManager.h"
 #include "Deako/Asset/Mesh/MeshHandler.h"
-#include "Deako/Asset/Pool/ProjectAssetPool.h"
 
 #include "System/MacOS/MacUtils.h" 
 
@@ -45,6 +44,8 @@ namespace Deako {
 
     Ref<Prefab> PrefabHandler::ImportPrefab(AssetHandle handle, AssetMetadata& metadata)
     {
+        DkContext& deako = Deako::GetContext();
+
         DK_CORE_INFO("Importing Prefab <{0}>", metadata.assetPath.filename().string());
 
         PrefabMetadata prefabMetadata;
@@ -55,7 +56,7 @@ namespace Deako {
         auto it = s_PrefabImportFunctions.find(prefabMetadata.prefabType);
         if (it == s_PrefabImportFunctions.end())
         {
-            DK_CORE_ERROR("No parse function available for prefab type: {0}", (uint16_t)prefabMetadata.prefabType);
+            DK_CORE_ERROR("No parse function available for prefab type: {0}", (DkU16)prefabMetadata.prefabType);
             return nullptr;
         }
 
@@ -65,27 +66,25 @@ namespace Deako {
         {
             prefab->m_Handle = handle;
 
-            Ref<ProjectAssetPool> projectAssetPool = ProjectAssetPool::Get();
-
             std::string assetName = metadata.assetPath.filename().string();
             assetName[0] = std::toupper(assetName[0]);
             metadata.assetName = assetName;
-            projectAssetPool->AddAssetToPool(prefab, metadata);
+            deako.projectAssetPool->AddAssetToPool(prefab, metadata);
 
             metadata.parentAssetHandle = prefab->m_Handle;
             metadata.assetType = AssetType::Model;
             metadata.assetName = "Mesh <" + metadata.assetPath.filename().string() + ">";
-            projectAssetPool->AddAssetToPool(prefab->model, metadata);
+            deako.projectAssetPool->AddAssetToPool(prefab->model, metadata);
 
             metadata.assetType = AssetType::Texture2D;
             metadata.assetName = "Texture2D <" + metadata.assetPath.filename().string() + ">";
             for (auto& [handle, texture] : prefab->textures)
-                projectAssetPool->AddAssetToPool(texture, metadata);
+                deako.projectAssetPool->AddAssetToPool(texture, metadata);
 
             metadata.assetType = AssetType::Material;
             metadata.assetName = "Material <" + metadata.assetPath.filename().string() + ">";
             for (auto& [handle, material] : prefab->materials)
-                projectAssetPool->AddAssetToPool(material, metadata);
+                deako.projectAssetPool->AddAssetToPool(material, metadata);
         }
 
         return prefab;
@@ -198,7 +197,7 @@ namespace Deako {
                 materialMetadata.assetType = AssetType::Material;
                 Ref<Material> material = CreateRef<Material>(tinyMaterial, textures);
 
-                material->index = static_cast<uint32_t>(materials.size());
+                material->index = static_cast<DkU32>(materials.size());
 
                 materials.emplace_back(material);
                 prefab->materials[material->m_Handle] = material;
@@ -219,9 +218,9 @@ namespace Deako {
                 MeshHandler::GetNodeProps(tinyModel.nodes[tinyScene.nodes[i]], tinyModel, prefab->model);
 
             prefab->model->vertexData.buffer.Allocate(sizeof(Model::Vertex) * prefab->model->vertexData.count);
-            prefab->model->indexData.buffer.Allocate(sizeof(uint32_t) * prefab->model->indexData.count);
+            prefab->model->indexData.buffer.Allocate(sizeof(DkU32) * prefab->model->indexData.count);
 
-            DK_CORE_ASSERT(prefab->model->vertexData.buffer.size > 0);
+            DK_CORE_ASSERT(prefab->model->vertexData.buffer.size > 0, "Vertex buffer size is zero!");
 
             // TODO: scene handling with no default scene
             for (size_t i = 0; i < tinyScene.nodes.size(); i++)

@@ -6,42 +6,46 @@
 #include "Deako/Renderer/EditorCamera.h"
 
 #include <entt.hpp>
-#include <glm/glm.hpp>
+
 
 namespace Deako {
 
-    using SceneRegistry = entt::registry;
-    using EntityMap = std::unordered_map<UUID, entt::entity>;
+    using EntityHandle = DkHandle;
 
     class Entity;
+
+    using SceneRegistry = entt::registry;
+    using EntityMap = std::unordered_map<EntityHandle, entt::entity>;
+    using PickerColorMap = std::unordered_map<DkVec4, EntityHandle, DkVec4Hash>;
 
     struct Scene : public Asset
     {
         SceneRegistry registry;
+        std::vector<Entity> entities;
         EntityMap entityMap;
+        PickerColorMap pickerColorMap;
         Ref<EditorCamera> activeCamera;
 
         bool isSavedUpToDate{ true };
         bool isValid{ false };
 
-        static Ref<Scene> Copy(Ref<Scene> other);
+        static Ref<Scene> Copy(Ref<Scene> srcScene);
 
         void LinkAssets();
 
         void OnUpdate();
 
-        Entity CreateEntity(const std::string& name = std::string());
-        Entity CreateEntityWithUUID(UUID uuid, const std::string& name);
+        Entity CreateEntity(const std::string& name = std::string(), EntityHandle handle = EntityHandle());
+
         void DestroyEntity(Entity entity);
 
-        Entity GetEntity(entt::entity handle);
-        Entity GetEntity(const std::string& tag);
-        Entity GetEntity(UUID uuid);
+        Entity GetEntity(EntityHandle handle);
+        EntityHandle GetEntityHandle(const DkVec4& pickerColor);
 
-        uint32_t GetSelectedEntity();
+        // template<typename... Components>
+        // std::vector<Entity> GetAllEntitiesWith();
 
-        template<typename... Components>
-        std::vector<Entity> GetAllEntitiesWith();
+        EntityMap& GetEntityMap() { return entityMap; }
 
         static AssetType GetStaticType() { return AssetType::Scene; }
         virtual AssetType GetType() const override { return GetStaticType(); }
@@ -51,5 +55,7 @@ namespace Deako {
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
     };
+
+    inline static Ref<Scene> s_EmptyScene;
 
 }

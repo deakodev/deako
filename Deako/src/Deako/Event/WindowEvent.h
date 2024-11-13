@@ -1,6 +1,5 @@
 #pragma once
 
-#include "dkpch.h"
 #include "Deako/Event/Event.h"
 
 namespace Deako {

@@ -1,14 +1,14 @@
 #pragma once 
 
-#include "Deako/Core/UUID.h"
+#include "Deako/Core/Handle.h"
 
 #include <typeindex>
 
 namespace Deako {
 
-    using AssetHandle = UUID;
+    using AssetHandle = DkHandle;
 
-    enum class AssetType : uint16_t
+    enum class AssetType : DkU16
     {
         None = 0,
         Texture2D,
@@ -32,7 +32,8 @@ namespace Deako {
 
         AssetMetadata() = default;
         AssetMetadata(AssetType type)
-            : assetType(type) {}
+            : assetType(type) {
+        }
         virtual ~AssetMetadata() = default;
 
         operator bool() const { return assetType != AssetType::None; }
@@ -42,8 +43,6 @@ namespace Deako {
     {
     public:
         virtual AssetType GetType() const = 0;
-
-        virtual ~Asset() {};
 
         virtual void Invalidate() {};
 

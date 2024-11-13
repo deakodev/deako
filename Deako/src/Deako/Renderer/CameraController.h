@@ -10,74 +10,73 @@ namespace Deako {
 
     struct FrustumTarget
     {   // represents the camera's relationship with a focal target
-        glm::vec3 focalPoint = { 0.0f, 0.0f, 0.0f };
-        float focalDistance = 15.0f;
+        DkVec3 focalPoint = { 0.0f, 0.0f, 0.0f };
+        DkF32 focalDistance = 15.0f;
     };
 
     struct FrustumProjection
     {
-        float fov = 40.0f;
-        float nearPlane = 0.1f;
-        float farPlane = 10000.0f;
-        glm::vec2 viewportSize{ 0.0f, 0.0f };
+        DkF32 fov = 40.0f;
+        DkF32 nearPlane = 0.1f;
+        DkF32 farPlane = 10000.0f;
+        DkVec2 viewportSize{ 0.0f, 0.0f };
     };
 
     struct ViewOrientation
     {
-        float pitch = 0.0f;
-        float yaw = 0.0f;
+        DkF32 pitch = 0.0f;
+        DkF32 yaw = 0.0f;
     };
 
     struct MovementSensitivity
     {
-        float translation = 5.0f;
-        float rotation = 0.8f;
-        glm::vec2 pan = { 0.0f, 0.0f };
+        DkF32 translation = 5.0f;
+        DkF32 rotation = 0.8f;
+        DkVec2 pan = { 0.0f, 0.0f };
     };
 
     class CameraController
     {
     public:
         CameraController();
-        CameraController(const glm::vec2& viewportSize);
+        CameraController(const DkVec2& viewportSize);
 
         void OnUpdate();
         void OnEvent(Event& event);
         bool OnMouseScrolled(MouseScrolledEvent& event);
 
-        void SetViewportSize(const glm::vec2& viewportSize);
+        void SetViewportSize(const DkVec2& viewportSize);
 
-        const glm::vec3& GetPosition() const { return m_CameraPosition; }
+        const DkVec3& GetPosition() const { return m_CameraPosition; }
         glm::quat GetOrientation() const;
 
-        float GetFOV() const { return m_FrustumProjection.fov; }
-        float GetNearPlane() const { return m_FrustumProjection.nearPlane; }
-        float GetFarPlane() const { return m_FrustumProjection.farPlane; }
+        DkF32 GetFOV() const { return m_FrustumProjection.fov; }
+        DkF32 GetNearPlane() const { return m_FrustumProjection.nearPlane; }
+        DkF32 GetFarPlane() const { return m_FrustumProjection.farPlane; }
 
     private:
         void UpdatePosition();
 
         void UpdatePanSensitivity();
-        float UpdateZoomSensitivity();
+        DkF32 UpdateZoomSensitivity();
 
-        void HandleMousePan(const glm::vec2& mousePositionDelta);
-        void HandleMouseRotate(const glm::vec2& mousePositionDelta);
-        void HandleMouseZoom(float mouseYDelta);
+        void HandleMousePan(const DkVec2& mousePositionDelta);
+        void HandleMouseRotate(const DkVec2& mousePositionDelta);
+        void HandleMouseZoom(DkF32 mouseYDelta);
 
-        glm::vec2 DetermineMousePositionDelta();
-        glm::vec3 DetermineUpDirection() const;
-        glm::vec3 DetermineRightDirection() const;
-        glm::vec3 DetermineForwardDirection() const;
+        DkVec3 DetermineUpDirection() const;
+        DkVec3 DetermineRightDirection() const;
+        DkVec3 DetermineForwardDirection() const;
 
     private:
-        glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
+        DkVec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
 
         FrustumTarget m_FrustumTarget;
         FrustumProjection m_FrustumProjection;
         ViewOrientation m_ViewOrientation;
         MovementSensitivity m_Sensitivity;
 
-        glm::vec2 m_InitialMousePosition = { 0.0f, 0.0f };
+        DkVec2 m_InitialMousePosition = { 0.0f, 0.0f };
     };
 
 }

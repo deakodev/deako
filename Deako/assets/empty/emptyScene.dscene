@@ -2,15 +2,6 @@ Scene:
   Name: EmptyScene
   AssetHandle: 0
 Entities:
-  - Entity: 63025543015532543
-    TagComponent:
-      Tag: Helmet
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    PrefabComponent:
-      AssetHandle: 51418710489529541
   - Entity: 4994874523686371997
     TagComponent:
       Tag: Purple Cube

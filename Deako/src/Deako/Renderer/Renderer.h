@@ -2,7 +2,7 @@
 
 #include "Deako/Renderer/EditorCamera.h"
 
-#include <glm/glm.hpp>
+
 
 namespace Deako {
 
@@ -12,8 +12,7 @@ namespace Deako {
         static void Init();
         static void Shutdown();
 
-        static void BeginScene();
-        static void EndScene();
+        static void Render();
     };
 
 }

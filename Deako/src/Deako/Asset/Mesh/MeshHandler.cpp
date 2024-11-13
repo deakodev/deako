@@ -23,7 +23,7 @@ namespace Deako {
         return nullptr;
     }
 
-    void MeshHandler::LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, float globalscale)
+    void MeshHandler::LoadNode(Node* parent, const tinygltf::Node& tinyNode, uint32_t nodeIndex, const tinygltf::Model& tinyModel, Ref<Model> model, DkF32 globalscale)
     {
         Node* node = new Node{};
 
@@ -31,24 +31,24 @@ namespace Deako {
         node->parent = parent;
         node->name = tinyNode.name;
         node->skinIndex = tinyNode.skin;
-        node->matrix = glm::mat4(1.0f);
+        node->matrix = DkMat4(1.0f);
 
         // generate local node matrix
-        glm::vec3 translation = glm::vec3(0.0f);
+        DkVec3 translation = DkVec3(0.0f);
         if (tinyNode.translation.size() == 3)
         {
             translation = glm::make_vec3(tinyNode.translation.data());
             node->translation = translation;
         }
 
-        glm::mat4 rotation = glm::mat4(1.0f);
+        DkMat4 rotation = DkMat4(1.0f);
         if (tinyNode.rotation.size() == 4)
         {
             glm::quat q = glm::make_quat(tinyNode.rotation.data());
-            node->rotation = glm::mat4(q);
+            node->rotation = DkMat4(q);
         }
 
-        glm::vec3 scale = glm::vec3(1.0f);
+        DkVec3 scale = DkVec3(1.0f);
         if (tinyNode.scale.size() == 3)
         {
             scale = glm::make_vec3(tinyNode.scale.data());
@@ -81,19 +81,19 @@ namespace Deako {
                 uint32_t indexStart = static_cast<uint32_t>(model->indexData.position);
                 uint32_t indexCount = 0;
                 uint32_t vertexCount = 0;
-                glm::vec3 posMin{};
-                glm::vec3 posMax{};
+                DkVec3 posMin{};
+                DkVec3 posMax{};
                 bool hasSkin = false;
                 bool hasIndices = tinyPrimitive.indices > -1;
 
                 {   // vertices
-                    const float* bufferPos = nullptr;
-                    const float* bufferNormals = nullptr;
-                    const float* bufferTexCoordSet0 = nullptr;
-                    const float* bufferTexCoordSet1 = nullptr;
-                    const float* bufferColorSet0 = nullptr;
+                    const DkF32* bufferPos = nullptr;
+                    const DkF32* bufferNormals = nullptr;
+                    const DkF32* bufferTexCoordSet0 = nullptr;
+                    const DkF32* bufferTexCoordSet1 = nullptr;
+                    const DkF32* bufferColorSet0 = nullptr;
                     const void* bufferJoints = nullptr;
-                    const float* bufferWeights = nullptr;
+                    const DkF32* bufferWeights = nullptr;
 
                     int posByteStride;
                     int normByteStride;
@@ -105,24 +105,23 @@ namespace Deako {
 
                     int jointComponentType;
 
-                    // position attribute (required)
-                    DK_CORE_ASSERT(tinyPrimitive.attributes.find("POSITION") != tinyPrimitive.attributes.end());
+                    DK_CORE_ASSERT(tinyPrimitive.attributes.find("POSITION") != tinyPrimitive.attributes.end(), "Primitive position attribute required!");
 
                     const tinygltf::Accessor& posAccessor =
                         tinyModel.accessors[tinyPrimitive.attributes.find("POSITION")->second];
                     const tinygltf::BufferView& posView =
                         tinyModel.bufferViews[posAccessor.bufferView];
 
-                    bufferPos = reinterpret_cast<const float*>(
+                    bufferPos = reinterpret_cast<const DkF32*>(
                         &(tinyModel.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
 
-                    posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-                    posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+                    posMin = DkVec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
+                    posMax = DkVec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
 
                     model->vertexData.count = static_cast<uint32_t>(posAccessor.count);
 
                     posByteStride = posAccessor.ByteStride(posView) ?
-                        (posAccessor.ByteStride(posView) / sizeof(float)) :
+                        (posAccessor.ByteStride(posView) / sizeof(DkF32)) :
                         tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
 
                     if (tinyPrimitive.attributes.find("NORMAL") != tinyPrimitive.attributes.end())
@@ -132,11 +131,11 @@ namespace Deako {
                         const tinygltf::BufferView& normView =
                             tinyModel.bufferViews[normAccessor.bufferView];
 
-                        bufferNormals = reinterpret_cast<const float*>(
+                        bufferNormals = reinterpret_cast<const DkF32*>(
                             &(tinyModel.buffers[normView.buffer].data[normAccessor.byteOffset + normView.byteOffset]));
 
                         normByteStride = normAccessor.ByteStride(normView) ?
-                            (normAccessor.ByteStride(normView) / sizeof(float)) :
+                            (normAccessor.ByteStride(normView) / sizeof(DkF32)) :
                             tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
                     }
 
@@ -147,11 +146,11 @@ namespace Deako {
                         const tinygltf::BufferView& uvView =
                             tinyModel.bufferViews[uvAccessor.bufferView];
 
-                        bufferTexCoordSet0 = reinterpret_cast<const float*>(
+                        bufferTexCoordSet0 = reinterpret_cast<const DkF32*>(
                             &(tinyModel.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
 
                         uv0ByteStride = uvAccessor.ByteStride(uvView) ?
-                            (uvAccessor.ByteStride(uvView) / sizeof(float)) :
+                            (uvAccessor.ByteStride(uvView) / sizeof(DkF32)) :
                             tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
                     }
 
@@ -162,11 +161,11 @@ namespace Deako {
                         const tinygltf::BufferView& uvView =
                             tinyModel.bufferViews[uvAccessor.bufferView];
 
-                        bufferTexCoordSet1 = reinterpret_cast<const float*>(
+                        bufferTexCoordSet1 = reinterpret_cast<const DkF32*>(
                             &(tinyModel.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
 
                         uv1ByteStride = uvAccessor.ByteStride(uvView) ?
-                            (uvAccessor.ByteStride(uvView) / sizeof(float)) :
+                            (uvAccessor.ByteStride(uvView) / sizeof(DkF32)) :
                             tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC2);
                     }
 
@@ -177,11 +176,11 @@ namespace Deako {
                         const tinygltf::BufferView& view =
                             tinyModel.bufferViews[accessor.bufferView];
 
-                        bufferColorSet0 = reinterpret_cast<const float*>(
+                        bufferColorSet0 = reinterpret_cast<const DkF32*>(
                             &(tinyModel.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
 
                         color0ByteStride = accessor.ByteStride(view) ?
-                            (accessor.ByteStride(view) / sizeof(float)) :
+                            (accessor.ByteStride(view) / sizeof(DkF32)) :
                             tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC3);
                     }
 
@@ -208,11 +207,11 @@ namespace Deako {
                         const tinygltf::BufferView& wtView =
                             tinyModel.bufferViews[wtAccessor.bufferView];
 
-                        bufferWeights = reinterpret_cast<const float*>(
+                        bufferWeights = reinterpret_cast<const DkF32*>(
                             &(tinyModel.buffers[wtView.buffer].data[wtAccessor.byteOffset + wtView.byteOffset]));
 
                         weightByteStride = wtAccessor.ByteStride(wtView) ?
-                            (wtAccessor.ByteStride(wtView) / sizeof(float)) :
+                            (wtAccessor.ByteStride(wtView) / sizeof(DkF32)) :
                             tinygltf::GetNumComponentsInType(TINYGLTF_TYPE_VEC4);
                     }
 
@@ -223,23 +222,23 @@ namespace Deako {
                         Model::Vertex& vertex = *(Model::Vertex*)(model->vertexData.buffer.data + model->vertexData.position * sizeof(Model::Vertex));
 
                         vertex.pos =
-                            glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
+                            DkVec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
 
-                        vertex.normal = glm::normalize(glm::vec3(bufferNormals ?
+                        vertex.normal = glm::normalize(DkVec3(bufferNormals ?
                             glm::make_vec3(&bufferNormals[v * normByteStride]) :
-                            glm::vec3(0.0f)));
+                            DkVec3(0.0f)));
 
                         vertex.uv0 = bufferTexCoordSet0 ?
                             glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) :
-                            glm::vec3(0.0f);
+                            DkVec3(0.0f);
 
                         vertex.uv1 = bufferTexCoordSet1 ?
                             glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) :
-                            glm::vec3(0.0f);
+                            DkVec3(0.0f);
 
                         vertex.color = bufferColorSet0 ?
                             glm::make_vec4(&bufferColorSet0[v * color0ByteStride]) :
-                            glm::vec4(1.0f);
+                            DkVec4(1.0f);
 
                         if (hasSkin)
                         {
@@ -247,15 +246,15 @@ namespace Deako {
                             {
                             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
                             {
-                                const uint16_t* buf = static_cast<const uint16_t*>(bufferJoints);
+                                const DkU16* buf = static_cast<const DkU16*>(bufferJoints);
                                 vertex.joint0 =
                                     glm::uvec4(glm::make_vec4(&buf[v * jointByteStride])); break;
                             }
                             case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
                             {
-                                const uint8_t* buf = static_cast<const uint8_t*>(bufferJoints);
+                                const DkU8* buf = static_cast<const DkU8*>(bufferJoints);
                                 vertex.joint0 =
-                                    glm::vec4(glm::make_vec4(&buf[v * jointByteStride])); break;
+                                    DkVec4(glm::make_vec4(&buf[v * jointByteStride])); break;
                             }
                             default: // not supported by spec
                                 DK_CORE_ERROR("Joint component type {0} not supported!", jointComponentType);
@@ -267,13 +266,13 @@ namespace Deako {
                         }
                         else
                         {
-                            vertex.joint0 = glm::vec4(0.0f);
-                            vertex.weight0 = glm::vec4(0.0f);
+                            vertex.joint0 = DkVec4(0.0f);
+                            vertex.weight0 = DkVec4(0.0f);
                         }
 
                         // fix for all zero weights
                         if (glm::length(vertex.weight0) == 0.0f)
-                            vertex.weight0 = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+                            vertex.weight0 = DkVec4(1.0f, 0.0f, 0.0f, 0.0f);
 
                         model->vertexData.position++;
                     }
@@ -305,7 +304,7 @@ namespace Deako {
                     }
                     case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                     {
-                        const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
+                        const DkU16* buf = static_cast<const DkU16*>(dataPtr);
                         for (size_t index = 0; index < accessor.count; index++)
                         {
                             ((uint32_t*)model->indexData.buffer.data)[model->indexData.position] = buf[index] + vertexStart;
@@ -315,7 +314,7 @@ namespace Deako {
                     }
                     case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
                     {
-                        const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
+                        const DkU8* buf = static_cast<const DkU8*>(dataPtr);
                         for (size_t index = 0; index < accessor.count; index++)
                         {
                             ((uint32_t*)model->indexData.buffer.data)[model->indexData.position] = buf[index] + vertexStart;
@@ -386,10 +385,10 @@ namespace Deako {
                     const tinygltf::Buffer& buffer =
                         tinyModel.buffers[bufferView.buffer];
 
-                    DK_CORE_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+                    DK_CORE_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT, "Wrong sampler accessor component type!");
 
                     const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
-                    const float* buf = static_cast<const float*>(dataPtr);
+                    const DkF32* buf = static_cast<const DkF32*>(dataPtr);
 
                     for (size_t index = 0; index < accessor.count; index++)
                         sampler.inputs.push_back(buf[index]);
@@ -410,7 +409,7 @@ namespace Deako {
                     const tinygltf::Buffer& buffer =
                         tinyModel.buffers[bufferView.buffer];
 
-                    DK_CORE_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+                    DK_CORE_ASSERT(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT, "Wrong sampler accessor component type!");
 
                     const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
 
@@ -418,10 +417,10 @@ namespace Deako {
                     {
                     case TINYGLTF_TYPE_VEC3:
                     {
-                        const glm::vec3* buf = static_cast<const glm::vec3*>(dataPtr);
+                        const DkVec3* buf = static_cast<const DkVec3*>(dataPtr);
                         for (size_t index = 0; index < accessor.count; index++)
                         {
-                            sampler.outputsVec4.push_back(glm::vec4(buf[index], 0.0f));
+                            sampler.outputsVec4.push_back(DkVec4(buf[index], 0.0f));
                             sampler.outputs.push_back(buf[index][0]);
                             sampler.outputs.push_back(buf[index][1]);
                             sampler.outputs.push_back(buf[index][2]);
@@ -430,7 +429,7 @@ namespace Deako {
                     }
                     case TINYGLTF_TYPE_VEC4:
                     {
-                        const glm::vec4* buf = static_cast<const glm::vec4*>(dataPtr);
+                        const DkVec4* buf = static_cast<const DkVec4*>(dataPtr);
                         for (size_t index = 0; index < accessor.count; index++)
                         {
                             sampler.outputsVec4.push_back(buf[index]);
@@ -510,7 +509,7 @@ namespace Deako {
                     tinyModel.buffers[bufferView.buffer];
 
                 skin->inverseBindMatrices.resize(accessor.count);
-                memcpy(skin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(glm::mat4));
+                memcpy(skin->inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof(DkMat4));
             }
 
             model->skins.push_back(skin);

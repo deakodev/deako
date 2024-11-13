@@ -1,51 +1,91 @@
 #include "Input.h"
 #include "dkpch.h"
 
-#include "Deako/Core/Application.h"
-
 namespace Deako {
 
-    void Input::Init()
+    void DkInput::OnUpdate()
     {
-        m_Window = GetApplication().GetWindow().GetNativeWindow();
+        this->UpdateMouse();
     }
 
-    bool Input::IsKeyPressed(KeyCode keycode)
+    void DkInput::UpdateMouse()
     {
-        auto state = glfwGetKey(m_Window.get(), static_cast<int32_t>(keycode));
+        DkWindow& window = Deako::GetWindow();
+
+        DkF64 xPosition, yPosition;
+        glfwGetCursorPos(window.glfwWindow, &xPosition, &yPosition);
+
+        mousePosition.x = xPosition * window.dpiScale.x;
+        mousePosition.y = yPosition * window.dpiScale.y;
+
+        if (IsMousePositionValid(mousePosition))
+            mousePosition = DkRoundDown(mousePosition);
+
+        if (IsMousePositionValid(mousePosition) && IsMousePositionValid(mousePositionPrevious))
+        {
+            mousePositionDelta = (mousePositionPrevious - mousePosition) * 0.003f;
+        }
+        else
+        {
+            mousePositionDelta = DkVec2(0.0f, 0.0f);
+        }
+
+        mousePositionPrevious = mousePosition;
+    }
+
+    bool IsKeyPressed(KeyCode key)
+    {
+        DkContext& deako = Deako::GetContext();
+        auto state = glfwGetKey(deako.window->glfwWindow, static_cast<DkS32>(key));
         return state == GLFW_PRESS || state == GLFW_REPEAT;
     }
 
-    bool Input::IsMouseButtonPressed(MouseCode button)
+    bool IsMousePressed(MouseCode button)
     {
-        auto state = glfwGetMouseButton(m_Window.get(), static_cast<int32_t>(button));
+        DkContext& deako = Deako::GetContext();
+        auto state = glfwGetMouseButton(deako.window->glfwWindow, static_cast<DkS32>(button));
         return state == GLFW_PRESS;
     }
 
-    glm::vec2 Input::GetMousePosition()
+    bool IsMouseStationary()
     {
-        double mouseX, mouseY;
-        glfwGetCursorPos(m_Window.get(), &mouseX, &mouseY);
-
-        float xscale, yscale;
-        glfwGetWindowContentScale(m_Window.get(), &xscale, &yscale);
-
-        int width, height;
-        glfwGetWindowSize(m_Window.get(), &width, &height);
-
-        mouseX *= xscale;
-        mouseY *= yscale;
-        width *= yscale;
-        height *= yscale;
-
-        if (mouseX >= 0 && mouseY >= 0 && mouseX <= width && mouseY <= height)
-            return { mouseX, mouseY }; // mouse is inside window
-        else
-            return { 0, 0 }; // mouse is outside window
+        DkInput& input = Deako::GetInput();
+        // threshold for occasional small movement tolerance
+        const DkF32 stationaryThreshold = 2.0f;
+        DkF32 stationaryThresholdSqr = stationaryThreshold * stationaryThreshold;
+        return glm::length2(input.mousePositionDelta) <= stationaryThresholdSqr;
     }
 
+    bool IsMousePositionValid(const DkVec2& position)
+    {
+        DkVec2 windowSize = Deako::GetWindow().GetScaledSize();
+        bool validX = (position.x <= windowSize.x) && (position.x >= 0);
+        bool validY = (position.y <= windowSize.y) && (position.y >= 0);
+        return validX && validY;
+    }
 
+    DkVec2 ScaleMousePosition()
+    {
+        // DkWindow& window = Deako::GetWindow();
+        // glfwGetCursorPos(window.glfwWindow, &mousePosition.x, &mousePosition.y);
 
+        // DkVec2 dpiScale = window.GetDPI();
+        // mousePosition.x *= dpiScale.x;
+        // mousePosition.x *= dpiScale.y;
+        return DkVec2();
+    }
+
+    void BlockEvents(bool blocked)
+    {
+        DkInput& input = Deako::GetInput();
+        input.eventsBlocked = blocked;
+    }
+
+    bool AreEventsBlocked()
+    {
+        DkInput& input = Deako::GetInput();
+        return input.eventsBlocked;
+    }
 
 
 }

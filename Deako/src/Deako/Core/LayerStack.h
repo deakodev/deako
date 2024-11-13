@@ -1,7 +1,9 @@
 #pragma once
 
-#include "Deako/Core/Layer.h"
 #include "Deako/Core/Base.h"
+#include "Deako/Core/Layer.h"
+
+#include <vector>
 
 namespace Deako {
 
@@ -11,10 +13,13 @@ namespace Deako {
         LayerStack() = default;
         ~LayerStack();
 
+        void OnUpdate();
+        void OnEvent(Event& event);
+
         void PushLayer(Layer* layer);
         void PushOverlay(Layer* overlay);
-        void PopLayer(Layer* layer);
-        void PopOverlay(Layer* overlay);
+        void PopLayer(int count = 1);
+        void PopOverlay(int count = 1);
 
         std::vector<Layer*>::iterator begin() { return m_Layers.begin(); }
         std::vector<Layer*>::iterator end() { return m_Layers.end(); }

@@ -17,7 +17,7 @@ namespace Deako {
 
         bool Scene(Deako::Scene& scene, AssetMetadata& metadata);
 
-        void Entity(YAML::Emitter& out, Entity entity);
+        void Entity(YAML::Emitter& out, EntityHandle handle);
 
     }
 
@@ -26,9 +26,9 @@ namespace Deako {
 namespace YAML {
 
     template<>
-    struct convert<glm::vec3>
+    struct convert<Deako::DkVec3>
     {
-        static Node encode(const glm::vec3& rhs)
+        static Node encode(const Deako::DkVec3& rhs)
         {
             Node node;
             node.push_back(rhs.x);
@@ -38,22 +38,22 @@ namespace YAML {
             return node;
         }
 
-        static bool decode(const Node& node, glm::vec3& rhs)
+        static bool decode(const Node& node, Deako::DkVec3& rhs)
         {
             if (!node.IsSequence() || node.size() != 3)
                 return false;
 
-            rhs.x = node[0].as<float>();
-            rhs.y = node[1].as<float>();
-            rhs.z = node[2].as<float>();
+            rhs.x = node[0].as<Deako::DkF32>();
+            rhs.y = node[1].as<Deako::DkF32>();
+            rhs.z = node[2].as<Deako::DkF32>();
             return true;
         }
     };
 
     template<>
-    struct convert<glm::vec4>
+    struct convert<Deako::DkVec4>
     {
-        static Node encode(const glm::vec4& rhs)
+        static Node encode(const Deako::DkVec4& rhs)
         {
             Node node;
             node.push_back(rhs.x);
@@ -64,15 +64,15 @@ namespace YAML {
             return node;
         }
 
-        static bool decode(const Node& node, glm::vec4& rhs)
+        static bool decode(const Node& node, Deako::DkVec4& rhs)
         {
             if (!node.IsSequence() || node.size() != 4)
                 return false;
 
-            rhs.x = node[0].as<float>();
-            rhs.y = node[1].as<float>();
-            rhs.z = node[2].as<float>();
-            rhs.w = node[3].as<float>();
+            rhs.x = node[0].as<Deako::DkF32>();
+            rhs.y = node[1].as<Deako::DkF32>();
+            rhs.z = node[2].as<Deako::DkF32>();
+            rhs.w = node[3].as<Deako::DkF32>();
             return true;
         }
     };

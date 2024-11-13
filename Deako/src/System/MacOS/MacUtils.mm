@@ -1,6 +1,5 @@
 #import "MacUtils.h"
-
-#import "Deako/Core/Application.h"
+#include "dkpch.h"
 
 #import <Cocoa/Cocoa.h>
 #import <GLFW/glfw3.h>
@@ -11,8 +10,8 @@ extern "C" {
 
     const char* OpenFileUsingCocoa(const char* filter, const char* title)
     {
-        Deako::Ref<GLFWwindow> glfwWindow = Deako::GetApplication().GetWindow().GetNativeWindow();
-        NSWindow* window = (NSWindow*)glfwGetCocoaWindow(glfwWindow.get());
+        Deako::DkContext& deako = Deako::GetContext();
+        NSWindow* window = (NSWindow*)glfwGetCocoaWindow(deako.window->glfwWindow);
 
         if (!window) return nullptr;
 
@@ -39,8 +38,8 @@ extern "C" {
 
     const char* SaveFileUsingCocoa(const char* filter, const char* title)
     {
-        Deako::Ref<GLFWwindow> glfwWindow = Deako::GetApplication().GetWindow().GetNativeWindow();
-        NSWindow* window = (NSWindow*)glfwGetCocoaWindow(glfwWindow.get());
+        Deako::DkContext& deako = Deako::GetContext();
+        NSWindow* window = (NSWindow*)glfwGetCocoaWindow(deako.window->glfwWindow);
 
         if (!window) return nullptr;
 

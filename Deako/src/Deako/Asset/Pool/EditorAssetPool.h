@@ -18,12 +18,8 @@ namespace Deako {
         virtual bool IsAssetImported(AssetHandle handle) const override;
         virtual bool IsAssetHandleValid(AssetHandle handle) const override;
 
-        static Ref<EditorAssetPool> Get() { return s_EditorAssetPool; }
-
     private:
         AssetMap m_AssetsImported;
-
-        inline static Ref<EditorAssetPool> s_EditorAssetPool = CreateRef<EditorAssetPool>();
     };
 
 }

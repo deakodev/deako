@@ -1,10 +1,11 @@
 #include "VulkanBase.h"
 #include "dkpch.h"
 
+#include "VulkanPicker.h"
+#include "VulkanScene.h"
+
 #include "Deako/Core/Application.h" 
 #include "Deako/ImGui/ImGuiLayer.h"
-
-#include "VulkanScene.h"
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -91,18 +92,18 @@ namespace Deako {
 
         VkApplicationInfo appInfo = {};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        appInfo.pApplicationName = GetApplication().GetSpecification().name.c_str();
+        appInfo.pApplicationName = Deako::GetApplication().name;
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "Deako Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_0;
 
-        uint32_t glfwExtensionCount = 0;
+        DkU32 glfwExtensionCount = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
         std::vector<const char*> instanceExtensions{ glfwExtensions, glfwExtensions + glfwExtensionCount };
 
-        for (uint32_t i = 0; i < glfwExtensionCount; i++)
+        for (DkU32 i = 0; i < glfwExtensionCount; i++)
             instanceExtensions.emplace_back(glfwExtensions[i]);
 
         #if defined(VK_USE_PLATFORM_MACOS_MVK) // enable surface extensions depending for mac
@@ -113,7 +114,7 @@ namespace Deako {
             instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         // check if required instanceExtensions are supported
-        uint32_t extensionCount = 0;
+        DkU32 extensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> supportedExtensions(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, supportedExtensions.data());
@@ -141,7 +142,7 @@ namespace Deako {
 
         if (instanceExtensions.size() > 0)
         {
-            instanceInfo.enabledExtensionCount = (uint32_t)instanceExtensions.size();
+            instanceInfo.enabledExtensionCount = (DkU32)instanceExtensions.size();
             instanceInfo.ppEnabledExtensionNames = instanceExtensions.data();
         }
 
@@ -149,7 +150,7 @@ namespace Deako {
         if (vb->settings.validationEnabled)
         {
             validationLayerNames.push_back("VK_LAYER_KHRONOS_validation");
-            instanceInfo.enabledLayerCount = (uint32_t)validationLayerNames.size();
+            instanceInfo.enabledLayerCount = (DkU32)validationLayerNames.size();
             instanceInfo.ppEnabledLayerNames = validationLayerNames.data();
             // used to debug instance creation without needing instance reference
             VkDebugUtilsMessengerCreateInfoEXT debugInfo = {};
@@ -172,14 +173,15 @@ namespace Deako {
 
     void VulkanBase::SetUpDevice()
     {
+        DkContext& deako = Deako::GetContext();
+
         /* CREATE SURFACE */
-        Ref<GLFWwindow> window = GetApplication().GetWindow().GetNativeWindow();
-        VkCR(glfwCreateWindowSurface(vb->instance, window.get(), nullptr, &vb->surface));
+        VkCR(glfwCreateWindowSurface(vb->instance, deako.window->glfwWindow, nullptr, &vb->surface));
 
         /* DETERMINE PHYSICAL */
-        uint32_t deviceCount = 0;
+        DkU32 deviceCount = 0;
         vkEnumeratePhysicalDevices(vb->instance, &deviceCount, nullptr);
-        DK_CORE_ASSERT(deviceCount);  // check if any devices are supported
+        DK_CORE_ASSERT(deviceCount, "No devices are supported on this platform!");
 
         std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
         vkEnumeratePhysicalDevices(vb->instance, &deviceCount, physicalDevices.data());
@@ -193,17 +195,17 @@ namespace Deako {
 
         // determine best candidate and set as physical device
         if (candidates.rbegin()->first > 0) vb->physicalDevice = candidates.rbegin()->second;
-        else DK_CORE_ASSERT(false);
+        else DK_CORE_ASSERT(false, "No device candidates are supported on this platform!");
 
         // set family indices of our selected physical device
         VulkanDevice::FindQueueFamilies(vb->physicalDevice);
 
         /* CREATE LOGICAL */
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos; // obtain
-        std::set<uint32_t> queueFamilies = { vb->graphicsFamily.value(), vb->presentFamily.value() };
+        std::set<DkU32> queueFamilies = { vb->graphicsFamily.value(), vb->presentFamily.value() };
 
-        float queuePriority = 1.0f; // 0.0 - 1.0, influences scheduling of command buffer
-        for (uint32_t queueFamily : queueFamilies)
+        DkF32 queuePriority = 1.0f; // 0.0 - 1.0, influences scheduling of command buffer
+        for (DkU32 queueFamily : queueFamilies)
         {
             VkDeviceQueueCreateInfo queueCreateInfo{};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -240,14 +242,14 @@ namespace Deako {
 
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());;
+        deviceInfo.queueCreateInfoCount = static_cast<DkU32>(queueCreateInfos.size());;
         deviceInfo.pQueueCreateInfos = queueCreateInfos.data();
         deviceInfo.pEnabledFeatures = &enabledFeatures;
         deviceInfo.pNext = &sync2Features;
 
         if (enabledExtensions.size() > 0)
         {
-            deviceInfo.enabledExtensionCount = (uint32_t)enabledExtensions.size();
+            deviceInfo.enabledExtensionCount = (DkU32)enabledExtensions.size();
             deviceInfo.ppEnabledExtensionNames = enabledExtensions.data();
         }
 
@@ -341,7 +343,7 @@ namespace Deako {
         if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
             swapchainInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-        uint32_t queueFamilyIndices[] = { vb->graphicsFamily.value(), vb->presentFamily.value() };
+        DkU32 queueFamilyIndices[] = { vb->graphicsFamily.value(), vb->presentFamily.value() };
         if (vb->graphicsFamily != vb->presentFamily)
         {
             swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -462,13 +464,15 @@ namespace Deako {
 
     void VulkanBase::SetUpImGui()
     {
+        DkContext& deako = Deako::GetContext();
+
         VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }, };
 
         VkDescriptorPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         poolInfo.maxSets = 1;
-        poolInfo.poolSizeCount = (uint32_t)std::size(poolSizes);
+        poolInfo.poolSizeCount = (DkU32)std::size(poolSizes);
         poolInfo.pPoolSizes = poolSizes;
 
         VkCR(vkCreateDescriptorPool(vb->device, &poolInfo, nullptr, &vb->imguiDescriptorPool));
@@ -481,8 +485,7 @@ namespace Deako {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 
-        Ref<GLFWwindow> window = GetApplication().GetWindow().GetNativeWindow();
-        ImGui_ImplGlfw_InitForVulkan(window.get(), true);
+        ImGui_ImplGlfw_InitForVulkan(deako.window->glfwWindow, true);
 
         ImGui_ImplVulkan_InitInfo initInfo{};
         initInfo.Instance = vb->instance;
@@ -509,25 +512,13 @@ namespace Deako {
         ImGuiLayer::SetStyles();
     }
 
-    void VulkanBase::Render()
-    {
-        VulkanScene::UpdateUniforms();
-
-        if (VulkanScene::IsInvalid())
-        {
-            VulkanScene::Rebuild(); return;
-        }
-
-        Draw();
-    }
-
     void VulkanBase::Draw()
     {
         FrameData& frame = vb->frames[vb->context.currentFrame];
 
         VkCR(vkWaitForFences(vb->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
 
-        uint32_t scImageIndex;
+        DkU32 scImageIndex;
         VkResult result = vkAcquireNextImageKHR(vb->device, vb->swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -536,7 +527,7 @@ namespace Deako {
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
-            DK_CORE_ASSERT(result);
+            DK_CORE_ASSERT(result, "vkAcquireNextImageKHR failed!");
         }
 
         // manually reset fence after acquiring image (to avoid deadlock)
@@ -551,7 +542,7 @@ namespace Deako {
 
         VulkanImage::Transition(frame.commandBuffer, vb->swapchain.colorTarget.image, vb->swapchain.colorTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-        VulkanScene::DrawPicking(frame.commandBuffer, scImageIndex);
+        VulkanPicker::Draw(frame.commandBuffer, scImageIndex);
 
         VulkanImage::Transition(frame.commandBuffer, vb->swapchain.depthTarget.image, vb->swapchain.depthTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
@@ -619,14 +610,16 @@ namespace Deako {
         }
         else if (result != VK_SUCCESS)
         {
-            DK_CORE_ASSERT(result);
+            DK_CORE_ASSERT(result, "vkQueuePresentKHR failed!");
         }
 
         vb->context.currentFrame = (vb->context.currentFrame + 1) % vb->settings.frameOverlap;
     }
 
-    void VulkanBase::DrawGui(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    void VulkanBase::DrawGui(VkCommandBuffer commandBuffer, DkU32 imageIndex)
     {
+        DkContext& deako = Deako::GetContext();
+
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.pNext = nullptr;
@@ -650,10 +643,8 @@ namespace Deako {
 
         vkCmdBeginRenderingKHR(commandBuffer, &renderInfo);
 
-        LayerStack& layerStack = GetApplication().GetLayerStack();
-
         ImGuiLayer::Begin();
-        for (Layer* layer : layerStack)
+        for (Layer* layer : Deako::GetApplication().layerStack)
             layer->OnImGuiRender();
         ImGuiLayer::End(commandBuffer);
 

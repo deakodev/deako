@@ -33,8 +33,10 @@ namespace Deako {
 
     void AssetManager::Init()
     {
-        ProjectAssetPool::Get()->Init();
-        EditorAssetPool::Get()->Init();
+        DkContext& deako = Deako::GetContext();
+
+        deako.projectAssetPool->Init();
+        deako.editorAssetPool->Init();
         // RuntimeAssetPool::Get()->Init();
 
         TextureHandler::Init();
@@ -45,8 +47,10 @@ namespace Deako {
 
     void AssetManager::CleanUp()
     {
-        ProjectAssetPool::Get()->CleanUp();
-        EditorAssetPool::Get()->CleanUp();
+        DkContext& deako = Deako::GetContext();
+
+        deako.projectAssetPool->CleanUp();
+        deako.editorAssetPool->CleanUp();
         // RuntimeAssetPool::Get()->CleanUp();
 
         TextureHandler::CleanUp();
@@ -60,7 +64,7 @@ namespace Deako {
         auto it = s_AssetImportFunctions.find(metadata.assetType);
         if (it == s_AssetImportFunctions.end())
         {
-            DK_CORE_ERROR("No import function available for asset type: {0}", (uint16_t)metadata.assetType);
+            DK_CORE_ERROR("No import function available for asset type: {0}", (DkU16)metadata.assetType);
             return nullptr;
         }
 
@@ -73,6 +77,15 @@ namespace Deako {
     Ref<Asset> AssetManager::CastToAsset(Ref<T> asset)
     {
         return std::dynamic_pointer_cast<Asset>(asset);  // Dynamic cast for safety
+    }
+
+    template<typename T>
+    Scope<Asset> AssetManager::CastToAsset(Scope<T> asset)
+    {
+        if (Asset* casted = dynamic_cast<Asset*>(asset.get())) {
+            return Scope<Asset>(asset.release());  // Transfer ownership if cast succeeds
+        }
+        return nullptr;  // Return nullptr if dynamic cast fails
     }
 
 

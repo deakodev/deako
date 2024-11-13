@@ -52,7 +52,7 @@ namespace Deako {
 
         // setup buffer copy regions for each mip level
         std::vector<VkBufferImageCopy> copyRegions;
-        for (uint32_t i = 0; i < details.mipLevels; i++)
+        for (DkU32 i = 0; i < details.mipLevels; i++)
         {
             VkBufferImageCopy copyRegion = {};
             copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -73,7 +73,7 @@ namespace Deako {
 
         // copy mip levels from staging buffer
         vkCmdCopyBufferToImage(commandBuffer, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
+            static_cast<DkU32>(copyRegions.size()), copyRegions.data());
 
         VulkanImage::Transition(commandBuffer, image.image, details.format, details.mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, details.layout);
 
@@ -96,7 +96,7 @@ namespace Deako {
         samplerInfo.mipLodBias = 0.0f;
         samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
         samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = static_cast<float>(details.mipLevels);
+        samplerInfo.maxLod = static_cast<DkF32>(details.mipLevels);
         samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
@@ -177,18 +177,18 @@ namespace Deako {
 
             // query image level information that we need later on for several calculations
             // we only support 2D images (no cube maps or layered images)
-            for (uint32_t i = 0; i < mipLevels; i++)
+            for (DkU32 i = 0; i < mipLevels; i++)
                 ktxTranscoder.get_image_level_info(levelInfos[i], i, 0, 0);
 
-            uint32_t width = levelInfos[0].m_orig_width;;
-            uint32_t height = levelInfos[0].m_orig_height;
+            DkU32 width = levelInfos[0].m_orig_width;;
+            DkU32 height = levelInfos[0].m_orig_height;
             image.extent = { width, height, 1 };
 
             // create one staging buffer large enough to hold all uncompressed image levels
-            const uint32_t bytesPerBlockOrPixel = basist::basis_get_bytes_per_block_or_pixel(targetFormat);
-            uint32_t numBlocksOrPixels = 0;
+            const DkU32 bytesPerBlockOrPixel = basist::basis_get_bytes_per_block_or_pixel(targetFormat);
+            DkU32 numBlocksOrPixels = 0;
             VkDeviceSize totalBufferSize = 0;
-            for (uint32_t i = 0; i < mipLevels; i++)
+            for (DkU32 i = 0; i < mipLevels; i++)
             {   // size calculations differ for compressed/uncompressed formats
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
                 totalBufferSize += numBlocksOrPixels * bytesPerBlockOrPixel;
@@ -208,11 +208,11 @@ namespace Deako {
                 throw std::runtime_error("Could not start transcoding for image file ");
 
             // transcode all mip levels into the staging buffer
-            for (uint32_t i = 0; i < mipLevels; i++)
+            for (DkU32 i = 0; i < mipLevels; i++)
             {
                 // Size calculations differ for compressed/uncompressed formats
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
-                uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
+                DkU32 outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
                 if (!ktxTranscoder.transcode_image_level(i, 0, 0, bufferPtr, numBlocksOrPixels, targetFormat, 0)) {
                     throw std::runtime_error("Could not transcode the requested image file ");
                 }
@@ -231,10 +231,10 @@ namespace Deako {
 
             // transcode and copy all image levels
             VkDeviceSize bufferOffset = 0;
-            for (uint32_t i = 0; i < mipLevels; i++)
+            for (DkU32 i = 0; i < mipLevels; i++)
             {   // size calculations differ for compressed/uncompressed formats
                 numBlocksOrPixels = targetFormatIsUncompressed ? levelInfos[i].m_orig_width * levelInfos[i].m_orig_height : levelInfos[i].m_total_blocks;
-                uint32_t outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
+                DkU32 outputSize = numBlocksOrPixels * bytesPerBlockOrPixel;
 
                 VkBufferImageCopy copyRegion = {};
                 copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -271,9 +271,9 @@ namespace Deako {
                 buffer = new unsigned char[bufferSize];
                 unsigned char* rgba = buffer;
                 unsigned char* rgb = &gltfimage.image[0];
-                for (int32_t i = 0; i < gltfimage.width * gltfimage.height; ++i)
+                for (DkS32 i = 0; i < gltfimage.width * gltfimage.height; ++i)
                 {
-                    for (int32_t j = 0; j < 3; ++j)
+                    for (DkS32 j = 0; j < 3; ++j)
                         rgba[j] = rgb[j];
 
                     rgba += 4;
@@ -287,15 +287,15 @@ namespace Deako {
                 bufferSize = gltfimage.image.size();
             }
 
-            uint32_t width = gltfimage.width;
-            uint32_t height = static_cast<uint32_t>(gltfimage.height);
+            DkU32 width = gltfimage.width;
+            DkU32 height = static_cast<DkU32>(gltfimage.height);
             image.extent = { width, height, 1 };
-            mipLevels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1.0);
+            mipLevels = static_cast<DkU32>(floor(log2(std::max(width, height))) + 1.0);
 
             VkFormatProperties formatProperties;
             vkGetPhysicalDeviceFormatProperties(vb->physicalDevice, image.format, &formatProperties);
-            DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT);
-            DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT);
+            DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT, "VK_FORMAT_FEATURE_BLIT_SRC_BIT is required!");
+            DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT, "VK_FORMAT_FEATURE_BLIT_DST_BIT is required!");
 
             // create host-visible staging buffer that contains the raw image data
             AllocatedBuffer staging =
@@ -333,20 +333,20 @@ namespace Deako {
             // generate the mip chain (glTF uses jpg and png, so we need to create this manually)
             VkCommandBuffer blitCommandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
 
-            for (uint32_t i = 1; i < mipLevels; i++)
+            for (DkU32 i = 1; i < mipLevels; i++)
             {
                 VkImageBlit imageBlit = {};
                 imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 imageBlit.srcSubresource.layerCount = 1;
                 imageBlit.srcSubresource.mipLevel = i - 1;
-                imageBlit.srcOffsets[1].x = int32_t(image.extent.width >> (i - 1));
-                imageBlit.srcOffsets[1].y = int32_t(image.extent.height >> (i - 1));
+                imageBlit.srcOffsets[1].x = DkS32(image.extent.width >> (i - 1));
+                imageBlit.srcOffsets[1].y = DkS32(image.extent.height >> (i - 1));
                 imageBlit.srcOffsets[1].z = 1;
                 imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 imageBlit.dstSubresource.layerCount = 1;
                 imageBlit.dstSubresource.mipLevel = i;
-                imageBlit.dstOffsets[1].x = int32_t(image.extent.width >> i);
-                imageBlit.dstOffsets[1].y = int32_t(image.extent.height >> i);
+                imageBlit.dstOffsets[1].x = DkS32(image.extent.width >> i);
+                imageBlit.dstOffsets[1].y = DkS32(image.extent.height >> i);
                 imageBlit.dstOffsets[1].z = 1;
 
                 VkImageSubresourceRange mipSubRange = {};
@@ -401,7 +401,7 @@ namespace Deako {
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         samplerInfo.maxAnisotropy = 1.0;
         samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.maxLod = (float)mipLevels;
+        samplerInfo.maxLod = (DkF32)mipLevels;
         samplerInfo.maxAnisotropy = 8.0f;
         samplerInfo.anisotropyEnable = VK_TRUE;
         VkCR(vkCreateSampler(vb->device, &samplerInfo, nullptr, &sampler));
@@ -452,11 +452,11 @@ namespace Deako {
 
         // setup buffer copy regions for each mip level
         std::vector<VkBufferImageCopy> copyRegions;
-        for (uint32_t face = 0; face < 6; face++)
+        for (DkU32 face = 0; face < 6; face++)
         {
-            for (uint32_t level = 0; level < details.mipLevels; level++)
+            for (DkU32 level = 0; level < details.mipLevels; level++)
             {
-                uint32_t index = face * mipLevels + level;
+                DkU32 index = face * mipLevels + level;
 
                 VkBufferImageCopy copyRegion = {};
                 copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -494,7 +494,7 @@ namespace Deako {
 
         // copy mip levels from staging buffer
         vkCmdCopyBufferToImage(commandBuffer, staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            static_cast<uint32_t>(copyRegions.size()), copyRegions.data());
+            static_cast<DkU32>(copyRegions.size()), copyRegions.data());
 
         {
             VkImageMemoryBarrier imageBarrier{};
@@ -539,7 +539,7 @@ namespace Deako {
         samplerInfo.mipLodBias = 0.0f;
         samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
         samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = static_cast<float>(details.mipLevels);
+        samplerInfo.maxLod = static_cast<DkF32>(details.mipLevels);
         samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
@@ -552,7 +552,7 @@ namespace Deako {
     void TextureCubeMap::GenerateCubeMap()
     {
         VkFormat format;
-        uint32_t dim;
+        DkU32 dim;
 
         switch (target)
         {
@@ -564,7 +564,7 @@ namespace Deako {
             dim = 512; break;
         };
 
-        const uint32_t numMips = static_cast<uint32_t>(floor(log2(dim))) + 1;
+        const DkU32 numMips = static_cast<DkU32>(floor(log2(dim))) + 1;
 
         {   // create target cubemap
             VkImageCreateInfo imageInfo{};
@@ -612,7 +612,7 @@ namespace Deako {
             samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             samplerInfo.minLod = 0.0f;
-            samplerInfo.maxLod = static_cast<float>(numMips);
+            samplerInfo.maxLod = static_cast<DkF32>(numMips);
             samplerInfo.maxAnisotropy = 1.0f;
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             VkCR(vkCreateSampler(vb->device, &samplerInfo, nullptr, &sampler));
@@ -733,16 +733,16 @@ namespace Deako {
 
         struct PushBlockIrradiance
         {
-            glm::mat4 mvp;
-            float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
-            float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
+            DkMat4 mvp;
+            DkF32 deltaPhi = (2.0f * DkF32(M_PI)) / 180.0f;
+            DkF32 deltaTheta = (0.5f * DkF32(M_PI)) / 64.0f;
         } pushBlockIrradiance;
 
         struct PushBlockPrefilter
         {
-            glm::mat4 mvp;
-            float roughness;
-            uint32_t numSamples = 32u;
+            DkMat4 mvp;
+            DkF32 roughness;
+            DkU32 numSamples = 32u;
         } pushBlockPrefilter;
 
         // Pipeline layout
@@ -808,7 +808,7 @@ namespace Deako {
         VkPipelineDynamicStateCreateInfo dynamicInfo{};
         dynamicInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamicInfo.pDynamicStates = dynamicStateEnables.data();
-        dynamicInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+        dynamicInfo.dynamicStateCount = static_cast<DkU32>(dynamicStateEnables.size());
 
         // vertex input state
         VkVertexInputBindingDescription vertexInputBinding = { 0, sizeof(Model::Vertex), VK_VERTEX_INPUT_RATE_VERTEX };
@@ -852,7 +852,7 @@ namespace Deako {
         pipelineInfo.pViewportState = &viewportInfo;
         pipelineInfo.pDepthStencilState = &depthStencilInfo;
         pipelineInfo.pDynamicState = &dynamicInfo;
-        pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+        pipelineInfo.stageCount = (DkU32)shaderStages.size();
         pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.renderPass = renderPass;
         pipelineInfo.pNext = nullptr;
@@ -875,18 +875,18 @@ namespace Deako {
         renderPassBeginInfo.clearValueCount = 1;
         renderPassBeginInfo.pClearValues = clearValues;
 
-        std::vector<glm::mat4> matrices = {
-            glm::rotate(glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
-            glm::rotate(glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
-            glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
-            glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
-            glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)),
-            glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        std::vector<DkMat4> matrices = {
+            glm::rotate(glm::rotate(DkMat4(1.0f), glm::radians(90.0f), DkVec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), DkVec3(1.0f, 0.0f, 0.0f)),
+            glm::rotate(glm::rotate(DkMat4(1.0f), glm::radians(-90.0f), DkVec3(0.0f, 1.0f, 0.0f)), glm::radians(180.0f), DkVec3(1.0f, 0.0f, 0.0f)),
+            glm::rotate(DkMat4(1.0f), glm::radians(-90.0f), DkVec3(1.0f, 0.0f, 0.0f)),
+            glm::rotate(DkMat4(1.0f), glm::radians(90.0f), DkVec3(1.0f, 0.0f, 0.0f)),
+            glm::rotate(DkMat4(1.0f), glm::radians(180.0f), DkVec3(1.0f, 0.0f, 0.0f)),
+            glm::rotate(DkMat4(1.0f), glm::radians(180.0f), DkVec3(0.0f, 0.0f, 1.0f)),
         };
 
         VkViewport viewport{};
-        viewport.width = (float)dim;
-        viewport.height = (float)dim;
+        viewport.width = (DkF32)dim;
+        viewport.height = (DkF32)dim;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -915,14 +915,14 @@ namespace Deako {
             VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
         }
 
-        for (uint32_t m = 0; m < numMips; m++)
+        for (DkU32 m = 0; m < numMips; m++)
         {
-            for (uint32_t f = 0; f < 6; f++)
+            for (DkU32 f = 0; f < 6; f++)
             {
                 VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
 
-                viewport.width = static_cast<float>(dim * std::pow(0.5f, m));
-                viewport.height = static_cast<float>(dim * std::pow(0.5f, m));
+                viewport.width = static_cast<DkF32>(dim * std::pow(0.5f, m));
+                viewport.height = static_cast<DkF32>(dim * std::pow(0.5f, m));
                 vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
                 vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
@@ -933,12 +933,12 @@ namespace Deako {
                 switch (target)
                 {
                 case IRRADIANCE:
-                    pushBlockIrradiance.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
+                    pushBlockIrradiance.mvp = glm::perspective((DkF32)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
                     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockIrradiance), &pushBlockIrradiance);
                     break;
                 case PREFILTERED:
-                    pushBlockPrefilter.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
-                    pushBlockPrefilter.roughness = (float)m / (float)(numMips - 1) * 0.8;
+                    pushBlockPrefilter.mvp = glm::perspective((DkF32)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
+                    pushBlockPrefilter.roughness = (DkF32)m / (DkF32)(numMips - 1) * 0.8;
                     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlockPrefilter), &pushBlockPrefilter);
                     break;
                 };
@@ -970,8 +970,8 @@ namespace Deako {
                 copyRegion.dstSubresource.mipLevel = m;
                 copyRegion.dstSubresource.layerCount = 1;
                 copyRegion.dstOffset = { 0, 0, 0 };
-                copyRegion.extent.width = static_cast<uint32_t>(viewport.width);
-                copyRegion.extent.height = static_cast<uint32_t>(viewport.height);
+                copyRegion.extent.width = static_cast<DkU32>(viewport.width);
+                copyRegion.extent.height = static_cast<DkU32>(viewport.height);
                 copyRegion.extent.depth = 1;
 
                 vkCmdCopyImage(commandBuffer, offscreen.image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -1011,11 +1011,11 @@ namespace Deako {
 
         if (target == PREFILTERED)
         {
-            vs->uniformLightData.prefilteredCubeMipLevels = static_cast<float>(numMips);
+            vs->uniformLightData.prefilteredCubeMipLevels = static_cast<DkF32>(numMips);
         }
     }
 
-    void TextureSampler::SetFilterModes(int32_t min, int32_t mag)
+    void TextureSampler::SetFilterModes(DkS32 min, DkS32 mag)
     {
         switch (min)
         {
@@ -1042,7 +1042,7 @@ namespace Deako {
         }
     }
 
-    void TextureSampler::SetWrapModes(int32_t wrapS, int32_t wrapT)
+    void TextureSampler::SetWrapModes(DkS32 wrapS, DkS32 wrapT)
     {
         switch (wrapS)
         {

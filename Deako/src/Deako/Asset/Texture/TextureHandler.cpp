@@ -67,10 +67,12 @@ namespace Deako {
 
     Ref<Texture2D> TextureHandler::ImportTexture2D(AssetHandle handle, AssetMetadata& metadata)
     {
+        DkContext& deako = Deako::GetContext();
+
         DK_CORE_INFO("Importing Texture2D <{0}>", metadata.assetPath.filename().string());
 
-        uint32_t width{ 0 }, height{ 0 }, mipLevels{ 1 };
-        std::vector<uint32_t> mipLevelWidths{ 1 }, mipLevelHeights{ 1 }, mipLevelOffsets{ 1 };
+        DkU32 width{ 0 }, height{ 0 }, mipLevels{ 1 };
+        std::vector<DkU32> mipLevelWidths{ 1 }, mipLevelHeights{ 1 }, mipLevelOffsets{ 1 };
         Buffer buffer;
 
         if (metadata.assetPath.extension() == ".ktx")
@@ -78,21 +80,21 @@ namespace Deako {
             gli::texture2d texture(gli::load(metadata.assetPath.string()));
             DK_CORE_ASSERT(!texture.empty(), "Unable to load KTX texture from file!");
 
-            width = static_cast<uint32_t>(texture[0].extent().x);
-            height = static_cast<uint32_t>(texture[0].extent().y);
-            mipLevels = static_cast<uint32_t>(texture.levels());
+            width = static_cast<DkU32>(texture[0].extent().x);
+            height = static_cast<DkU32>(texture[0].extent().y);
+            mipLevels = static_cast<DkU32>(texture.levels());
 
             mipLevelWidths.resize(mipLevels);
             mipLevelHeights.resize(mipLevels);
             mipLevelOffsets.resize(mipLevels);
-            uint32_t currentOffset = 0;
-            for (uint32_t i = 0; i < mipLevels; i++)
+            DkU32 currentOffset = 0;
+            for (DkU32 i = 0; i < mipLevels; i++)
             {
-                mipLevelWidths[i] = static_cast<uint32_t>(texture[i].extent().x);
-                mipLevelHeights[i] = static_cast<uint32_t>(texture[i].extent().y);
+                mipLevelWidths[i] = static_cast<DkU32>(texture[i].extent().x);
+                mipLevelHeights[i] = static_cast<DkU32>(texture[i].extent().y);
                 mipLevelOffsets[i] = currentOffset;
 
-                currentOffset += static_cast<uint32_t>(texture[i].size());
+                currentOffset += static_cast<DkU32>(texture[i].size());
             }
 
             buffer = Buffer(texture.data(), texture.size());
@@ -102,7 +104,7 @@ namespace Deako {
             stbi_set_flip_vertically_on_load(1);
 
             int channels;
-            uint8_t* data = stbi_load(metadata.assetPath.c_str(), reinterpret_cast<int*>(&width), reinterpret_cast<int*>(&height), &channels, STBI_rgb_alpha);
+            DkU8* data = stbi_load(metadata.assetPath.c_str(), reinterpret_cast<int*>(&width), reinterpret_cast<int*>(&height), &channels, STBI_rgb_alpha);
             DK_CORE_ASSERT(data, "Unable to load texture from file!");
             // TODO: think about mips
             mipLevelWidths[0] = width;
@@ -130,11 +132,11 @@ namespace Deako {
 
         if (metadata.assetName != "Empty")
         {
-            ProjectAssetPool::Get()->AddAssetToPool(texture, metadata);
+            deako.projectAssetPool->AddAssetToPool(texture, metadata);
         }
         else
         {
-            EditorAssetPool::Get()->AddAssetToPool(texture);
+            deako.editorAssetPool->AddAssetToPool(texture);
         }
 
         return texture;
@@ -168,33 +170,35 @@ namespace Deako {
 
     Ref<TextureCubeMap> TextureHandler::ImportTextureCubeMap(AssetHandle handle, AssetMetadata& metadata)
     {
+        DkContext& deako = Deako::GetContext();
+
         DK_CORE_INFO("Importing TextureCube <{0}>", metadata.assetPath.filename().string());
 
-        uint32_t width{ 0 }, height{ 0 }, mipLevels{ 1 };
-        std::vector<uint32_t> mipLevelWidths, mipLevelHeights, mipLevelOffsets;
+        DkU32 width{ 0 }, height{ 0 }, mipLevels{ 1 };
+        std::vector<DkU32> mipLevelWidths, mipLevelHeights, mipLevelOffsets;
         Buffer buffer;
 
         gli::texture_cube textureCube(gli::load(metadata.assetPath.string()));
         DK_CORE_ASSERT(!textureCube.empty(), "Unable to load texture cube from file!");
 
-        width = static_cast<uint32_t>(textureCube[0].extent().x);
-        height = static_cast<uint32_t>(textureCube[0].extent().y);
-        mipLevels = static_cast<uint32_t>(textureCube.levels());
+        width = static_cast<DkU32>(textureCube[0].extent().x);
+        height = static_cast<DkU32>(textureCube[0].extent().y);
+        mipLevels = static_cast<DkU32>(textureCube.levels());
 
         mipLevelWidths.resize(mipLevels * 6);
         mipLevelHeights.resize(mipLevels * 6);
         mipLevelOffsets.resize(mipLevels * 6);
-        uint32_t currentOffset = 0;
-        for (uint32_t face = 0; face < 6; face++)
+        DkU32 currentOffset = 0;
+        for (DkU32 face = 0; face < 6; face++)
         {
-            for (uint32_t level = 0; level < mipLevels; level++)
+            for (DkU32 level = 0; level < mipLevels; level++)
             {
-                uint32_t index = face * mipLevels + level;
-                mipLevelWidths[index] = static_cast<uint32_t>(textureCube[face][level].extent().x);
-                mipLevelHeights[index] = static_cast<uint32_t>(textureCube[face][level].extent().y);
+                DkU32 index = face * mipLevels + level;
+                mipLevelWidths[index] = static_cast<DkU32>(textureCube[face][level].extent().x);
+                mipLevelHeights[index] = static_cast<DkU32>(textureCube[face][level].extent().y);
                 mipLevelOffsets[index] = currentOffset;
 
-                currentOffset += static_cast<uint32_t>(textureCube[face][level].size());
+                currentOffset += static_cast<DkU32>(textureCube[face][level].size());
             }
         }
 
@@ -216,11 +220,11 @@ namespace Deako {
 
         if (metadata.assetName != "Empty")
         {
-            ProjectAssetPool::Get()->AddAssetToPool(texture, metadata);
+            deako.projectAssetPool->AddAssetToPool(texture, metadata);
         }
         else
         {
-            EditorAssetPool::Get()->AddAssetToPool(texture);
+            deako.editorAssetPool->AddAssetToPool(texture);
         }
 
         return texture;

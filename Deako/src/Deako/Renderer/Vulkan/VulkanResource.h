@@ -59,7 +59,7 @@ namespace Deako {
 
         int RatePhysical(VkPhysicalDevice physicalDevice);
 
-        uint32_t GetMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound = nullptr);
+        DkU32 GetMemoryType(DkU32 typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound = nullptr);
 
     } // end namespace VulkanDevice
 ///////////////////////////////////////////////////////////////////////
@@ -79,11 +79,11 @@ namespace Deako {
 
     namespace VulkanImage {
 
-        AllocatedImage Create(VkExtent3D extent, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, uint32_t mipLevels = 1, VkImageType imageType = VK_IMAGE_TYPE_2D);
+        AllocatedImage Create(VkExtent3D extent, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, DkU32 mipLevels = 1, VkImageType imageType = VK_IMAGE_TYPE_2D);
 
         void Destroy(const AllocatedImage& allocImage);
 
-        void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout);
+        void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, DkU32 mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout);
 
         VkFormat ConvertToVulkanFormat(ImageFormat format);
 

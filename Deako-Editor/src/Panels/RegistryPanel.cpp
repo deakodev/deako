@@ -15,10 +15,9 @@ namespace Deako {
         { AssetType::Scene, &s_RegistryBins.Scene  }
     };
 
-    RegistryPanel::RegistryPanel(Ref<EditorContext> editorContext)
-        : m_EditorContext(editorContext), m_RateLimiter(0, 1) // 0 counter cycle, 1-second time cycle
+    RegistryPanel::RegistryPanel()
+        : m_RateLimiter(0, 1) // 0 counter cycle, 1-second time cycle
     {
-        Refresh();
     }
 
     void RegistryPanel::OnImGuiRender()
@@ -42,8 +41,8 @@ namespace Deako {
 
     void RegistryPanel::OnRegistryRender()
     {
-        float buttonWidth = ImGui::GetContentRegionAvail().x;
-        float buttonHeight = 22.0f;
+        DkF32 buttonWidth = ImGui::GetContentRegionAvail().x;
+        DkF32 buttonHeight = 22.0f;
 
         if (ImGui::BeginTabBar("Registry Tabs", ImGuiTabBarFlags_None))
         {
@@ -131,7 +130,7 @@ namespace Deako {
         for (auto& [assetType, registryBin] : s_RegistryBinMap)
             registryBin->clear();
 
-        const auto& registryAssets = m_EditorContext->assetPool->GetAssetRegistry();
+        const auto& registryAssets = Deako::GetProjectAssetPool().GetAssetRegistry();
         for (const auto& [handle, metadata] : registryAssets)
         {
             auto it = s_RegistryBinMap.find(metadata.assetType);

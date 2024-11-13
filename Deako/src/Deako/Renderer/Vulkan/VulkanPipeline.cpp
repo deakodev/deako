@@ -24,7 +24,7 @@ namespace Deako {
 
             VkPipelineDynamicStateCreateInfo dynamicState{};
             dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-            dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicEnables.size());
+            dynamicState.dynamicStateCount = static_cast<DkU32>(dynamicEnables.size());
             dynamicState.pDynamicStates = dynamicEnables.data();
 
             VkPipelineRenderingCreateInfoKHR renderingInfo{};
@@ -38,7 +38,7 @@ namespace Deako {
             pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             pipelineInfo.layout = pipelineLayout;
 
-            pipelineInfo.stageCount = static_cast<uint32_t>(m_ShaderStages.size());
+            pipelineInfo.stageCount = static_cast<DkU32>(m_ShaderStages.size());
             pipelineInfo.pStages = m_ShaderStages.data();
             pipelineInfo.pInputAssemblyState = &m_InputAssembly;
             pipelineInfo.pVertexInputState = &m_VertexInput;
@@ -156,7 +156,7 @@ namespace Deako {
             m_VertexInput.vertexBindingDescriptionCount = 1;
             m_VertexInput.pVertexBindingDescriptions = &m_VertexBindingDescription;
 
-            m_VertexInput.vertexAttributeDescriptionCount = static_cast<uint32_t>(m_VertexAttributeDescriptions.size());
+            m_VertexInput.vertexAttributeDescriptionCount = static_cast<DkU32>(m_VertexAttributeDescriptions.size());
             m_VertexInput.pVertexAttributeDescriptions = m_VertexAttributeDescriptions.data();
         }
 

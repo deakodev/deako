@@ -37,7 +37,7 @@ namespace Deako {
             project.projectFilename = path.filename();
             project.assetRegistryFilename = projectNode["AssetRegistryFilename"].as<std::string>();
 
-            project.initialSceneHandle = projectNode["InitialSceneHandle"].as<uint64_t>();
+            project.initialSceneHandle = projectNode["InitialSceneHandle"].as<DkU64>();
         }
 
         return true;
@@ -65,7 +65,7 @@ namespace Deako {
 
         for (const auto& assetNode : rootNode)
         {
-            AssetHandle handle = assetNode["AssetHandle"].as<uint64_t>();
+            AssetHandle handle = assetNode["AssetHandle"].as<DkU64>();
 
             AssetMetadata metadata;
             metadata.assetType = AssetTypeFromString(assetNode["AssetType"].as<std::string>());
@@ -81,6 +81,8 @@ namespace Deako {
 
     void Deserialize::Scene(Deako::Scene& scene, AssetMetadata& metadata)
     {
+        DkContext& deako = Deako::GetContext();
+
         YAML::Node data;
         try
         {
@@ -100,60 +102,59 @@ namespace Deako {
         }
 
         metadata.assetName = sceneNode["Name"].as<std::string>();
-        scene.m_Handle = sceneNode["AssetHandle"].as<uint64_t>();
+        scene.m_Handle = sceneNode["AssetHandle"].as<DkU64>();
 
         auto yamlEntities = data["Entities"];
         if (yamlEntities)
         {
             for (auto yamlEntity : yamlEntities)
             {
-                uint64_t uuid = yamlEntity["Entity"].as<uint64_t>();
+                EntityHandle handle = yamlEntity["Entity"].as<DkU64>();
 
                 std::string name;
-
                 auto tagCompYaml = yamlEntity["TagComponent"];
                 if (tagCompYaml)
                     name = tagCompYaml["Tag"].as<std::string>();
 
-                Entity entity = scene.CreateEntity(name);
+                Entity entity = scene.CreateEntity(name, handle);
 
                 auto transformCompYaml = yamlEntity["TransformComponent"];
                 if (transformCompYaml)
                 {
                     auto& transformComp = entity.GetComponent<TransformComponent>();
-                    transformComp.translation = transformCompYaml["Translation"].as<glm::vec3>();
-                    transformComp.rotation = transformCompYaml["Rotation"].as<glm::vec3>();
-                    transformComp.scale = transformCompYaml["Scale"].as<glm::vec3>();
+                    transformComp.translation = transformCompYaml["Translation"].as<DkVec3>();
+                    transformComp.rotation = transformCompYaml["Rotation"].as<DkVec3>();
+                    transformComp.scale = transformCompYaml["Scale"].as<DkVec3>();
                 }
 
                 auto textureCompYaml = yamlEntity["TextureComponent"];
                 if (textureCompYaml)
                 {
                     auto& textureComp = entity.AddComponent<TextureComponent>();
-                    textureComp.handle = textureCompYaml["AssetHandle"].as<uint64_t>();
+                    textureComp.handle = textureCompYaml["AssetHandle"].as<DkU64>();
                 }
 
                 auto materialCompYaml = yamlEntity["MaterialComponent"];
                 if (materialCompYaml)
                 {
                     auto& materialComp = entity.AddComponent<MaterialComponent>();
-                    materialComp.handle = materialCompYaml["AssetHandle"].as<uint64_t>();
+                    materialComp.handle = materialCompYaml["AssetHandle"].as<DkU64>();
                 }
 
                 auto modelCompYaml = yamlEntity["ModelComponent"];
                 if (modelCompYaml)
                 {
                     auto& modelComp = entity.AddComponent<ModelComponent>();
-                    modelComp.handle = modelCompYaml["AssetHandle"].as<uint64_t>();
+                    modelComp.handle = modelCompYaml["AssetHandle"].as<DkU64>();
                 }
 
                 auto prefabCompYaml = yamlEntity["PrefabComponent"];
                 if (prefabCompYaml)
                 {
                     auto& prefabComp = entity.AddComponent<PrefabComponent>();
-                    prefabComp.handle = prefabCompYaml["AssetHandle"].as<uint64_t>();
+                    prefabComp.handle = prefabCompYaml["AssetHandle"].as<DkU64>();
 
-                    Ref<Prefab> prefab = ProjectAssetPool::Get()->GetAsset<Prefab>(prefabComp.handle);
+                    Ref<Prefab> prefab = deako.projectAssetPool->GetAsset<Prefab>(prefabComp.handle);
 
                     prefabComp.meshHandle = prefab->model->m_Handle;
 
@@ -171,7 +172,7 @@ namespace Deako {
                     envComp.active = envCompYaml["Active"].as<bool>();
                 }
 
-                DK_CORE_INFO("Deser Entity '{0}' [{1}]", name, uuid);
+                DK_CORE_INFO("Deser Entity '{0}' [{1}]", name, (DkU64)handle);
             }
         }
     }

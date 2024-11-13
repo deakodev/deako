@@ -11,26 +11,27 @@ namespace Deako {
 
     void EditorLayer::OnAttach()
     {
-        m_EditorContext = CreateRef<EditorContext>();
-        m_EditorCamera = m_EditorContext->scene->activeCamera;
+        m_ScenePanel = CreateScope<ScenePanel>();
+        m_PropertiesPanel = CreateScope<PropertiesPanel>();
+        m_RegistryPanel = CreateScope<RegistryPanel>();
+        m_ViewportPanel = CreateScope<ViewportPanel>();
 
-        m_ScenePanel = CreateScope<ScenePanel>(m_EditorContext);
-        m_PropertiesPanel = CreateScope<PropertiesPanel>(m_EditorContext);
-        m_RegistryPanel = CreateScope<RegistryPanel>(m_EditorContext);
-        m_ViewportPanel = CreateScope<ViewportPanel>(m_EditorContext, m_EditorCamera);
+        m_EditorCamera = CreateRef<EditorCamera>();
     }
 
     void EditorLayer::OnDetach()
     {
+        m_EditorCamera.reset();
     }
 
     void EditorLayer::OnUpdate()
     {
+        Deako::GetActiveScene().activeCamera = m_EditorCamera;
+
         m_ViewportPanel->OnUpdate();
 
-        m_EditorCamera->OnUpdate();
-
-        m_EditorContext->OnUpdate();
+        Deako::NewFrame();
+        Deako::Render();
     }
 
     void EditorLayer::OnImGuiRender()
@@ -64,13 +65,11 @@ namespace Deako {
                 {
                     SceneHandler::NewScene();
                     SceneHandler::RefreshScene();
-                    m_EditorContext->scene.isValid = false;
                 }
                 if (ImGui::MenuItem("Open...", "Cmd+O"))
                 {
                     SceneHandler::OpenScene();
                     SceneHandler::RefreshScene();
-                    m_EditorContext->scene.isValid = false;
                 }
                 if (ImGui::BeginMenu("Import", "Cmd+I"))
                 {
@@ -122,7 +121,7 @@ namespace Deako {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit Editor", "Cmd+Q"))
                 {
-                    GetApplication().Close();
+                    Deako::GetApplication().Shutdown();
                 }
 
                 ImGui::EndMenu();
@@ -152,7 +151,7 @@ namespace Deako {
 
     void EditorLayer::OnEvent(Event& event)
     {
-        m_EditorCamera->GetController().OnEvent(event);
+        m_EditorCamera->OnEvent(event);
 
         EventDispatcher dispatcher(event);
         dispatcher.Dispatch<KeyPressedEvent>(DK_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
@@ -162,8 +161,8 @@ namespace Deako {
     {
         if (event.IsRepeat()) return false;
 
-        bool super = Input::IsKeyPressed(Key::LeftSuper) || Input::IsKeyPressed(Key::RightSuper); // On mac instead of Cmd
-        bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+        bool super = Deako::IsKeyPressed(Key::LeftSuper) || Deako::IsKeyPressed(Key::RightSuper); // On mac instead of Cmd
+        bool shift = Deako::IsKeyPressed(Key::LeftShift) || Deako::IsKeyPressed(Key::RightShift);
         switch (event.GetKeyCode())
         {
             // File Shortcuts

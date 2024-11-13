@@ -12,8 +12,9 @@ namespace Deako {
 
     void ProjectHandler::Init()
     {
+        DkContext& deako = Deako::GetContext();
         OpenProject();
-        DK_CORE_ASSERT(!s_ActiveProject->projectFilename.empty(), "No project opened!");
+        DK_CORE_ASSERT(!deako.activeProject->projectFilename.empty(), "No project opened!");
     }
 
     void ProjectHandler::CleanUp()
@@ -23,7 +24,9 @@ namespace Deako {
 
     void ProjectHandler::OpenProject()
     {
-        if (!s_ActiveProject->isSavedUpToDate)
+        DkContext& deako = Deako::GetContext();
+
+        if (!deako.activeProject->isSavedUpToDate)
         {
             bool continueToOpenProject = PromptToSaveProject();
             if (!continueToOpenProject) return; // user canceled
@@ -40,41 +43,48 @@ namespace Deako {
 
     void ProjectHandler::OpenProject(std::filesystem::path path)
     {
-        Deserialize::Project(*s_ActiveProject, path) ?
+        DkContext& deako = Deako::GetContext();
+
+        Deserialize::Project(*deako.activeProject, path) ?
             DK_CORE_INFO("Opened project <{0}>", path.filename().string()) :
             DK_CORE_WARN("Could not open project <{0}>", path.filename().string());
 
-        DK_CORE_ASSERT(s_ActiveProject);
+        DK_CORE_ASSERT(deako.activeProject, "No active project!");
     }
 
     void ProjectHandler::SaveProject(std::filesystem::path path)
     {
-        Serialize::Project(*s_ActiveProject, path) ?
+        DkContext& deako = Deako::GetContext();
+
+        Serialize::Project(*deako.activeProject, path) ?
             DK_CORE_INFO("Saved project <{0}>", path.filename().string()) :
             DK_CORE_WARN("Could not save project <{0}>", path.filename().string());
     }
 
     void ProjectHandler::SaveProject()
     {
-        // set initial scene for next time project is accessed
-        Ref<Scene> activeScene = SceneHandler::GetActiveScene();
-        s_ActiveProject->initialSceneHandle = activeScene->m_Handle;
+        DkContext& deako = Deako::GetContext();
 
-        if (s_ActiveProject->projectFilename.empty())
+        // set initial scene for next time project is accessed
+        deako.activeProject->initialSceneHandle = deako.activeSceneHandle;
+
+        if (deako.activeProject->projectFilename.empty())
         {
             SaveAsProject();
             return;
         }
 
-        std::filesystem::path projectPath = s_ActiveProject->workingDirectory / s_ActiveProject->projectFilename;
+        std::filesystem::path projectPath = deako.activeProject->workingDirectory / deako.activeProject->projectFilename;
 
         SaveProject(projectPath);
     }
 
     void ProjectHandler::SaveAsProject()
     {
+        DkContext& deako = Deako::GetContext();
+
         std::filesystem::path projectPath = MacUtils::File::SaveAs("dproj", "Save Project");
-        s_ActiveProject->projectFilename = projectPath.filename();
+        deako.activeProject->projectFilename = projectPath.filename();
 
         SaveProject(projectPath);
     }

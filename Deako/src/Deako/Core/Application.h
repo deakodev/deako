@@ -1,74 +1,36 @@
 #pragma once
 
-#include "Deako/Core/Base.h"
-#include "Deako/Core/Window.h"
 #include "Deako/Core/LayerStack.h"
-
 #include "Deako/Event/Event.h"
-#include "Deako/Event/WindowEvent.h"
 
-int main(int argc, char** argv);
+#include <filesystem>
 
 namespace Deako {
 
-    struct CommandLineArgs
-    {
-        int count = 0;
-        char** args = nullptr;
+    struct DkContext;
 
-        const char* operator[](int index) const
-        {
-            DK_CORE_ASSERT(index < count);
-            return args[index];
-        }
+    struct DkApplicationConfig
+    {
+        const char* appName = "Deako App";
+        std::filesystem::path workingDirectory;
     };
 
-    struct ApplicationSpecification
+    struct DkApplication
     {
-        std::string name = "Deako Application";
-        std::string workingDirectory;
-        CommandLineArgs commandLineArgs;
-    };
+        const char* name;
+        std::filesystem::path workingDirectory;
+        LayerStack layerStack;
 
-    class Application
-    {
-    public:
-        Application(const ApplicationSpecification& specification);
-        virtual ~Application() = default;
+        DkContext* context; // not owned, parent context 
 
-        void Close() { m_Running = false; }
+        bool running{ true };
 
-        void OnEvent(Event& event);
+        DkApplication(DkContext* context, DkApplicationConfig& config);
 
-        const ApplicationSpecification& GetSpecification() const { return m_Specification; }
-
-        virtual void PushLayers() = 0;
-
-        Window& GetWindow() { return *m_Window; }
-        LayerStack& GetLayerStack() { return m_LayerStack; }
-
-    private:
-        friend int ::main(int argc, char** argv);
         void Run();
-
-        bool OnWindowClose(WindowCloseEvent& event);
-        bool OnWindowMinimized(WindowMinimizedEvent& event);
-        bool OnWindowRestored(WindowRestoredEvent& event);
-
-    private:
-        ApplicationSpecification m_Specification;
-
-        Ref<Window> m_Window;
-        LayerStack m_LayerStack;
-
-        bool m_Running = true;
-        bool m_Minimized = false;
+        void Shutdown() { running = false; }
     };
 
-    Application& CreateApplication(CommandLineArgs args); // To be defined client side
-
-    Application& InitApplication(Application* application); // Sets the editor (or in the future, the game) as the application
-    void DestroyApplication();
-    Application& GetApplication();
+    Scope<DkApplication> ConfigureApplication(DkContext* context);  // defined/configured on the client side
 
 }

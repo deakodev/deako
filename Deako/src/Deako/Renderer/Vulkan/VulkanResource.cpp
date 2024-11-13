@@ -20,7 +20,7 @@ namespace Deako {
         {
             vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, vb->surface, &vb->swapchain.details.capabilities);
 
-            uint32_t formatCount;  // swap chain formats
+            DkU32 formatCount;  // swap chain formats
             vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vb->surface, &formatCount, nullptr);
             if (formatCount != 0)
             {
@@ -28,7 +28,7 @@ namespace Deako {
                 vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, vb->surface, &formatCount, vb->swapchain.details.formats.data());
             }
 
-            uint32_t presentModeCount; // swap chain present modes
+            DkU32 presentModeCount; // swap chain present modes
             vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, vb->surface, &presentModeCount, nullptr);
             if (presentModeCount != 0)
             {
@@ -72,17 +72,17 @@ namespace Deako {
 
         VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities)
         {
-            if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+            if (capabilities.currentExtent.width != std::numeric_limits<DkU32>::max())
             {
                 return capabilities.currentExtent;
             }
             else
             {
-                Ref<GLFWwindow> window = GetApplication().GetWindow().GetNativeWindow();
+                DkWindow& deakoWindow = Deako::GetWindow();
 
-                int width, height;
-                glfwGetFramebufferSize(window.get(), &width, &height);
-                VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+                // int width, height;
+                // glfwGetFramebufferSize(deako.window->glfwWindow, &width, &height);
+                VkExtent2D actualExtent = { static_cast<DkU32>(deakoWindow.size.x), static_cast<DkU32>(deakoWindow.size.y) };
 
                 actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
                 actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
@@ -102,7 +102,7 @@ namespace Deako {
 
         void FindQueueFamilies(VkPhysicalDevice physicalDevice)
         {
-            uint32_t queueFamilyCount = 0;
+            DkU32 queueFamilyCount = 0;
             vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
             std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
@@ -125,7 +125,7 @@ namespace Deako {
 
         bool CheckExtensionSupport(VkPhysicalDevice physicalDevice, std::vector<const char*> extensions)
         {
-            uint32_t extensionCount;
+            DkU32 extensionCount;
             vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
 
             std::vector<VkExtensionProperties> availableExtensions(extensionCount);
@@ -169,12 +169,12 @@ namespace Deako {
             return suitable ? score : 0;
         }
 
-        uint32_t GetMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound)
+        DkU32 GetMemoryType(DkU32 typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound)
         {
             VkPhysicalDeviceMemoryProperties memProperties;
             vkGetPhysicalDeviceMemoryProperties(vb->physicalDevice, &memProperties);
 
-            for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+            for (DkU32 i = 0; i < memProperties.memoryTypeCount; i++)
             {
                 if ((typeBits & 1) == 1)
                 {
@@ -193,7 +193,7 @@ namespace Deako {
             }
             else
             {
-                DK_CORE_ASSERT("Could not find a matching memory type!"); return 0;
+                DK_CORE_ASSERT(false, "Could not find a matching memory type!"); return 0;
             }
         }
 
@@ -217,7 +217,6 @@ namespace Deako {
                 else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
                     return format;
             }
-            DK_CORE_ASSERT(false);
             return VK_FORMAT_UNDEFINED;
         }
 
@@ -236,7 +235,7 @@ namespace Deako {
 
     namespace VulkanImage {
 
-        AllocatedImage Create(VkExtent3D extent, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, uint32_t mipLevels, VkImageType imageType)
+        AllocatedImage Create(VkExtent3D extent, VkFormat format, VkSampleCountFlagBits samples, VkImageUsageFlags usage, DkU32 mipLevels, VkImageType imageType)
         {
             AllocatedImage allocImage;
             allocImage.extent = extent;
@@ -308,7 +307,7 @@ namespace Deako {
             vkFreeMemory(vb->device, allocImage.memory, nullptr);
         }
 
-        void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, uint32_t mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout)
+        void Transition(VkCommandBuffer commandBuffer, VkImage image, VkFormat format, DkU32 mipLevels, VkImageLayout currentLayout, VkImageLayout newLayout)
         {
             VkImageMemoryBarrier2 imageBarrier{};
             imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -504,12 +503,12 @@ namespace Deako {
             VkShaderModuleCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
             createInfo.codeSize = shaderCode.size();
-            // Size of the bytecode is in bytes, but bytecode pointer is a uint32_t pointer rather than a char pointer, thus need to reinterpret cast shader data
-            createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
+            // Size of the bytecode is in bytes, but bytecode pointer is a DkU32 pointer rather than a char pointer, thus need to reinterpret cast shader data
+            createInfo.pCode = reinterpret_cast<const DkU32*>(shaderCode.data());
 
             VkShaderModule shaderModule;
             VkResult result = vkCreateShaderModule(vb->device, &createInfo, nullptr, &shaderModule);
-            DK_CORE_ASSERT(!result);
+            DK_CORE_ASSERT(!result, "Failed to create shader module!");
 
             return shaderModule;
         }
@@ -555,7 +554,7 @@ namespace Deako {
     void GenerateBRDFLookUpTable()
     {
         const VkFormat format = VK_FORMAT_R16G16_SFLOAT;
-        const uint32_t dim = 512;
+        const DkU32 dim = 512;
 
         vs->lightSource.lutBrdf = CreateRef<Texture2D>();
 
@@ -696,7 +695,7 @@ namespace Deako {
         VkPipelineDynamicStateCreateInfo dynamicState{};
         dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamicState.pDynamicStates = dynamicStateEnables.data();
-        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+        dynamicState.dynamicStateCount = static_cast<DkU32>(dynamicStateEnables.size());
 
         VkPipelineVertexInputStateCreateInfo emptyInput{};
         emptyInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -755,8 +754,8 @@ namespace Deako {
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport viewport{};
-        viewport.width = (float)dim;
-        viewport.height = (float)dim;
+        viewport.width = (DkF32)dim;
+        viewport.height = (DkF32)dim;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 

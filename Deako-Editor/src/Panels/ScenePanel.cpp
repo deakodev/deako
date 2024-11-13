@@ -6,45 +6,32 @@
 
 namespace Deako {
 
-    ScenePanel::ScenePanel(Ref<EditorContext> editorContext)
-        : m_EditorContext(editorContext)
-    {
-    }
-
     void ScenePanel::OnImGuiRender()
     {
+        DkContext& deako = Deako::GetContext();
+        Scene& activeScene = Deako::GetActiveScene();
+
         ImGui::Begin("Scene");
 
-        bool eventsBlocked = ImGui::IsWindowHovered();
-        ImGuiLayer::BlockEvents(eventsBlocked);
+        bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
+        Deako::BlockEvents(eventsBlocked);
 
-        uint32_t selectedEntity = m_EditorContext->scene->GetSelectedEntity();
-
-        auto view = m_EditorContext->scene->registry.view<TagComponent>();
-        bool isEntitySelected = false;
-
-        for (auto entityHandle : view)
+        for (auto& entity : activeScene.entities)
         {
-            Ref<Entity> entity = CreateRef<Entity>(entityHandle, m_EditorContext->scene.context.get());
-            isEntitySelected |= DrawEntityNode(entity) || (selectedEntity == (uint32_t)entityHandle);
-
-            if (isEntitySelected)
-            {
-                m_EditorContext->entity.Set(entity);
-                isEntitySelected = false;
-            }
+            EntityHandle entityHandle = entity.GetHandle();
+            DrawEntityNode(entityHandle, deako.activeHandle == entityHandle);
         }
 
-        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && !isEntitySelected)
+        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
         {
-            m_EditorContext->entity.Reset();
+            deako.activeHandle = 0;
         }
 
         // Popup Menu - after right click on blank space
         if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
         {
             if (ImGui::MenuItem("Create Empty Entity"))
-                m_EditorContext->scene->CreateEntity("Empty Entity");
+                activeScene.CreateEntity("Empty Entity");
 
             ImGui::EndPopup();
         }
@@ -52,21 +39,20 @@ namespace Deako {
         ImGui::End();
     }
 
-    bool ScenePanel::DrawEntityNode(Ref<Entity> entity)
+    void ScenePanel::DrawEntityNode(EntityHandle entityHandle, bool isNodeSelected)
     {
-        bool isNodeSelected = m_EditorContext->entity == entity;
+        DkContext& deako = Deako::GetContext();
 
         ImGuiTreeNodeFlags flags = (isNodeSelected ? ImGuiTreeNodeFlags_Selected : 0)
             | ImGuiTreeNodeFlags_OpenOnArrow
             | ImGuiTreeNodeFlags_SpanAvailWidth;
 
-        auto& tag = entity->GetComponent<TagComponent>().tag;
-        bool opened = ImGui::TreeNodeEx((void*)(uintptr_t)entity.get(), flags, "%s", tag.c_str());
+        std::string& tag = Entity::GetComponent<TagComponent>(entityHandle).tag;
 
-        bool entityClicked = false;
+        bool opened = ImGui::TreeNodeEx((void*)(uintptr_t)entityHandle, flags, "%s", tag.c_str());
 
         if (ImGui::IsItemClicked())
-            entityClicked = true;
+            deako.activeHandle = entityHandle;
 
         bool entityDeleted = false;
         if (ImGui::BeginPopupContextItem())
@@ -81,12 +67,10 @@ namespace Deako {
 
         if (entityDeleted)
         {
-            m_EditorContext->scene->DestroyEntity(*entity); // TODO
-            if (m_EditorContext->entity == entity)
-                m_EditorContext->entity.Reset();
+            // deako.activeEntityHandle->DestroyEntity(entityHandle); // TODO
+            // if (deako.activeEntityHandle == entityHandle)
+            //     deako.activeEntityHandle = 0;
         }
-
-        return entityClicked;
     }
 
 }

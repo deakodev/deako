@@ -1,23 +1,11 @@
 #pragma once
 
-#include "Deako/Core/UUID.h"
 
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
 namespace Deako {
-
-    struct IDComponent
-    {
-        UUID id;
-
-        IDComponent() = default;
-        IDComponent(const IDComponent&) = default;
-        IDComponent(UUID uuid)
-            : id(uuid) {}
-    };
 
     struct TagComponent
     {
@@ -26,30 +14,31 @@ namespace Deako {
         TagComponent() = default;
         TagComponent(const TagComponent&) = default;
         TagComponent(const std::string& tag)
-            : tag(tag) {}
+            : tag(tag) {
+        }
     };
 
     struct TransformComponent
     {
-        glm::vec3 translation = { 0.0f, 0.0f, 0.0f };
-        glm::vec3 rotation = { 0.0f, 0.0f, 0.0f };
-        glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+        DkVec3 translation = { 0.0f, 0.0f, 0.0f };
+        DkVec3 rotation = { 0.0f, 0.0f, 0.0f };
+        DkVec3 scale = { 1.0f, 1.0f, 1.0f };
 
         TransformComponent() = default;
         TransformComponent(const TransformComponent&) = default;
 
-        glm::mat4 GetTransform() const
+        DkMat4 GetTransform() const
         {
-            return glm::translate(glm::mat4(1.0f), translation) *
+            return glm::translate(DkMat4(1.0f), translation) *
                 glm::toMat4(glm::quat(rotation)) *
-                glm::scale(glm::mat4(1.0f), scale);
+                glm::scale(DkMat4(1.0f), scale);
         }
 
-        glm::vec3 NormalizeRotation(const glm::vec3& rotation)
+        DkVec3 NormalizeRotation(const DkVec3& rotation)
         {
-            static float MAX_ROTATION = 2 * glm::pi<float>();
+            static DkF32 MAX_ROTATION = 2 * glm::pi<DkF32>();
 
-            glm::vec3 normalizedRotation;
+            DkVec3 normalizedRotation;
             normalizedRotation.x = fmod(rotation.x, MAX_ROTATION);
             normalizedRotation.y = fmod(rotation.y, MAX_ROTATION);
             normalizedRotation.z = fmod(rotation.z, MAX_ROTATION);
@@ -84,7 +73,8 @@ namespace Deako {
 
         ModelComponent() = default;
         ModelComponent(AssetHandle handle)
-            : handle(handle) {}
+            : handle(handle) {
+        }
         ModelComponent(const ModelComponent&) = default;
     };
 
@@ -98,7 +88,8 @@ namespace Deako {
         PrefabComponent() = default;
         PrefabComponent(const PrefabComponent&) = default;
         PrefabComponent(AssetHandle handle)
-            : handle(handle) {}
+            : handle(handle) {
+        }
     };
 
     struct EnvironmentComponent
