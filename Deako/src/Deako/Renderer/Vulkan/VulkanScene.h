@@ -91,6 +91,7 @@ namespace Deako {
             VkPipeline                             unlit;
             VkPipeline                             unlitDoubleSided;
             VkPipeline                             unlitAlphaBlending;
+            VkPipeline                             outline;
             VkPipeline                             picker;
         } pipelines;
 

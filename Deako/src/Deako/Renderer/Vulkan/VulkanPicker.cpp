@@ -14,6 +14,29 @@ namespace Deako {
 
     void VulkanPicker::Init()
     {
+        SetUpTargets();
+
+        // TODO: extract picker impl from VulkanScene
+        // SetUpUniforms();
+
+        // SetUpDescriptors();
+
+        // SetUpPipelines();
+    }
+
+    void VulkanPicker::CleanUp()
+    {
+        vkDestroyPipeline(vb->device, vs->pipelines.picker, nullptr);
+        vkDestroyPipelineLayout(vb->device, vs->pickerPipelineLayout, nullptr);
+        vkDestroyDescriptorSetLayout(vb->device, vs->descriptorLayouts.picker, nullptr);
+
+        VulkanImage::Destroy(vs->picker.colorTarget);
+        VulkanImage::Destroy(vs->picker.depthTarget);
+        VulkanBuffer::Destroy(vs->picker.stagingBuffer);
+    }
+
+    void VulkanPicker::SetUpTargets()
+    {
         VkExtent3D targetExtent = { vb->swapchain.extent.width, vb->swapchain.extent.height, 1 };
         VkSampleCountFlagBits targetSamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -34,16 +57,6 @@ namespace Deako {
         VkCR(vkMapMemory(vb->device, vs->picker.stagingBuffer.memory, 0, sizeof(DkVec4), 0, &vs->picker.stagingBuffer.mapped));
     }
 
-    void VulkanPicker::CleanUp()
-    {
-        vkDestroyPipeline(vb->device, vs->pipelines.picker, nullptr);
-        vkDestroyPipelineLayout(vb->device, vs->pickerPipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(vb->device, vs->descriptorLayouts.picker, nullptr);
-
-        VulkanImage::Destroy(vs->picker.colorTarget);
-        VulkanImage::Destroy(vs->picker.depthTarget);
-        VulkanBuffer::Destroy(vs->picker.stagingBuffer);
-    }
 
     void VulkanPicker::Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex)
     {   // offscreen color picking draw
@@ -99,7 +112,7 @@ namespace Deako {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->pipelines.picker);
 
         DkU32 index = 0;
-        auto DrawPrimitive = [&](Node* node)
+        auto DrawNode = [&](Node* node)
             {
                 if (!node->mesh) return;
                 for (Primitive* primitive : node->mesh->primitives)
@@ -142,10 +155,10 @@ namespace Deako {
             // render each node with picking color
             for (auto node : model->nodes)
             {
-                DrawPrimitive(node);
+                DrawNode(node);
 
                 for (auto child : node->children)
-                    DrawPrimitive(child);
+                    DrawNode(child);
             }
 
             index++;

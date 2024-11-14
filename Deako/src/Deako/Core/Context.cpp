@@ -105,7 +105,7 @@ namespace Deako {
 
         deako.activeHandlePreviousFrame = deako.activeHandle;
 
-        if (IsMousePressed(Mouse::ButtonLeft) && !AreEventsBlocked())
+        if (IsMousePressed(Mouse::ButtonLeft) && !IsKeyPressed(Key::LeftAlt) && !AreEventsBlocked())
         {
             deako.activeHandle = deako.hoveredHandle;
         }

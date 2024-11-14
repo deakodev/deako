@@ -1,12 +1,12 @@
 #include "VulkanScene.h"
 #include "dkpch.h"
 
+#include "VulkanBase.h"
+#include "VulkanPipeline.h"
+
 #include "Deako/Asset/Scene/SceneHandler.h"
 #include "Deako/Asset/Texture/TextureHandler.h"
 #include "Deako/Core/Input.h" 
-
-#include "VulkanBase.h"
-#include "VulkanPipeline.h"
 
 namespace Deako {
 
@@ -38,6 +38,7 @@ namespace Deako {
         vkDestroyPipeline(vb->device, vs->pipelines.unlit, nullptr);
         vkDestroyPipeline(vb->device, vs->pipelines.unlitDoubleSided, nullptr);
         vkDestroyPipeline(vb->device, vs->pipelines.unlitAlphaBlending, nullptr);
+        vkDestroyPipeline(vb->device, vs->pipelines.outline, nullptr);
 
         vkDestroyPipelineLayout(vb->device, vs->scenePipelineLayout, nullptr);
         vkDestroyPipelineLayout(vb->device, vs->skyboxPipelineLayout, nullptr);
@@ -475,6 +476,9 @@ namespace Deako {
         VkShaderModule pbrMaterialFrag = VulkanShader::CreateModule("material_pbr.frag.spv");
         VkShaderModule unlitMaterialFrag = VulkanShader::CreateModule("material_unlit.frag.spv");
 
+        VkShaderModule outlineVert = VulkanShader::CreateModule("outline.vert.spv");
+        VkShaderModule outlineFrag = VulkanShader::CreateModule("outline.frag.spv");
+
         VkShaderModule pickerVert = VulkanShader::CreateModule("picker.vert.spv");
         VkShaderModule pickerFrag = VulkanShader::CreateModule("picker.frag.spv");
 
@@ -553,6 +557,7 @@ namespace Deako {
             pipelineBuilder.DisableColorBlending();
             pipelineBuilder.SetMultisampling(sampleFlag);
             pipelineBuilder.EnableDepthTest();
+            pipelineBuilder.EnableStencilWrite();
 
             vertexInputAttributes = {
                 { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, pos)},
@@ -610,6 +615,29 @@ namespace Deako {
             vs->pipelines.unlitAlphaBlending = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
         }
 
+        {   // outline pipeline
+            VulkanPipeline::Builder pipelineBuilder;
+            pipelineBuilder.SetShaders(outlineVert, outlineFrag);
+            pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_LINE);
+            pipelineBuilder.SetCullMode(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+            pipelineBuilder.DisableColorBlending();
+            pipelineBuilder.SetMultisampling(sampleFlag);
+            pipelineBuilder.EnableDepthTest();
+            pipelineBuilder.EnableStencilTest();
+
+            vertexInputAttributes = {
+                { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, pos) },
+                { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, normal) },
+                { 4, 0, VK_FORMAT_R32G32B32A32_UINT, offsetof(Model::Vertex, joint0) },
+                { 5, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Model::Vertex, weight0) },
+            };
+
+            pipelineBuilder.SetVertexInput(vertexInputBinding, vertexInputAttributes);
+
+            vs->pipelines.outline = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
+        }
+
         {   // color picker pipeline
             VulkanPipeline::Builder pipelineBuilder;
             pipelineBuilder.SetShaders(pickerVert, pickerFrag);
@@ -636,12 +664,17 @@ namespace Deako {
         vkDestroyShaderModule(vb->device, pbrVert, nullptr);
         vkDestroyShaderModule(vb->device, pbrMaterialFrag, nullptr);
         vkDestroyShaderModule(vb->device, unlitMaterialFrag, nullptr);
+        vkDestroyShaderModule(vb->device, outlineVert, nullptr);
+        vkDestroyShaderModule(vb->device, outlineFrag, nullptr);
         vkDestroyShaderModule(vb->device, pickerVert, nullptr);
         vkDestroyShaderModule(vb->device, pickerFrag, nullptr);
     }
 
+
     void VulkanScene::Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex)
     {
+        DkContext& deako = Deako::GetContext();
+
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.pNext = nullptr;
@@ -692,12 +725,69 @@ namespace Deako {
         }
 
         VkDeviceSize vertexOffsets[1] = { 0 };
-        DkU32 dynamicOffset = 0;
 
         Scene& activeScene = Deako::GetActiveScene();
         ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
 
         DkU32 index = 0;
+        auto DrawNode = [&](Node* node, Material::AlphaMode alphaMode, bool isSelected)
+            {
+                if (!node->mesh) return;
+                for (Primitive* primitive : node->mesh->primitives)
+                {
+                    if (primitive->material.alphaMode == alphaMode)
+                    {
+                        VkPipeline pipelineToUse = vs->pipelines.pbr;
+
+                        if (primitive->material.unlit) // KHR_materials_unlit
+                            pipelineToUse = vs->pipelines.unlit;
+
+                        if (alphaMode == Material::ALPHAMODE_BLEND)
+                            pipelineToUse = vs->pipelines.unlitAlphaBlending;
+                        else if (primitive->material.doubleSided)
+                            pipelineToUse = primitive->material.unlit ? vs->pipelines.unlitDoubleSided : vs->pipelines.pbrDoubleSided;
+
+                        if (pipelineToUse != vs->context.boundPipeline)
+                        {
+                            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineToUse);
+                            vs->context.boundPipeline = pipelineToUse;
+                        }
+
+                        const std::vector<VkDescriptorSet> descriptorSets = {
+                            vb->frames[vb->context.currentFrame].sceneDescriptorSet,
+                            primitive->material.descriptorSet,
+                            node->mesh->uniform.descriptorSet,
+                            vs->materialBuffer.descriptorSet
+                        };
+
+                        // one dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
+                        DkU32 dynamicOffset = index * static_cast<DkU32>(vs->dynamicUniformAlignment);
+                        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->scenePipelineLayout, 0, static_cast<DkU32>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
+
+                        // pass material index for this primitive using a push constant, shader uses this to index in the material buffer
+                        vkCmdPushConstants(commandBuffer, vs->scenePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DkU32), &primitive->material.index);
+
+                        if (primitive->hasIndices)
+                            vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+                        else
+                            vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+
+                        // Draw outline if selected
+                        if (isSelected)
+                        {
+                            // Bind the outline pipeline
+                            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->pipelines.outline);
+
+                            // Issue another draw call for the outline pass
+                            if (primitive->hasIndices)
+                                vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+                            else
+                                vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+                        }
+                    }
+                }
+            };
+
         for (auto& entity : activeScene.entities)
         {
             auto& prefabComp = entity.GetComponent<PrefabComponent>();
@@ -710,11 +800,16 @@ namespace Deako {
 
             vs->context.boundPipeline = VK_NULL_HANDLE;
 
-            // one dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
-            dynamicOffset = index * static_cast<DkU32>(vs->dynamicUniformAlignment);
+            bool isSelected = entity.GetHandle() == deako.activeHandle;
 
-            for (auto node : model->nodes) // opaque primitives first
-                RenderNode(node, commandBuffer, Material::ALPHAMODE_OPAQUE, dynamicOffset);
+            for (auto node : model->nodes)  // opaque primitives first
+            {
+                DrawNode(node, Material::ALPHAMODE_OPAQUE, isSelected);
+
+                for (auto child : node->children)
+                    DrawNode(child, Material::ALPHAMODE_OPAQUE, isSelected);
+            }
+
             // for (auto node : model->nodes) // alpha masked primitives
             //     RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK, dynamicOffset);
             // for (auto node : model->nodes) // transparent primitives, TODO: Correct depth sorting

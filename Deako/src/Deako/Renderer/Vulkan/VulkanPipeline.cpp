@@ -133,7 +133,6 @@ namespace Deako {
             m_DepthStencil.depthTestEnable = VK_FALSE;
             m_DepthStencil.depthWriteEnable = VK_FALSE;
             m_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-            m_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             m_DepthStencil.front = m_DepthStencil.back;
             m_DepthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
         }
@@ -143,9 +142,38 @@ namespace Deako {
             m_DepthStencil.depthTestEnable = VK_TRUE;
             m_DepthStencil.depthWriteEnable = VK_TRUE;
             m_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-            m_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
             m_DepthStencil.front = m_DepthStencil.back;
             m_DepthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+        }
+
+        void Builder::EnableStencilTest()
+        {
+            m_DepthStencil.stencilTestEnable = VK_TRUE;
+            m_DepthStencil.back.compareOp = VK_COMPARE_OP_NOT_EQUAL;
+
+            m_DepthStencil.back.passOp = VK_STENCIL_OP_REPLACE;
+            m_DepthStencil.back.failOp = VK_STENCIL_OP_KEEP;
+            m_DepthStencil.back.depthFailOp = VK_STENCIL_OP_KEEP;
+
+            m_DepthStencil.back.compareMask = 0xff;
+            m_DepthStencil.back.writeMask = 0;
+            m_DepthStencil.back.reference = 1;
+            m_DepthStencil.front = m_DepthStencil.back;
+        }
+
+        void Builder::EnableStencilWrite()
+        {
+            m_DepthStencil.stencilTestEnable = VK_TRUE;
+            m_DepthStencil.back.compareOp = VK_COMPARE_OP_ALWAYS;
+
+            m_DepthStencil.back.passOp = VK_STENCIL_OP_REPLACE;
+            m_DepthStencil.back.failOp = VK_STENCIL_OP_REPLACE;
+            m_DepthStencil.back.depthFailOp = VK_STENCIL_OP_REPLACE;
+
+            m_DepthStencil.back.compareMask = 0;
+            m_DepthStencil.back.writeMask = 0xff;
+            m_DepthStencil.back.reference = 2;
+            m_DepthStencil.front = m_DepthStencil.back;
         }
 
         void Builder::SetVertexInput(VkVertexInputBindingDescription bindingDescription, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)

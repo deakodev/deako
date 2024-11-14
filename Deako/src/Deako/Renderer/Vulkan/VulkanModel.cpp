@@ -10,54 +10,6 @@ namespace Deako {
     static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
     static Ref<VulkanSceneResources> vs = VulkanScene::GetResources();
 
-    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, DkU32 dynamicOffset)
-    {
-        if (node->mesh)
-        {   // Render mesh primitives
-            for (Primitive* primitive : node->mesh->primitives)
-            {
-                if (primitive->material.alphaMode == alphaMode)
-                {
-                    VkPipeline pipelineToUse = vs->pipelines.pbr;
-
-                    if (primitive->material.unlit) // KHR_materials_unlit
-                        pipelineToUse = vs->pipelines.unlit;
-
-                    if (alphaMode == Material::ALPHAMODE_BLEND)
-                        pipelineToUse = vs->pipelines.unlitAlphaBlending;
-                    else if (primitive->material.doubleSided)
-                        pipelineToUse = primitive->material.unlit ? vs->pipelines.unlitDoubleSided : vs->pipelines.pbrDoubleSided;
-
-                    if (pipelineToUse != vs->context.boundPipeline)
-                    {
-                        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineToUse);
-                        vs->context.boundPipeline = pipelineToUse;
-                    }
-
-                    const std::vector<VkDescriptorSet> descriptorSets = {
-                        vb->frames[vb->context.currentFrame].sceneDescriptorSet,
-                        primitive->material.descriptorSet,
-                        node->mesh->uniform.descriptorSet,
-                        vs->materialBuffer.descriptorSet
-                    };
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vs->scenePipelineLayout, 0, static_cast<DkU32>(descriptorSets.size()), descriptorSets.data(), 1, &dynamicOffset);
-
-                    // pass material index for this primitive using a push constant, shader uses this to index in the material buffer
-                    vkCmdPushConstants(commandBuffer, vs->scenePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(DkU32), &primitive->material.index);
-
-                    if (primitive->hasIndices)
-                        vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
-                    else
-                        vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
-                }
-            }
-
-        }
-
-        for (auto child : node->children)
-            RenderNode(child, commandBuffer, alphaMode, dynamicOffset);
-    }
-
     void Model::DrawNode(Node* node, VkCommandBuffer commandBuffer)
     {
         if (node->mesh)

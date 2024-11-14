@@ -18,10 +18,13 @@ namespace Deako {
             void SetInputTopology(VkPrimitiveTopology topology);
             void SetPolygonMode(VkPolygonMode mode);
             void SetCullMode(VkCullModeFlags cullMode, VkFrontFace frontFace);
+            void SetDepthBias();
             void SetMultisampling(VkSampleCountFlagBits sampleFlag);
             void DisableColorBlending();
             void DisableDepthTest();
             void EnableDepthTest();
+            void EnableStencilTest();
+            void EnableStencilWrite();
             void EnableAlphaBlending();
             void SetVertexInput(VkVertexInputBindingDescription bindingDescription, const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
 

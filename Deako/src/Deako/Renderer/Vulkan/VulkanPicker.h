@@ -13,6 +13,12 @@ namespace Deako {
         static void Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex);
 
         static const DkVec4& GetPixelColor();
+
+    private:
+        static void SetUpTargets();
+        // static void SetUpUniforms();
+        // static void SetUpDescriptors();
+        // static void SetUpPipelines();
     };
 
 }

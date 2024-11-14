@@ -217,6 +217,7 @@ namespace Deako {
 
         VkPhysicalDeviceFeatures enabledFeatures{};
         enabledFeatures.samplerAnisotropy = VK_TRUE;
+        enabledFeatures.fillModeNonSolid = VK_TRUE;
 
         VkPhysicalDeviceDynamicRenderingFeaturesKHR drFeatures{};
         drFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
