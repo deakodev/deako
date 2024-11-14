@@ -42,10 +42,11 @@ namespace Deako {
         VkPhysicalDevice                        physicalDevice;
         VkQueue                                 graphicsQueue;
         VkQueue                                 presentQueue;
-        std::optional<DkU32>                 graphicsFamily;
-        std::optional<DkU32>                 presentFamily;
+        std::optional<DkU32>                    graphicsFamily;
+        std::optional<DkU32>                    presentFamily;
 
         VkPipelineCache                         pipelineCache;
+        VkQueryPool                             timestampQueryPool;
         VkCommandPool                           singleUseCommandPool;
         VkDescriptorPool                        imguiDescriptorPool;
 
@@ -59,12 +60,12 @@ namespace Deako {
             std::vector<VkImageView>            views;
             AllocatedImage                      colorTarget; // resolves to swapchain image
             AllocatedImage                      depthTarget;
-            DkU32                            imageCount;
+            DkU32                               imageCount;
         } swapchain;
 
         struct
         {
-            DkU32                            frameOverlap = 2;
+            DkU32                               frameOverlap = 2;
             bool                                validationEnabled{ true };
             bool                                vsync{ false };
             VkSampleCountFlagBits               sampleCount{ VK_SAMPLE_COUNT_4_BIT };
@@ -72,8 +73,13 @@ namespace Deako {
 
         struct
         {
-            DkU32                            currentFrame{ 0 };
+            DkU32                               currentFrame{ 0 };
         } context;
+
+        struct
+        {
+            DkF32 frameTime;
+        } stats;
     };
 
     class VulkanBase

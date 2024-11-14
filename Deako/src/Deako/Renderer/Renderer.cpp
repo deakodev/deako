@@ -40,4 +40,9 @@ namespace Deako {
         VulkanBase::Draw();
     }
 
+    DkF32 Renderer::GetFrameTime()
+    {
+        return VulkanBase::GetResources()->stats.frameTime;
+    }
+
 }

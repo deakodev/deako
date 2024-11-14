@@ -3,6 +3,7 @@
 
 #include "VulkanPicker.h"
 #include "VulkanScene.h"
+#include "VulkanStats.h"
 
 #include "Deako/Core/Application.h" 
 #include "Deako/ImGui/ImGuiLayer.h"
@@ -65,6 +66,7 @@ namespace Deako {
 
         vkDestroyCommandPool(vb->device, vb->singleUseCommandPool, nullptr);
 
+        vkDestroyQueryPool(vb->device, vb->timestampQueryPool, nullptr);
         vkDestroyPipelineCache(vb->device, vb->pipelineCache, nullptr);
 
         for (auto imageView : vb->swapchain.views)
@@ -448,6 +450,10 @@ namespace Deako {
 
         /* SINGLE-USE COMMANDS */
         VkCR(vkCreateCommandPool(vb->device, &commandPoolInfo, nullptr, &vb->singleUseCommandPool));
+
+        // Stats
+        if (vb->timestampQueryPool) vkDestroyQueryPool(vb->device, vb->timestampQueryPool, nullptr);
+        VulkanStats::SetupTimestampQuery();
     }
 
 
@@ -541,6 +547,8 @@ namespace Deako {
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         VkCR(vkBeginCommandBuffer(frame.commandBuffer, &commandBufferBeginInfo));
 
+        VulkanStats::RecordStartTime(frame.commandBuffer);
+
         VulkanImage::Transition(frame.commandBuffer, vb->swapchain.colorTarget.image, vb->swapchain.colorTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         VulkanPicker::Draw(frame.commandBuffer, scImageIndex);
@@ -554,6 +562,8 @@ namespace Deako {
         DrawGui(frame.commandBuffer, scImageIndex);
 
         VulkanImage::Transition(frame.commandBuffer, vb->swapchain.images[scImageIndex], vb->swapchain.format, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+        VulkanStats::RecordEndTime(frame.commandBuffer);
 
         VkCR(vkEndCommandBuffer(frame.commandBuffer));
 
@@ -615,6 +625,8 @@ namespace Deako {
         }
 
         vb->context.currentFrame = (vb->context.currentFrame + 1) % vb->settings.frameOverlap;
+
+        VulkanStats::QueryTimestamps();
     }
 
     void VulkanBase::DrawGui(VkCommandBuffer commandBuffer, DkU32 imageIndex)

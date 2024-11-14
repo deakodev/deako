@@ -1,7 +1,5 @@
 #include "ViewportPanel.h"
 
-#include "../EditorLayer.h"
-
 namespace Deako {
 
     void ViewportPanel::OnUpdate()

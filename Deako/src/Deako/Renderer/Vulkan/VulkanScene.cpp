@@ -527,27 +527,6 @@ namespace Deako {
 
         std::vector<VkVertexInputAttributeDescription>  vertexInputAttributes;
 
-        {   // skybox pipeline
-            VulkanPipeline::Builder pipelineBuilder;
-            pipelineBuilder.SetShaders(skyboxVert, skyboxFrag);
-            pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-            pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
-            pipelineBuilder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            pipelineBuilder.DisableColorBlending();
-            pipelineBuilder.SetMultisampling(sampleFlag);
-            pipelineBuilder.DisableDepthTest();
-
-            vertexInputAttributes = {
-                { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, pos) },
-                { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, normal) },
-                { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Model::Vertex, uv0) },
-            };
-
-            pipelineBuilder.SetVertexInput(vertexInputBinding, vertexInputAttributes);
-
-            vs->pipelines.skybox = pipelineBuilder.Build(vs->skyboxPipelineLayout, &vb->swapchain.colorTarget.format);
-        }
-
         {   // pbr default pipeline
             VulkanPipeline::Builder pipelineBuilder;
             pipelineBuilder.SetShaders(pbrVert, pbrMaterialFrag);
@@ -613,6 +592,27 @@ namespace Deako {
             // unlit alpha blending pipeline
             pipelineBuilder.EnableAlphaBlending();
             vs->pipelines.unlitAlphaBlending = pipelineBuilder.Build(vs->scenePipelineLayout, &vb->swapchain.colorTarget.format);
+        }
+
+        {   // skybox pipeline
+            VulkanPipeline::Builder pipelineBuilder;
+            pipelineBuilder.SetShaders(skyboxVert, skyboxFrag);
+            pipelineBuilder.SetInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            pipelineBuilder.SetPolygonMode(VK_POLYGON_MODE_FILL);
+            pipelineBuilder.SetCullMode(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+            pipelineBuilder.DisableColorBlending();
+            pipelineBuilder.SetMultisampling(sampleFlag);
+            pipelineBuilder.DisableDepthTest();
+
+            vertexInputAttributes = {
+                { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, pos) },
+                { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Model::Vertex, normal) },
+                { 2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Model::Vertex, uv0) },
+            };
+
+            pipelineBuilder.SetVertexInput(vertexInputBinding, vertexInputAttributes);
+
+            vs->pipelines.skybox = pipelineBuilder.Build(vs->skyboxPipelineLayout, &vb->swapchain.colorTarget.format);
         }
 
         {   // outline pipeline

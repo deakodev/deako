@@ -2,8 +2,6 @@
 
 #include "Deako/Renderer/EditorCamera.h"
 
-
-
 namespace Deako {
 
     class Renderer
@@ -13,6 +11,8 @@ namespace Deako {
         static void Shutdown();
 
         static void Render();
+
+        static DkF32 GetFrameTime();
     };
 
 }

@@ -1,6 +1,5 @@
 #include "ScenePanel.h"
 
-#include "../EditorLayer.h"
 #include <imgui/imgui_internal.h>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -12,6 +11,10 @@ namespace Deako {
         Scene& activeScene = Deako::GetActiveScene();
 
         ImGui::Begin("Scene");
+
+        float frameTime = Renderer::GetFrameTime();
+        float fps = 1000.0f / frameTime;
+        ImGui::Text("%s: %.2f ms/frame (%.0f fps)", "Frame Time", frameTime, fps);
 
         bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
         Deako::BlockEvents(eventsBlocked);
