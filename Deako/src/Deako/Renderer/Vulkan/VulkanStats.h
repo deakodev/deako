@@ -10,7 +10,7 @@ namespace Deako {
         void SetupTimestampQuery();
         void RecordStartTime(VkCommandBuffer commandBuffer);
         void RecordEndTime(VkCommandBuffer commandBuffer);
-        void QueryTimestamps();
+        DkU64 QueryTimestamps();
 
     }
 }

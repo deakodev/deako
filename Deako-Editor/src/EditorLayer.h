@@ -6,6 +6,7 @@
 #include "Panels/ScenePanel.h"
 #include "Panels/PropertiesPanel.h"
 #include "Panels/RegistryPanel.h"
+#include "Panels/DebugPanel.h"
 
 #include <imgui/imgui.h>
 
@@ -32,6 +33,7 @@ namespace Deako {
         Scope<PropertiesPanel> m_PropertiesPanel;
         Scope<RegistryPanel> m_RegistryPanel;
         Scope<ViewportPanel> m_ViewportPanel;
+        Scope<DebugPanel> m_DebugPanel;
     };
 
 }

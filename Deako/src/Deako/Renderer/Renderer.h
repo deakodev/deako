@@ -4,6 +4,13 @@
 
 namespace Deako {
 
+    struct RendererStats
+    {
+        DkF32 frameTime;
+        DkU64 primitiveCount;
+        DkU64 drawCallCount;
+    };
+
     class Renderer
     {
     public:
@@ -12,7 +19,13 @@ namespace Deako {
 
         static void Render();
 
-        static DkF32 GetFrameTime();
+        static void ClearStats();
+        static void QueryStats();
+        static RendererStats& GetSceneStats() { return s_SceneStats; };
+
+    private:
+        // inline static RendererStats s_EngineStats;
+        inline static RendererStats s_SceneStats;
     };
 
 }

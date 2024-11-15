@@ -13,6 +13,9 @@ namespace Deako {
 
         ImGui::Begin("Properties");
 
+        bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
+        Deako::BlockEvents(eventsBlocked);
+
         if (deako.activeHandle != 0)
         {
             const Entity& entity = activeScene.GetEntity(deako.activeHandle);

@@ -5,17 +5,25 @@
 #include "VulkanScene.h"
 #include "VulkanResource.h"
 
+#include "Deako/Renderer/Renderer.h"
+
 namespace Deako {
 
     static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
     static Ref<VulkanSceneResources> vs = VulkanScene::GetResources();
+    static RendererStats& stats = Renderer::GetSceneStats();
 
     void Model::DrawNode(Node* node, VkCommandBuffer commandBuffer)
     {
         if (node->mesh)
         {
             for (Primitive* primitive : node->mesh->primitives)
+            {
                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
+
+                stats.drawCallCount++;
+                stats.primitiveCount += primitive->indexCount / 3;
+            }
         }
 
         for (auto& child : node->children) DrawNode(child, commandBuffer);

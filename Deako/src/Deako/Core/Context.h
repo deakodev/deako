@@ -62,4 +62,6 @@ namespace Deako {
     void NewFrame();
     void Render();
 
+    const RendererStats& GetSceneStats();
+
 }

@@ -15,6 +15,7 @@ namespace Deako {
         m_PropertiesPanel = CreateScope<PropertiesPanel>();
         m_RegistryPanel = CreateScope<RegistryPanel>();
         m_ViewportPanel = CreateScope<ViewportPanel>();
+        m_DebugPanel = CreateScope<DebugPanel>();
 
         m_EditorCamera = CreateRef<EditorCamera>();
     }
@@ -142,11 +143,14 @@ namespace Deako {
         //// VIEWPORT ////
         m_ViewportPanel->OnImGuiRender();
 
+        //// DEBUG ////
+        m_DebugPanel->OnImGuiRender();
+
         ImGui::End();
 
         ImGui::PopStyleVar();
 
-        ImGui::ShowDemoWindow();
+        // ImGui::ShowDemoWindow();
     }
 
     void EditorLayer::OnEvent(Event& event)

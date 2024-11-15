@@ -3,6 +3,9 @@
 
 #include "Deako/Renderer/Vulkan/VulkanPicker.h"
 
+// temp
+#include <ImGuizmo.h>
+
 namespace Deako {
 
     static DkContext* Gdeako = nullptr;
@@ -101,11 +104,9 @@ namespace Deako {
         const DkVec4& pickerColor = VulkanPicker::GetPixelColor();
         deako.hoveredHandle = GetActiveScene().GetEntityHandle(pickerColor);
 
-        DK_CORE_WARN("EntityHandle: {0}", (DkU64)deako.hoveredHandle);
-
         deako.activeHandlePreviousFrame = deako.activeHandle;
 
-        if (IsMousePressed(Mouse::ButtonLeft) && !IsKeyPressed(Key::LeftAlt) && !AreEventsBlocked())
+        if (IsMousePressed(Mouse::ButtonLeft) && !IsKeyPressed(Key::LeftAlt) && !AreEventsBlocked() && !ImGuizmo::IsOver())
         {
             deako.activeHandle = deako.hoveredHandle;
         }
@@ -119,5 +120,11 @@ namespace Deako {
     {
         Renderer::Render();
     }
+
+    const RendererStats& GetSceneStats()
+    {
+        return Renderer::GetSceneStats();
+    }
+
 
 }

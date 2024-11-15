@@ -625,8 +625,6 @@ namespace Deako {
         }
 
         vb->context.currentFrame = (vb->context.currentFrame + 1) % vb->settings.frameOverlap;
-
-        VulkanStats::QueryTimestamps();
     }
 
     void VulkanBase::DrawGui(VkCommandBuffer commandBuffer, DkU32 imageIndex)

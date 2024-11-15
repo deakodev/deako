@@ -11,6 +11,7 @@
 namespace Deako {
 
     static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
+    static RendererStats& stats = Renderer::GetSceneStats();
 
     void VulkanScene::Build()
     {
@@ -772,6 +773,9 @@ namespace Deako {
                         else
                             vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
 
+                        stats.drawCallCount++;
+                        stats.primitiveCount += primitive->indexCount / 3;
+
                         // Draw outline if selected
                         if (isSelected)
                         {
@@ -783,6 +787,9 @@ namespace Deako {
                                 vkCmdDrawIndexed(commandBuffer, primitive->indexCount, 1, primitive->firstIndex, 0, 0);
                             else
                                 vkCmdDraw(commandBuffer, primitive->vertexCount, 1, 0, 0);
+
+                            stats.drawCallCount++;
+                            stats.primitiveCount += primitive->indexCount / 3;
                         }
                     }
                 }

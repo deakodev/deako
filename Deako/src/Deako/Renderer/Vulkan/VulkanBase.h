@@ -75,11 +75,6 @@ namespace Deako {
         {
             DkU32                               currentFrame{ 0 };
         } context;
-
-        struct
-        {
-            DkF32 frameTime;
-        } stats;
     };
 
     class VulkanBase

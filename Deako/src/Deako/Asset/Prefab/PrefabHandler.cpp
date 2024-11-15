@@ -156,7 +156,9 @@ namespace Deako {
                 textureMetadata.assetType = AssetType::Texture2D;
                 Ref<Texture2D> texture = CreateRef<Texture2D>();
 
-                TextureSampler& sampler = textureSamplers[tinyTexture.sampler];
+                TextureSampler sampler{};
+                if (tinyTexture.sampler >= 0)
+                    sampler = textureSamplers[tinyTexture.sampler];
 
                 int source = tinyTexture.source;
                 if (tinyTexture.extensions.find("KHR_texture_basisu") != tinyTexture.extensions.end())

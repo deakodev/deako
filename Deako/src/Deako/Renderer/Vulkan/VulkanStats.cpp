@@ -30,16 +30,19 @@ namespace Deako {
             vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vb->timestampQueryPool, 1);
         }
 
-        void QueryTimestamps()
+        DkU64 QueryTimestamps()
         {
-            uint64_t timestamps[2];
+            DkU64 timestamps[2];
             vkGetQueryPoolResults(vb->device, vb->timestampQueryPool, 0, 2, sizeof(timestamps),
-                timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+                timestamps, sizeof(DkU64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
 
-            uint64_t startTime = timestamps[0];
-            uint64_t endTime = timestamps[1];
+            DkU64 startTime = timestamps[0];
+            DkU64 endTime = timestamps[1];
 
-            vb->stats.frameTime = (endTime - startTime) / 1e6;  // Frame time in milliseconds
+            DkU64 deltaTime = (endTime - startTime) / 1e6;  // in milliseconds;
+
+            return deltaTime;
         }
+
     }
 }

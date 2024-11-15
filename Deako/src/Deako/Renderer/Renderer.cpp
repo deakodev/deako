@@ -6,6 +6,7 @@
 #include "Deako/Renderer/Vulkan/VulkanBase.h"
 #include "Deako/Renderer/Vulkan/VulkanPicker.h"
 #include "Deako/Renderer/Vulkan/VulkanScene.h"
+#include "Deako/Renderer/Vulkan/VulkanStats.h"
 
 namespace Deako {
 
@@ -37,12 +38,22 @@ namespace Deako {
 
     void Renderer::Render()
     {
+        ClearStats();
+
         VulkanBase::Draw();
+
+        QueryStats();
     }
 
-    DkF32 Renderer::GetFrameTime()
+    void Renderer::ClearStats()
     {
-        return VulkanBase::GetResources()->stats.frameTime;
+        s_SceneStats.primitiveCount = 0;
+        s_SceneStats.drawCallCount = 0;
+    }
+
+    void Renderer::QueryStats()
+    {
+        s_SceneStats.frameTime = VulkanStats::QueryTimestamps();
     }
 
 }

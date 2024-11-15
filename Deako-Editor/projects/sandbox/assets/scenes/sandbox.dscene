@@ -1,21 +1,30 @@
 Scene:
   Name: Sandbox.dscene
-  AssetHandle: 11821854033975738793
+  AssetHandle: 1364095540859975581
 Entities:
-  - Entity: 4994874523686371997
+  - Entity: 8094168751861195546
     TagComponent:
-      Tag: Purple Cube
+      Tag: TerrainGrid
     TransformComponent:
-      Translation: [2.0999999, 2, 3]
-      Rotation: [0, 1.30550635, 0]
-      Scale: [1, 1, 1]
+      Translation: [0, -1.89999998, 0]
+      Rotation: [0, 0.808031559, 0]
+      Scale: [2, 1.39999998, 2]
     PrefabComponent:
-      AssetHandle: 5532312814824508002
+      AssetHandle: 1472441976225249573
+  - Entity: 9020378395315195923
+    TagComponent:
+      Tag: Teapot
+    TransformComponent:
+      Translation: [-3.84619141, 3.43889165, -1.56152451]
+      Rotation: [0, 0, 0]
+      Scale: [1.23299992, 1.23299992, 1.23299992]
+    PrefabComponent:
+      AssetHandle: 2334446085925837575
   - Entity: 10131947750311195924
     TagComponent:
       Tag: DamagedHelmet
     TransformComponent:
-      Translation: [0, 0, 6.80000019]
+      Translation: [0.0258791074, 0.634279132, 6.48310471]
       Rotation: [0, 0.912807167, 0]
       Scale: [1, 1, 1]
     TextureComponent:
@@ -30,8 +39,17 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     TextureComponent:
-      AssetHandle: 0
+      AssetHandle: 6885474818565613459
     PrefabComponent:
       AssetHandle: 57892318812072087
     EnvironmentComponent:
       Active: true
+  - Entity: 4994874523686371997
+    TagComponent:
+      Tag: Purple Cube
+    TransformComponent:
+      Translation: [6.49774075, 2.07659674, -0.117789924]
+      Rotation: [0, 0, 1.58785045]
+      Scale: [0.302893758, 4.30929899, 3.48444867]
+    PrefabComponent:
+      AssetHandle: 5532312814824508002

@@ -13,11 +13,11 @@ namespace Deako {
 
     struct TextureSampler
     {
-        VkFilter magFilter;
-        VkFilter minFilter;
-        VkSamplerAddressMode addressModeU;
-        VkSamplerAddressMode addressModeV;
-        VkSamplerAddressMode addressModeW;
+        VkFilter magFilter = VK_FILTER_LINEAR;
+        VkFilter minFilter = VK_FILTER_LINEAR;
+        VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
         void SetFilterModes(DkS32 min, DkS32 mag);
         void SetWrapModes(DkS32 wrapS, DkS32 wrapT);
