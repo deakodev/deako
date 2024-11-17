@@ -143,25 +143,28 @@ namespace Deako {
         ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
         for (auto& entity : activeScene.entities)
         {
-            auto& prefabComp = entity.GetComponent<PrefabComponent>();
-            Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
-
-            VkDeviceSize vertexOffset = 0;
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, &vertexOffset);
-
-            if (model->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            // render each node with picking color
-            for (auto node : model->nodes)
+            if (entity.HasComponent<PrefabComponent>())
             {
-                DrawNode(node);
+                auto& prefabComp = entity.GetComponent<PrefabComponent>();
+                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
-                for (auto child : node->children)
-                    DrawNode(child);
+                VkDeviceSize vertexOffset = 0;
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, &vertexOffset);
+
+                if (model->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+                // render each node with picking color
+                for (auto node : model->nodes)
+                {
+                    DrawNode(node);
+
+                    for (auto child : node->children)
+                        DrawNode(child);
+                }
+
+                index++;
             }
-
-            index++;
         }
 
         vkCmdEndRenderingKHR(commandBuffer);

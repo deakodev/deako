@@ -6,9 +6,6 @@ namespace Deako {
     {
         ImGui::Begin("Debug");
 
-        bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
-        Deako::BlockEvents(eventsBlocked);
-
         DkContext& deako = Deako::GetContext();
         const RendererStats& stats = Deako::GetSceneStats();
 
@@ -20,6 +17,9 @@ namespace Deako {
         ImGui::Text("Scene Handle: %llu", (DkU64)deako.activeSceneHandle);
         ImGui::Text("Hovered Handle: %llu", (DkU64)deako.hoveredHandle);
         ImGui::Text("Active Handle: %llu", (DkU64)deako.activeHandle);
+
+        const char* blocked = Deako::AreEventsBlocked() ? "true" : "false";
+        ImGui::Text("Events Blocked? %s", blocked);
 
         ImGui::End();
     }

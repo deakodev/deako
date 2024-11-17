@@ -3,6 +3,7 @@
 
 #include "VulkanBase.h"
 #include "VulkanPipeline.h"
+#include "VulkanPicker.h"
 
 #include "Deako/Asset/Scene/SceneHandler.h"
 #include "Deako/Asset/Texture/TextureHandler.h"
@@ -72,8 +73,14 @@ namespace Deako {
 
     void VulkanScene::Rebuild()
     {
+        // TODO: temp
+        VulkanPicker::CleanUp();
+
         CleanUp();
         Build();
+
+        // TODO: temp
+        VulkanPicker::Init();
     }
 
     void VulkanScene::SetUpAssets()
@@ -106,15 +113,21 @@ namespace Deako {
                     vs->settings.displayBackground = false;
                 }
 
-                vs->skybox.irradianceCube->GenerateCubeMap();
-                vs->skybox.prefilteredCube->GenerateCubeMap();
+                continue;
+            }
 
-                break;
+            // TODO: temp, think about, right now need prefab for all these entity
+            if (!entity.HasComponent<PrefabComponent>())
+            {
+                activeScene.entities.erase(it);
+                continue;
             }
 
             ++it;
         }
 
+        vs->skybox.irradianceCube->GenerateCubeMap();
+        vs->skybox.prefilteredCube->GenerateCubeMap();
         CreateMaterialBuffer();
         GenerateBRDFLookUpTable();
     }
@@ -251,15 +264,18 @@ namespace Deako {
 
             for (auto& entity : activeScene.entities)
             {
-                auto& prefabComp = entity.GetComponent<PrefabComponent>();
+                if (entity.HasComponent<PrefabComponent>())
+                {
+                    auto& prefabComp = entity.GetComponent<PrefabComponent>();
+                    Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
-                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
-                for (auto node : model->linearNodes)
-                    if (node->mesh) meshCount++; // 1 set for mesh
+                    for (auto node : model->linearNodes)
+                        if (node->mesh) meshCount++; // 1 set for mesh
 
-                DkU32 entityMaterialCount = prefabComp.materialHandles.size();
-                materialCount += entityMaterialCount;
-                materialSamplerCount += (entityMaterialCount * 5); // 5 sets for material samplers
+                    DkU32 entityMaterialCount = prefabComp.materialHandles.size();
+                    materialCount += entityMaterialCount;
+                    materialSamplerCount += (entityMaterialCount * 5); // 5 sets for material samplers
+                }
             }
 
             std::vector<VulkanDescriptor::PoolSizeRatio> poolSizes = {
@@ -350,46 +366,49 @@ namespace Deako {
 
             for (auto& entity : activeScene.entities)
             {
-                auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
-
-                for (auto& material : model->materials)
+                if (entity.HasComponent<PrefabComponent>())
                 {
-                    std::vector<VkDescriptorImageInfo> materialDescriptors = {
-                       emptyTexture->descriptor,
-                       emptyTexture->descriptor,
-                       material->normalTexture ? material->normalTexture->descriptor : emptyTexture->descriptor,
-                       material->occlusionTexture ? material->occlusionTexture->descriptor : emptyTexture->descriptor,
-                       material->emissiveTexture ? material->emissiveTexture->descriptor : emptyTexture->descriptor
-                    };
+                    auto& prefabComp = entity.GetComponent<PrefabComponent>();
+                    Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
-                    if (material->pbrWorkflows.metallicRoughness)
+                    for (auto& material : model->materials)
                     {
-                        if (material->baseColorTexture)
-                            materialDescriptors[0] = material->baseColorTexture->descriptor;
-                        if (material->metallicRoughnessTexture)
-                            materialDescriptors[1] = material->metallicRoughnessTexture->descriptor;
+                        std::vector<VkDescriptorImageInfo> materialDescriptors = {
+                           emptyTexture->descriptor,
+                           emptyTexture->descriptor,
+                           material->normalTexture ? material->normalTexture->descriptor : emptyTexture->descriptor,
+                           material->occlusionTexture ? material->occlusionTexture->descriptor : emptyTexture->descriptor,
+                           material->emissiveTexture ? material->emissiveTexture->descriptor : emptyTexture->descriptor
+                        };
+
+                        if (material->pbrWorkflows.metallicRoughness)
+                        {
+                            if (material->baseColorTexture)
+                                materialDescriptors[0] = material->baseColorTexture->descriptor;
+                            if (material->metallicRoughnessTexture)
+                                materialDescriptors[1] = material->metallicRoughnessTexture->descriptor;
+                        }
+                        else if (material->pbrWorkflows.specularGlossiness)
+                        {
+                            if (material->extension.diffuseTexture)
+                                materialDescriptors[0] = material->extension.diffuseTexture->descriptor;
+                            if (material->extension.specularGlossinessTexture)
+                                materialDescriptors[1] = material->extension.specularGlossinessTexture->descriptor;
+                        }
+
+                        VkDescriptorSetLayout layout = vs->descriptorLayouts.material;
+                        material->descriptorSet = vs->staticDescriptorAllocator.Allocate(layout);
+                        VkDescriptorSet set = material->descriptorSet;
+
+                        VulkanDescriptor::Writer writer;
+                        writer.WriteImage(0, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[0]);
+                        writer.WriteImage(1, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[1]);
+                        writer.WriteImage(2, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[2]);
+                        writer.WriteImage(3, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[3]);
+                        writer.WriteImage(4, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[4]);
+
+                        writer.UpdateSets();
                     }
-                    else if (material->pbrWorkflows.specularGlossiness)
-                    {
-                        if (material->extension.diffuseTexture)
-                            materialDescriptors[0] = material->extension.diffuseTexture->descriptor;
-                        if (material->extension.specularGlossinessTexture)
-                            materialDescriptors[1] = material->extension.specularGlossinessTexture->descriptor;
-                    }
-
-                    VkDescriptorSetLayout layout = vs->descriptorLayouts.material;
-                    material->descriptorSet = vs->staticDescriptorAllocator.Allocate(layout);
-                    VkDescriptorSet set = material->descriptorSet;
-
-                    VulkanDescriptor::Writer writer;
-                    writer.WriteImage(0, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[0]);
-                    writer.WriteImage(1, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[1]);
-                    writer.WriteImage(2, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[2]);
-                    writer.WriteImage(3, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[3]);
-                    writer.WriteImage(4, set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialDescriptors[4]);
-
-                    writer.UpdateSets();
                 }
             }
         }
@@ -416,15 +435,18 @@ namespace Deako {
 
             for (auto& entity : activeScene.entities)
             {
-                auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
-
-                for (auto& node : model->nodes) // per-node descriptor set
+                if (entity.HasComponent<PrefabComponent>())
                 {
-                    AllocateNodeDescriptorSet(node);
+                    auto& prefabComp = entity.GetComponent<PrefabComponent>();
+                    Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
-                    for (auto child : node->children)
-                        AllocateNodeDescriptorSet(child); // recursive
+                    for (auto& node : model->nodes) // per-node descriptor set
+                    {
+                        AllocateNodeDescriptorSet(node);
+
+                        for (auto child : node->children)
+                            AllocateNodeDescriptorSet(child); // recursive
+                    }
                 }
             }
         }
@@ -797,32 +819,35 @@ namespace Deako {
 
         for (auto& entity : activeScene.entities)
         {
-            auto& prefabComp = entity.GetComponent<PrefabComponent>();
-            Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
-
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, vertexOffsets);
-
-            if (model->indices.buffer != VK_NULL_HANDLE)
-                vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-            vs->context.boundPipeline = VK_NULL_HANDLE;
-
-            bool isSelected = entity.GetHandle() == deako.activeHandle;
-
-            for (auto node : model->nodes)  // opaque primitives first
+            if (entity.HasComponent<PrefabComponent>())
             {
-                DrawNode(node, Material::ALPHAMODE_OPAQUE, isSelected);
+                auto& prefabComp = entity.GetComponent<PrefabComponent>();
+                Ref<Model> model = projectAssetPool.GetAsset<Model>(prefabComp.meshHandle);
 
-                for (auto child : node->children)
-                    DrawNode(child, Material::ALPHAMODE_OPAQUE, isSelected);
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model->vertices.buffer, vertexOffsets);
+
+                if (model->indices.buffer != VK_NULL_HANDLE)
+                    vkCmdBindIndexBuffer(commandBuffer, model->indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+                vs->context.boundPipeline = VK_NULL_HANDLE;
+
+                bool isSelected = entity.GetHandle() == deako.activeHandle;
+
+                for (auto node : model->nodes)  // opaque primitives first
+                {
+                    DrawNode(node, Material::ALPHAMODE_OPAQUE, isSelected);
+
+                    for (auto child : node->children)
+                        DrawNode(child, Material::ALPHAMODE_OPAQUE, isSelected);
+                }
+
+                // for (auto node : model->nodes) // alpha masked primitives
+                //     RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK, dynamicOffset);
+                // for (auto node : model->nodes) // transparent primitives, TODO: Correct depth sorting
+                //     RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND, dynamicOffset);
+
+                index++;
             }
-
-            // for (auto node : model->nodes) // alpha masked primitives
-            //     RenderNode(node, commandBuffer, Material::ALPHAMODE_MASK, dynamicOffset);
-            // for (auto node : model->nodes) // transparent primitives, TODO: Correct depth sorting
-            //     RenderNode(node, commandBuffer, Material::ALPHAMODE_BLEND, dynamicOffset);
-
-            index++;
         }
 
         vkCmdEndRenderingKHR(commandBuffer);

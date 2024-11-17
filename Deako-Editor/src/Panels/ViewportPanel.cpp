@@ -21,10 +21,6 @@ namespace Deako {
 
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
-        // m_ViewportFocused = ImGui::IsWindowFocused();
-        // m_ViewportHovered = ImGui::IsWindowHovered();
-        // ImGuiLayer::BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
-
         if (m_ViewportSize.x != viewport->Size.x || m_ViewportSize.y != viewport->Size.y)
             m_ViewportResize = true;
 

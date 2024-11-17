@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 
+#include <imgui_internal.h>
 #include <ImGuizmo.h>
 
 namespace Deako {
@@ -56,7 +57,18 @@ namespace Deako {
         ImGui::PopStyleColor();
         ImGui::PopStyleVar(3);
 
-        ImGui::DockSpaceOverViewport(viewport, ImGuiDockNodeFlags_PassthruCentralNode);
+        bool blockEvents = true;
+        for (ImGuiWindow* window : ImGui::GetCurrentContext()->Windows)
+        {
+            if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) &&
+                (window->Flags & ImGuiWindowFlags_NoDocking) == 0) // Ignore non-dockable windows
+            {
+                blockEvents = false;
+                break;
+            }
+        }
+
+        Deako::BlockEvents(blockEvents);
 
         if (ImGui::BeginMenuBar())
         {

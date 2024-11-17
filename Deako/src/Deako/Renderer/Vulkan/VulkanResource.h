@@ -15,8 +15,8 @@ namespace Deako {
 
     struct AllocatedImage
     {
-        VkImage                                   image;
-        VkImageView                               view;
+        VkImage                                   image{ VK_NULL_HANDLE };
+        VkImageView                               view{ VK_NULL_HANDLE };
         VkDeviceMemory                            memory;
         VkExtent3D                                extent;
         VkFormat                                  format;

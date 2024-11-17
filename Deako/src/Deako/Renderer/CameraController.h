@@ -17,6 +17,7 @@ namespace Deako {
     struct FrustumProjection
     {
         DkF32 fov = 40.0f;
+        DkF32 orthoSize = 0.0f;
         DkF32 nearPlane = 0.1f;
         DkF32 farPlane = 10000.0f;
         DkVec2 viewportSize{ 0.0f, 0.0f };
@@ -35,16 +36,24 @@ namespace Deako {
         DkVec2 pan = { 0.0f, 0.0f };
     };
 
+    enum class ProjectionType;
+
     class CameraController
     {
     public:
         CameraController();
         CameraController(const DkVec2& viewportSize);
 
+        void DefaultTo(ProjectionType type);
+
         void OnUpdate();
         void OnEvent(Event& event);
         bool OnMouseScrolled(MouseScrolledEvent& event);
 
+        void SetFOV(DkF32 fov) { m_FrustumProjection.fov = fov; }
+        void SetOrthoSize(DkF32 size) { m_FrustumProjection.orthoSize = size; }
+        void SetNearPlane(DkF32 nearPlane) { m_FrustumProjection.nearPlane = nearPlane; }
+        void SetFarPlane(DkF32 farPlane) { m_FrustumProjection.farPlane = farPlane; }
         void SetViewportSize(const DkVec2& viewportSize);
 
         const DkVec3& GetPosition() const { return m_CameraPosition; }
@@ -53,6 +62,8 @@ namespace Deako {
         DkF32 GetFOV() const { return m_FrustumProjection.fov; }
         DkF32 GetNearPlane() const { return m_FrustumProjection.nearPlane; }
         DkF32 GetFarPlane() const { return m_FrustumProjection.farPlane; }
+        DkF32 GetOrthoSize() const { return m_FrustumProjection.orthoSize; }
+        const DkVec2& GetViewportSize() const { return m_FrustumProjection.viewportSize; }
 
     private:
         void UpdatePosition();
@@ -64,9 +75,9 @@ namespace Deako {
         void HandleMouseRotate(const DkVec2& mousePositionDelta);
         void HandleMouseZoom(DkF32 mouseYDelta);
 
-        DkVec3 DetermineUpDirection() const;
-        DkVec3 DetermineRightDirection() const;
-        DkVec3 DetermineForwardDirection() const;
+        DkVec3 GetUpDirection() const;
+        DkVec3 GetRightDirection() const;
+        DkVec3 GetForwardDirection() const;
 
     private:
         DkVec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };

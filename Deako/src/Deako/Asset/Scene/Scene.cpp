@@ -148,70 +148,73 @@ namespace Deako {
 
         for (auto& entity : activeScene.entities)
         {
-            if (entity.HasComponent<PrefabComponent>())
+            auto& prefabComp = entity.GetComponent<PrefabComponent>();
+            Ref<Prefab> prefabAsset = projectAssetPool.GetAsset<Prefab>(prefabComp.handle);
+
+            // Assign prefab asset textures
+            if (prefabAsset)
             {
-                auto& prefabComp = entity.GetComponent<PrefabComponent>();
-                Ref<Prefab> prefabAsset = projectAssetPool.GetAsset<Prefab>(prefabComp.handle);
-
-                // Assign prefab asset textures
-                if (prefabAsset)
+                if (prefabAsset->textures.size() > 0)
                 {
-                    if (prefabAsset->textures.size() > 0)
-                    {
-                        prefabComp.textureHandles.reserve(prefabAsset->textures.size());
-                        for (const auto& [assetHandle, materialAsset] : prefabAsset->textures)
-                            prefabComp.textureHandles.emplace_back(assetHandle);
-                    }
-
-                    // Assign prefab asset materials
-                    if (prefabAsset->materials.size() > 0)
-                    {
-                        prefabComp.textureHandles.reserve(prefabAsset->materials.size());
-                        for (const auto& [assetHandle, materialAsset] : prefabAsset->materials)
-                            prefabComp.materialHandles.emplace_back(assetHandle);
-                    }
-
-                    // Assign prefab asset model
-                    if (prefabAsset->model)
-                        prefabComp.meshHandle = prefabAsset->model->m_Handle;
+                    prefabComp.textureHandles.reserve(prefabAsset->textures.size());
+                    for (const auto& [assetHandle, materialAsset] : prefabAsset->textures)
+                        prefabComp.textureHandles.emplace_back(assetHandle);
                 }
+
+                // Assign prefab asset materials
+                if (prefabAsset->materials.size() > 0)
+                {
+                    prefabComp.textureHandles.reserve(prefabAsset->materials.size());
+                    for (const auto& [assetHandle, materialAsset] : prefabAsset->materials)
+                        prefabComp.materialHandles.emplace_back(assetHandle);
+                }
+
+                // Assign prefab asset model
+                if (prefabAsset->model)
+                    prefabComp.meshHandle = prefabAsset->model->m_Handle;
             }
         }
     }
 
     template<>
-    void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
+    void Scene::OnComponentAdded<TransformComponent>(const Entity& entity, TransformComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
+    void Scene::OnComponentAdded<TagComponent>(const Entity& entity, TagComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<TextureComponent>(Entity entity, TextureComponent& component)
+    void Scene::OnComponentAdded<TextureComponent>(const Entity& entity, TextureComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<MaterialComponent>(Entity entity, MaterialComponent& component)
+    void Scene::OnComponentAdded<MaterialComponent>(const Entity& entity, MaterialComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<ModelComponent>(Entity entity, ModelComponent& component)
+    void Scene::OnComponentAdded<ModelComponent>(const Entity& entity, ModelComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<PrefabComponent>(Entity entity, PrefabComponent& component)
+    void Scene::OnComponentAdded<PrefabComponent>(const Entity& entity, PrefabComponent& component)
     {
     }
 
     template<>
-    void Scene::OnComponentAdded<EnvironmentComponent>(Entity entity, EnvironmentComponent& component)
+    void Scene::OnComponentAdded<EnvironmentComponent>(const Entity& entity, EnvironmentComponent& component)
     {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<CameraComponent>(const Entity& entity, CameraComponent& component)
+    {
+        component.camera = activeCamera;
     }
 
 

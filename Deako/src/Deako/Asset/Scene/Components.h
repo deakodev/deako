@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Deako/Renderer/EditorCamera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -100,13 +101,21 @@ namespace Deako {
         EnvironmentComponent(const EnvironmentComponent&) = default;
     };
 
+    struct CameraComponent
+    {
+        Ref<EditorCamera> camera;
+
+        CameraComponent() = default;
+        CameraComponent(const CameraComponent&) = default;
+    };
+
     template<typename... Component>
     struct ComponentGroup
     {
     };
 
     using AllComponents =
-        ComponentGroup<TransformComponent, TextureComponent, MaterialComponent, ModelComponent, PrefabComponent, EnvironmentComponent>;
+        ComponentGroup<TransformComponent, TextureComponent, MaterialComponent, ModelComponent, PrefabComponent, EnvironmentComponent, CameraComponent>;
 
 
 }

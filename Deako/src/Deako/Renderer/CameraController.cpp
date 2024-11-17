@@ -1,6 +1,7 @@
 #include "CameraController.h"
 #include "dkpch.h"
 
+#include "Deako/Renderer/EditorCamera.h"
 #include "Deako/Core/Input.h"
 
 namespace Deako {
@@ -14,7 +15,26 @@ namespace Deako {
     CameraController::CameraController(const DkVec2& viewportSize)
     {
         SetViewportSize(viewportSize);
+        UpdatePanSensitivity();
         UpdatePosition();
+    }
+
+    void CameraController::DefaultTo(ProjectionType type)
+    {
+        if (type == ProjectionType::Perspective)
+        {
+            m_FrustumProjection.fov = 40.0f;
+            m_FrustumProjection.orthoSize = 0.0f;
+            m_FrustumProjection.nearPlane = 0.1f;
+            m_FrustumProjection.farPlane = 10000.0f;
+        }
+        else if (type == ProjectionType::Orthographic)
+        {
+            m_FrustumProjection.fov = 0.0f;
+            m_FrustumProjection.orthoSize = 10.0f;
+            m_FrustumProjection.nearPlane = -1.0f;
+            m_FrustumProjection.farPlane = 1.0f;
+        }
     }
 
     void CameraController::OnUpdate()
@@ -58,7 +78,7 @@ namespace Deako {
 
     void CameraController::UpdatePosition()
     {
-        m_CameraPosition = m_FrustumTarget.focalPoint - DetermineForwardDirection() * m_FrustumTarget.focalDistance;
+        m_CameraPosition = m_FrustumTarget.focalPoint - GetForwardDirection() * m_FrustumTarget.focalDistance;
     }
 
     glm::quat CameraController::GetOrientation() const
@@ -87,8 +107,8 @@ namespace Deako {
 
     void CameraController::HandleMousePan(const DkVec2& mousePositionDelta)
     {
-        m_FrustumTarget.focalPoint += DetermineRightDirection() * mousePositionDelta.x * m_Sensitivity.pan.x * m_FrustumTarget.focalDistance;
-        m_FrustumTarget.focalPoint += DetermineUpDirection() * mousePositionDelta.y * m_Sensitivity.pan.y * m_FrustumTarget.focalDistance;
+        m_FrustumTarget.focalPoint += GetRightDirection() * mousePositionDelta.x * m_Sensitivity.pan.x * m_FrustumTarget.focalDistance;
+        m_FrustumTarget.focalPoint += GetUpDirection() * mousePositionDelta.y * m_Sensitivity.pan.y * m_FrustumTarget.focalDistance;
     }
 
     void CameraController::HandleMouseRotate(const DkVec2& mousePositionDelta)
@@ -102,22 +122,22 @@ namespace Deako {
         m_FrustumTarget.focalDistance -= mouseYDelta * UpdateZoomSensitivity();
         if (m_FrustumTarget.focalDistance < 1.0f)
         {
-            m_FrustumTarget.focalPoint += DetermineForwardDirection();
+            m_FrustumTarget.focalPoint += GetForwardDirection();
             m_FrustumTarget.focalDistance = 1.0f;
         }
     }
 
-    DkVec3 CameraController::DetermineUpDirection() const
+    DkVec3 CameraController::GetUpDirection() const
     {
         return glm::rotate(GetOrientation(), DkVec3(0.0f, 1.0f, 0.0f));
     }
 
-    DkVec3 CameraController::DetermineRightDirection() const
+    DkVec3 CameraController::GetRightDirection() const
     {
         return glm::rotate(GetOrientation(), DkVec3(1.0f, 0.0f, 0.0f));
     }
 
-    DkVec3 CameraController::DetermineForwardDirection() const
+    DkVec3 CameraController::GetForwardDirection() const
     {
         return glm::rotate(GetOrientation(), DkVec3(0.0f, 0.0f, -1.0f));
     }

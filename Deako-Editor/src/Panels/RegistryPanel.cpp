@@ -26,9 +26,6 @@ namespace Deako {
 
         ImGui::Begin("Assets");
 
-        bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
-        Deako::BlockEvents(eventsBlocked);
-
         if (m_RateLimiter.Trigger(now))
         {
             Refresh();

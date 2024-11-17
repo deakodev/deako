@@ -53,7 +53,7 @@ namespace Deako {
         virtual void Destroy() override {}
 
         template<typename T>
-        void OnComponentAdded(Entity entity, T& component);
+        void OnComponentAdded(const Entity& entity, T& component);
     };
 
     inline static Ref<Scene> s_EmptyScene;

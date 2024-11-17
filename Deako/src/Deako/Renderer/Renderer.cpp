@@ -40,6 +40,12 @@ namespace Deako {
     {
         ClearStats();
 
+        if (!GetActiveScene().isValid)
+        {
+            VulkanScene::Rebuild();
+            return;
+        }
+
         VulkanBase::Draw();
 
         QueryStats();

@@ -12,16 +12,13 @@ namespace Deako {
 
         ImGui::Begin("Scene");
 
-        bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
-        Deako::BlockEvents(eventsBlocked);
-
         for (auto& entity : activeScene.entities)
         {
             EntityHandle entityHandle = entity.GetHandle();
             DrawEntityNode(entityHandle, deako.activeHandle == entityHandle);
         }
 
-        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
+        if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
         {
             deako.activeHandle = 0;
         }
@@ -30,7 +27,10 @@ namespace Deako {
         if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
         {
             if (ImGui::MenuItem("Create Empty Entity"))
-                activeScene.CreateEntity("Empty Entity");
+            {
+                // activeScene.CreateEntity("Empty Entity");
+                activeScene.isValid = false;
+            }
 
             ImGui::EndPopup();
         }

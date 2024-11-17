@@ -6,6 +6,11 @@
 
 namespace Deako {
 
+    EditorCamera::EditorCamera()
+    {
+        SetProjectionType(ProjectionType::Perspective);
+    }
+
     void EditorCamera::OnUpdate()
     {
         m_Controller.OnUpdate();
@@ -21,28 +26,54 @@ namespace Deako {
         m_Controller.OnEvent(event);
     }
 
-    void EditorCamera::UpdateProjection(DkF32 fov, DkF32 aspectRatio, DkF32 nearPlane, DkF32 farPlane)
+    void EditorCamera::SetProjectionType(ProjectionType type)
     {
-        m_Projection = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
-        // m_Projection[1][1] *= -1.0f;
+        m_ProjectionType = type;
+
+        // assign the appropriate lambda to ProjectionFn
+        if (type == ProjectionType::Perspective)
+        {
+            m_Controller.DefaultTo(ProjectionType::Perspective);
+            ProjectionFn = [this]()
+                {
+                    DkF32 aspectRatio = m_Controller.GetViewportSize().x / m_Controller.GetViewportSize().y;
+                    return glm::perspective(glm::radians(m_Controller.GetFOV()), aspectRatio, m_Controller.GetNearPlane(), m_Controller.GetFarPlane());
+                };
+        }
+        else if (type == ProjectionType::Orthographic)
+        {
+            m_Controller.DefaultTo(ProjectionType::Orthographic);
+            ProjectionFn = [this]()
+                {
+                    DkF32 aspectRatio = m_Controller.GetViewportSize().x / m_Controller.GetViewportSize().y;
+                    DkF32 orthoSize = m_Controller.GetOrthoSize();
+                    DkF32 halfWidth = orthoSize * aspectRatio * 0.5f;
+                    DkF32 halfHeight = orthoSize * 0.5f;
+                    return glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, m_Controller.GetNearPlane(), m_Controller.GetFarPlane());
+                };
+        }
+    }
+
+    void EditorCamera::ResizeCamera()
+    {
+        UpdateProjection();
+    }
+
+    void EditorCamera::ResizeCamera(const DkVec2& viewportSize)
+    {
+        m_Controller.SetViewportSize(viewportSize);
+        UpdateProjection();
+    }
+
+    void EditorCamera::UpdateProjection()
+    {
+        if (ProjectionFn) m_Projection = ProjectionFn();
     }
 
     void EditorCamera::UpdateView(const DkVec3& position, const glm::quat& orientation)
     {
         m_View = glm::translate(DkMat4(1.0f), position) * glm::toMat4(orientation);
         m_View = glm::inverse(m_View);
-    }
-
-    void EditorCamera::ResizeCamera(const DkVec2& viewportSize)
-    {
-        m_Controller.SetViewportSize(viewportSize);
-
-        DkF32 fov = m_Controller.GetFOV();
-        DkF32 aspectRatio = viewportSize.x / viewportSize.y;
-        DkF32 nearPlane = m_Controller.GetNearPlane();
-        DkF32 farPlane = m_Controller.GetFarPlane();
-
-        UpdateProjection(fov, aspectRatio, nearPlane, farPlane);
     }
 
 }

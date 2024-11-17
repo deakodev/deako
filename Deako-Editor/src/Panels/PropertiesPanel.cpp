@@ -13,9 +13,6 @@ namespace Deako {
 
         ImGui::Begin("Properties");
 
-        bool eventsBlocked = ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) || ImGui::IsAnyItemHovered();
-        Deako::BlockEvents(eventsBlocked);
-
         if (deako.activeHandle != 0)
         {
             const Entity& entity = activeScene.GetEntity(deako.activeHandle);
@@ -38,21 +35,12 @@ namespace Deako {
 
             if (ImGui::BeginPopup("AddComponent"))
             {
-                if (ImGui::MenuItem("Color"))
+                if (ImGui::MenuItem("Camera"))
                 {
-                    if (!entity.HasComponent<TextureComponent>())
-                        entity.AddComponent<TextureComponent>();
+                    if (!entity.HasComponent<CameraComponent>())
+                        entity.AddComponent<CameraComponent>();
                     else
-                        DK_CORE_WARN("This entity already has TextureComponent!");
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Sprite Renderer"))
-                {
-                    if (!entity.HasComponent<ModelComponent>())
-                        entity.AddComponent<ModelComponent>();
-                    else
-                        DK_CORE_WARN("This entity already has ModelComponent!");
+                        DK_CORE_WARN("This entity already has CameraComponent!");
                     ImGui::CloseCurrentPopup();
                 }
 
@@ -292,6 +280,86 @@ namespace Deako {
         DrawComponent<ModelComponent>("Model", entity, assetPool, [](auto& component)
             {
                 ImGui::Button("Model", ImVec2(100.0f, 0.0f));
+            });
+
+        DrawComponent<CameraComponent>("Camera", entity, assetPool, [](auto& component)
+            {
+                EditorCamera& camera = *component.camera;
+
+                const char* projectionTypeStrings[] = { "perspective", "orthographic" };
+                int projectionTypeIndex = (int)camera.GetProjectionType();
+                const char* currentProjectionTypeString = projectionTypeStrings[projectionTypeIndex];
+
+                if (ImGui::BeginCombo("Projection Type", currentProjectionTypeString))
+                {
+                    for (uint32_t i = 0; i < 2; i++)
+                    {
+                        bool isSelected = projectionTypeIndex == i;
+                        if (ImGui::Selectable(projectionTypeStrings[i], isSelected))
+                        {
+                            currentProjectionTypeString = projectionTypeStrings[i];
+                            camera.SetProjectionType((ProjectionType)i);
+                            camera.ResizeCamera();
+                        }
+
+                        if (isSelected) ImGui::SetItemDefaultFocus();
+                    }
+
+
+                    ImGui::EndCombo();
+                }
+
+                if (camera.GetProjectionType() == ProjectionType::Perspective)
+                {
+                    CameraController& cameraController = camera.GetController();
+
+                    DkF32 fov = cameraController.GetFOV();
+                    if (ImGui::DragFloat("FOV", &fov))
+                    {
+                        cameraController.SetFOV(fov);
+                        camera.ResizeCamera();
+                    }
+
+                    DkF32 nearPlane = cameraController.GetNearPlane();
+                    if (ImGui::DragFloat("Near", &nearPlane))
+                    {
+                        cameraController.SetNearPlane(nearPlane);
+                        camera.ResizeCamera();
+                    }
+
+                    DkF32 farPlane = cameraController.GetFarPlane();
+                    if (ImGui::DragFloat("Far", &farPlane))
+                    {
+                        cameraController.SetFarPlane(farPlane);
+                        camera.ResizeCamera();
+                    }
+                }
+
+                if (camera.GetProjectionType() == ProjectionType::Orthographic)
+                {
+                    CameraController& cameraController = camera.GetController();
+
+                    DkF32 orthoSize = cameraController.GetOrthoSize();
+                    if (ImGui::DragFloat("Size", &orthoSize))
+                    {
+                        cameraController.SetOrthoSize(orthoSize);
+                        camera.ResizeCamera();
+                    }
+
+                    DkF32 nearPlane = cameraController.GetNearPlane();
+                    if (ImGui::DragFloat("Near", &nearPlane))
+                    {
+                        cameraController.SetNearPlane(nearPlane);
+                        camera.ResizeCamera();
+                    }
+
+                    DkF32 farPlane = cameraController.GetFarPlane();
+                    if (ImGui::DragFloat("Far", &farPlane))
+                    {
+                        cameraController.SetFarPlane(farPlane);
+                        camera.ResizeCamera();
+                    }
+                }
             });
 
     }

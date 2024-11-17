@@ -6,25 +6,38 @@
 
 namespace Deako {
 
+    using ProjectionFunction = std::function<DkMat4()>;
+
+    enum class ProjectionType { Perspective = 0, Orthographic = 1 }; // TODO: still need to imple ortho
+
     class EditorCamera
     {
     public:
+        EditorCamera();
+
         void OnUpdate();
         void OnEvent(Event& event);
 
+        void ResizeCamera();
         void ResizeCamera(const DkVec2& viewportSize);
+
+        void SetProjectionType(ProjectionType type);
+        ProjectionType GetProjectionType() { return m_ProjectionType; }
 
         DkMat4& GetView() { return m_View; }
         DkMat4& GetProjection() { return m_Projection; }
         CameraController& GetController() { return m_Controller; }
 
     private:
-        void UpdateProjection(DkF32 fov, DkF32 aspectRatio, DkF32 nearPlane, DkF32 farPlane);
+        void UpdateProjection();
         void UpdateView(const DkVec3& position, const glm::quat& orientation);
 
     private:
-        DkMat4 m_View;
+        ProjectionType m_ProjectionType = ProjectionType::Perspective;
+        ProjectionFunction ProjectionFn;
+
         DkMat4 m_Projection;
+        DkMat4 m_View;
 
         CameraController m_Controller;
     };
