@@ -3,10 +3,6 @@
 
 #include "Deako/Project/ProjectHandler.h"
 #include "Deako/Asset/AssetManager.h"
-#include "Deako/Renderer/Vulkan/VulkanBase.h"
-#include "Deako/Renderer/Vulkan/VulkanPicker.h"
-#include "Deako/Renderer/Vulkan/VulkanScene.h"
-#include "Deako/Renderer/Vulkan/VulkanStats.h"
 
 namespace Deako {
 
@@ -14,24 +10,22 @@ namespace Deako {
     {
         VulkanBase::Init();
 
-        VulkanPicker::Init();
-
         ProjectHandler::Init();
 
         AssetManager::Init();
 
-        VulkanScene::Build();
+        Scene& activeScene = GetActiveScene();
+        activeScene.Build();
     }
 
     void Renderer::Shutdown()
     {
-        VulkanScene::CleanUp();
+        Scene& activeScene = GetActiveScene();
+        activeScene.CleanUp();
 
         AssetManager::CleanUp();
 
         ProjectHandler::CleanUp();
-
-        VulkanPicker::CleanUp();
 
         VulkanBase::Shutdown();
     }
@@ -39,12 +33,6 @@ namespace Deako {
     void Renderer::Render()
     {
         ClearStats();
-
-        if (!GetActiveScene().isValid)
-        {
-            VulkanScene::Rebuild();
-            return;
-        }
 
         VulkanBase::Draw();
 

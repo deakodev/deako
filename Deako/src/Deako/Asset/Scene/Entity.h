@@ -22,7 +22,7 @@ namespace Deako {
             DK_CORE_ASSERT(!HasComponent<T>(), "Entity already has component!");
             DK_CORE_ASSERT(m_Scene, "Scene is expired or null!1");
 
-            T& component = m_Scene->registry.emplace<T>(m_EnttEntity, std::forward<Args>(args)...);
+            T& component = m_Scene->GetRegistry().emplace<T>(m_EnttEntity, std::forward<Args>(args)...);
 
             m_Scene->OnComponentAdded<T>(*this, component);
             return component;
@@ -33,7 +33,7 @@ namespace Deako {
         {
             DK_CORE_ASSERT(m_Scene, "Scene is expired or null!2");
 
-            T& component = m_Scene->registry.emplace_or_replace<T>(m_EnttEntity, std::forward<Args>(args)...);
+            T& component = m_Scene->GetRegistry().emplace_or_replace<T>(m_EnttEntity, std::forward<Args>(args)...);
             m_Scene->OnComponentAdded<T>(*this, component);
 
             return component;
@@ -45,7 +45,7 @@ namespace Deako {
             DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
             DK_CORE_ASSERT(m_Scene, "Scene is expired or null!3");
 
-            return m_Scene->registry.get<T>(m_EnttEntity);
+            return m_Scene->GetRegistry().get<T>(m_EnttEntity);
         }
 
         template<typename T>
@@ -53,22 +53,22 @@ namespace Deako {
         {
             DK_CORE_ASSERT(HasComponent<T>(handle), "Entity does not have component!");
 
-            entt::entity enttEntity = Deako::GetActiveScene().entityMap.at(handle);
-            return Deako::GetActiveScene().registry.get<T>(enttEntity);
+            entt::entity enttEntity = Deako::GetActiveScene().GetEnttEntityMap().at(handle);
+            return Deako::GetActiveScene().GetRegistry().get<T>(enttEntity);
         }
 
         template<typename T>
         bool HasComponent() const
         {
             DK_CORE_ASSERT(m_Scene, "Scene is expired or null!4");
-            return m_Scene->registry.all_of<T>(m_EnttEntity);
+            return m_Scene->GetRegistry().all_of<T>(m_EnttEntity);
         }
 
         template<typename T>
         static bool HasComponent(EntityHandle handle)
         {
-            entt::entity enttEntity = Deako::GetActiveScene().entityMap.at(handle);
-            return Deako::GetActiveScene().registry.all_of<T>(enttEntity);
+            entt::entity enttEntity = Deako::GetActiveScene().GetEnttEntityMap().at(handle);
+            return Deako::GetActiveScene().GetRegistry().all_of<T>(enttEntity);
         }
 
         template<typename T>
@@ -77,7 +77,7 @@ namespace Deako {
             DK_CORE_ASSERT(HasComponent<T>(), "Entity does not have component!");
             DK_CORE_ASSERT(m_Scene, "Scene is expired or null!5");
 
-            m_Scene->registry.remove<T>(m_EnttEntity);
+            m_Scene->GetRegistry().remove<T>(m_EnttEntity);
         }
 
         EntityHandle GetHandle() { return m_EntityHandle; }

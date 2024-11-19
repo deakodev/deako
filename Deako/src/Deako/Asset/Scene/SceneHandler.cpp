@@ -59,7 +59,7 @@ namespace Deako {
     {
         Scene& activeScene = Deako::GetActiveScene();
 
-        if (!activeScene.isSavedUpToDate)
+        if (!activeScene.IsSceneSaved())
         {
             bool continueToOpenScene = PromptToSaveScene();
             if (!continueToOpenScene) return; // user canceled, so exit
@@ -155,7 +155,6 @@ namespace Deako {
     {
         Scene& activeScene = Deako::GetActiveScene();
         activeScene.LinkAssets();
-        activeScene.isValid = true;
     }
 
     bool SceneHandler::HandleUserResponse(UserResponse response)

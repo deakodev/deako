@@ -101,7 +101,7 @@ namespace Deako {
 
         out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
-        for (auto& [entityHandle, enttEntity] : scene.GetEntityMap())
+        for (auto& [entityHandle, enttEntity] : scene.GetEnttEntityMap())
             Serialize::Entity(out, entityHandle);
 
         out << YAML::EndSeq;

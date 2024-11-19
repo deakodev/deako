@@ -1,16 +1,14 @@
 #include "VulkanMaterial.h"
 #include "dkpch.h"
 
-#include "Deako/Asset/Pool/ProjectAssetPool.h"
-
 #include "VulkanBase.h"
 #include "VulkanScene.h"
 #include "VulkanResource.h"
 
-namespace Deako {
+#include "Deako/Asset/Pool/ProjectAssetPool.h"
+#include "Deako/Asset/Scene/Entity.h"
 
-    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
-    static Ref<VulkanSceneResources> vs = VulkanScene::GetResources();
+namespace Deako {
 
     Material::Material(tinygltf::Material& tinyMaterial, std::vector<Ref<Texture2D>>& textures)
     {
@@ -141,14 +139,16 @@ namespace Deako {
 
     void CreateMaterialBuffer()
     {
-        Scene& activeScene = Deako::GetActiveScene();
         ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
+        Scene& activeScene = Deako::GetActiveScene();
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+        VulkanSceneResources& vs = activeScene.GetVulkanScene().GetResources();
 
         std::vector<ShaderMaterial> shaderMaterials{};
 
         DkU32 materialBufferIndex = 0;
 
-        for (auto& entity : activeScene.entities)
+        for (auto& entity : activeScene.GetEntities())
         {
             if (entity.HasComponent<PrefabComponent>())
             {
@@ -206,35 +206,35 @@ namespace Deako {
             }
         }
 
-        if (vs->materialBuffer.buffer.buffer != VK_NULL_HANDLE)
-            VulkanBuffer::Destroy(vs->materialBuffer.buffer);
+        if (vs.materialBuffer.buffer.buffer != VK_NULL_HANDLE)
+            VulkanBuffer::Destroy(vs.materialBuffer.buffer);
 
         VkDeviceSize bufferSize = shaderMaterials.size() * sizeof(ShaderMaterial);
 
         AllocatedBuffer staging = VulkanBuffer::Create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VkCR(vkMapMemory(vb->device, staging.memory, 0, bufferSize, 0, &staging.mapped));
+        VkCR(vkMapMemory(vb.device, staging.memory, 0, bufferSize, 0, &staging.mapped));
         memcpy(staging.mapped, shaderMaterials.data(), bufferSize);
-        vkUnmapMemory(vb->device, staging.memory);
+        vkUnmapMemory(vb.device, staging.memory);
 
         // create shader material buffer
-        vs->materialBuffer.buffer = VulkanBuffer::Create(bufferSize,
+        vs.materialBuffer.buffer = VulkanBuffer::Create(bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
         VkBufferCopy copyRegion{ };
         copyRegion.size = bufferSize;
-        vkCmdCopyBuffer(commandBuffer, staging.buffer, vs->materialBuffer.buffer.buffer, 1, &copyRegion);
+        vkCmdCopyBuffer(commandBuffer, staging.buffer, vs.materialBuffer.buffer.buffer, 1, &copyRegion);
 
-        VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(staging);
 
         // update descriptor
-        vs->materialBuffer.descriptor.buffer = vs->materialBuffer.buffer.buffer;
-        vs->materialBuffer.descriptor.offset = 0;
-        vs->materialBuffer.descriptor.range = bufferSize;
+        vs.materialBuffer.descriptor.buffer = vs.materialBuffer.buffer.buffer;
+        vs.materialBuffer.descriptor.offset = 0;
+        vs.materialBuffer.descriptor.range = bufferSize;
     }
 
 }

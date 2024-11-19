@@ -28,7 +28,7 @@ namespace Deako {
 
     void EditorLayer::OnUpdate()
     {
-        Deako::GetActiveScene().activeCamera = m_EditorCamera;
+        Deako::GetActiveScene().SetActiveCamera(m_EditorCamera);
 
         m_ViewportPanel->OnUpdate();
 

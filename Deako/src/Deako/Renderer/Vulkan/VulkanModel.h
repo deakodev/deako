@@ -205,6 +205,4 @@ namespace Deako {
         virtual AssetType GetType() const override { return GetStaticType(); }
     };
 
-    void RenderNode(Node* node, VkCommandBuffer commandBuffer, Material::AlphaMode alphaMode, DkU32 dynamicOffset);
-
 }

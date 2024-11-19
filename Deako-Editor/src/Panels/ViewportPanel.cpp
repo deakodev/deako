@@ -8,7 +8,7 @@ namespace Deako {
 
         if (m_ViewportResize)
         {
-            activeScene.activeCamera->ResizeCamera(m_ViewportSize);
+            activeScene.GetActiveCamera()->ResizeCamera(m_ViewportSize);
             m_ViewportResize = false;
         }
     }
@@ -61,7 +61,7 @@ namespace Deako {
     void ViewportPanel::TransformWithGizmo(EntityHandle handle)
     {
         Scene& activeScene = Deako::GetActiveScene();
-        Ref<EditorCamera> camera = activeScene.activeCamera;
+        Ref<EditorCamera> camera = activeScene.GetActiveCamera();
 
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist();

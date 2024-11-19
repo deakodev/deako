@@ -89,7 +89,7 @@ namespace Deako {
 
         static void RecreateSwapchain();
 
-        static Ref<VulkanBaseResources> GetResources() { return vb; }
+        static VulkanBaseResources& GetResources() { return s_Resources; }
 
     private:
         static void CreateInstance();
@@ -102,7 +102,7 @@ namespace Deako {
         static void SetUpImGui();
 
     private:
-        static Ref<VulkanBaseResources> vb;
+        inline static VulkanBaseResources s_Resources;
     };
 
 }

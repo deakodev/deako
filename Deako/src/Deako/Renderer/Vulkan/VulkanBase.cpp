@@ -20,9 +20,6 @@ namespace Deako {
     PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
     PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
 
-    Ref<VulkanBaseResources> VulkanBase::vb = CreateRef<VulkanBaseResources>();
-    Ref<VulkanSceneResources> VulkanScene::vs = CreateRef<VulkanSceneResources>();
-
     void VulkanBase::Init()
     {
         CreateInstance();
@@ -44,52 +41,57 @@ namespace Deako {
 
     void VulkanBase::Idle()
     {
-        vkDeviceWaitIdle(vb->device);
+        VulkanBaseResources& vb = s_Resources;
+        vkDeviceWaitIdle(vb.device);
     }
 
     void VulkanBase::Shutdown()
     {
+        VulkanBaseResources& vb = s_Resources;
+
         VulkanBase::Idle();
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        vkDestroyDescriptorPool(vb->device, vb->imguiDescriptorPool, nullptr);
+        vkDestroyDescriptorPool(vb.device, vb.imguiDescriptorPool, nullptr);
 
-        for (auto& frame : vb->frames)
+        for (auto& frame : vb.frames)
         {
-            vkDestroySemaphore(vb->device, frame.renderSemaphore, nullptr);
-            vkDestroySemaphore(vb->device, frame.presentSemaphore, nullptr);
-            vkDestroyFence(vb->device, frame.waitFence, nullptr);
-            vkDestroyCommandPool(vb->device, frame.commandPool, nullptr);
+            vkDestroySemaphore(vb.device, frame.renderSemaphore, nullptr);
+            vkDestroySemaphore(vb.device, frame.presentSemaphore, nullptr);
+            vkDestroyFence(vb.device, frame.waitFence, nullptr);
+            vkDestroyCommandPool(vb.device, frame.commandPool, nullptr);
         }
 
-        vkDestroyCommandPool(vb->device, vb->singleUseCommandPool, nullptr);
+        vkDestroyCommandPool(vb.device, vb.singleUseCommandPool, nullptr);
 
-        vkDestroyQueryPool(vb->device, vb->timestampQueryPool, nullptr);
-        vkDestroyPipelineCache(vb->device, vb->pipelineCache, nullptr);
+        vkDestroyQueryPool(vb.device, vb.timestampQueryPool, nullptr);
+        vkDestroyPipelineCache(vb.device, vb.pipelineCache, nullptr);
 
-        for (auto imageView : vb->swapchain.views)
-            vkDestroyImageView(vb->device, imageView, nullptr);
+        for (auto imageView : vb.swapchain.views)
+            vkDestroyImageView(vb.device, imageView, nullptr);
 
-        VulkanImage::Destroy(vb->swapchain.colorTarget);
-        VulkanImage::Destroy(vb->swapchain.depthTarget);
+        VulkanImage::Destroy(vb.swapchain.colorTarget);
+        VulkanImage::Destroy(vb.swapchain.depthTarget);
 
-        vkDestroySwapchainKHR(vb->device, vb->swapchain.swapchain, nullptr);
+        vkDestroySwapchainKHR(vb.device, vb.swapchain.swapchain, nullptr);
 
-        vkDestroyDevice(vb->device, nullptr);
+        vkDestroyDevice(vb.device, nullptr);
 
-        vkDestroySurfaceKHR(vb->instance, vb->surface, nullptr);
+        vkDestroySurfaceKHR(vb.instance, vb.surface, nullptr);
 
-        if (vb->settings.validationEnabled) VulkanDebug::DestroyDebugUtilsMessengerEXT();
+        if (vb.settings.validationEnabled) VulkanDebug::DestroyDebugUtilsMessengerEXT();
 
-        vkDestroyInstance(vb->instance, nullptr);
+        vkDestroyInstance(vb.instance, nullptr);
     }
 
     void VulkanBase::CreateInstance()
     {
+        VulkanBaseResources& vb = s_Resources;
+
         #if defined(VK_VALIDATION)
-        vb->settings.validationEnabled = true;
+        vb.settings.validationEnabled = true;
         #endif
 
         VkApplicationInfo appInfo = {};
@@ -112,7 +114,7 @@ namespace Deako {
         instanceExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         instanceExtensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         #endif
-        if (vb->settings.validationEnabled)
+        if (vb.settings.validationEnabled)
             instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         // check if required instanceExtensions are supported
@@ -149,7 +151,7 @@ namespace Deako {
         }
 
         std::vector<const char*> validationLayerNames;
-        if (vb->settings.validationEnabled)
+        if (vb.settings.validationEnabled)
         {
             validationLayerNames.push_back("VK_LAYER_KHRONOS_validation");
             instanceInfo.enabledLayerCount = (DkU32)validationLayerNames.size();
@@ -160,12 +162,14 @@ namespace Deako {
             instanceInfo.pNext = &debugInfo;
         }
 
-        VkCR(vkCreateInstance(&instanceInfo, nullptr, &vb->instance));
+        VkCR(vkCreateInstance(&instanceInfo, nullptr, &vb.instance));
     }
 
     void VulkanBase::SetUpDebugMessenger()
     {
-        if (vb->settings.validationEnabled)
+        VulkanBaseResources& vb = s_Resources;
+
+        if (vb.settings.validationEnabled)
         {
             VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
             VulkanDebug::PopulateDebugMessengerCreateInfo(debugInfo);
@@ -175,18 +179,19 @@ namespace Deako {
 
     void VulkanBase::SetUpDevice()
     {
+        VulkanBaseResources& vb = s_Resources;
         DkContext& deako = Deako::GetContext();
 
         /* CREATE SURFACE */
-        VkCR(glfwCreateWindowSurface(vb->instance, deako.window->glfwWindow, nullptr, &vb->surface));
+        VkCR(glfwCreateWindowSurface(vb.instance, deako.window->glfwWindow, nullptr, &vb.surface));
 
         /* DETERMINE PHYSICAL */
         DkU32 deviceCount = 0;
-        vkEnumeratePhysicalDevices(vb->instance, &deviceCount, nullptr);
+        vkEnumeratePhysicalDevices(vb.instance, &deviceCount, nullptr);
         DK_CORE_ASSERT(deviceCount, "No devices are supported on this platform!");
 
         std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-        vkEnumeratePhysicalDevices(vb->instance, &deviceCount, physicalDevices.data());
+        vkEnumeratePhysicalDevices(vb.instance, &deviceCount, physicalDevices.data());
 
         std::multimap<int, VkPhysicalDevice> candidates;
         for (const auto& physicalDevice : physicalDevices)
@@ -196,15 +201,15 @@ namespace Deako {
         }
 
         // determine best candidate and set as physical device
-        if (candidates.rbegin()->first > 0) vb->physicalDevice = candidates.rbegin()->second;
+        if (candidates.rbegin()->first > 0) vb.physicalDevice = candidates.rbegin()->second;
         else DK_CORE_ASSERT(false, "No device candidates are supported on this platform!");
 
         // set family indices of our selected physical device
-        VulkanDevice::FindQueueFamilies(vb->physicalDevice);
+        VulkanDevice::FindQueueFamilies(vb.physicalDevice);
 
         /* CREATE LOGICAL */
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos; // obtain
-        std::set<DkU32> queueFamilies = { vb->graphicsFamily.value(), vb->presentFamily.value() };
+        std::set<DkU32> queueFamilies = { vb.graphicsFamily.value(), vb.presentFamily.value() };
 
         DkF32 queuePriority = 1.0f; // 0.0 - 1.0, influences scheduling of command buffer
         for (DkU32 queueFamily : queueFamilies)
@@ -241,7 +246,7 @@ namespace Deako {
         enabledExtensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
         enabledExtensions.push_back(VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME);
 
-        VulkanDevice::CheckExtensionSupport(vb->physicalDevice, enabledExtensions);
+        VulkanDevice::CheckExtensionSupport(vb.physicalDevice, enabledExtensions);
 
         VkDeviceCreateInfo deviceInfo = {};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -256,49 +261,51 @@ namespace Deako {
             deviceInfo.ppEnabledExtensionNames = enabledExtensions.data();
         }
 
-        VkCR(vkCreateDevice(vb->physicalDevice, &deviceInfo, nullptr, &vb->device));
+        VkCR(vkCreateDevice(vb.physicalDevice, &deviceInfo, nullptr, &vb.device));
 
         /* GET QUEUE FAMILIES */
-        vkGetDeviceQueue(vb->device, vb->graphicsFamily.value(), 0, &vb->graphicsQueue);
-        vkGetDeviceQueue(vb->device, vb->presentFamily.value(), 0, &vb->presentQueue);
+        vkGetDeviceQueue(vb.device, vb.graphicsFamily.value(), 0, &vb.graphicsQueue);
+        vkGetDeviceQueue(vb.device, vb.presentFamily.value(), 0, &vb.presentQueue);
 
         // find certain extension functions since macos doesn't support 1.3
         vkCmdPipelineBarrier2KHR =
-            (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(vb->device, "vkCmdPipelineBarrier2KHR");
+            (PFN_vkCmdPipelineBarrier2KHR)vkGetDeviceProcAddr(vb.device, "vkCmdPipelineBarrier2KHR");
         vkQueueSubmit2KHR =
-            (PFN_vkQueueSubmit2KHR)vkGetDeviceProcAddr(vb->device, "vkQueueSubmit2KHR");
+            (PFN_vkQueueSubmit2KHR)vkGetDeviceProcAddr(vb.device, "vkQueueSubmit2KHR");
         if (!vkCmdPipelineBarrier2KHR || !vkQueueSubmit2KHR)
             throw std::runtime_error("Failed to load VK_KHR_synchronization2 functions!");
 
         vkCmdBeginRenderingKHR =
-            (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(vb->device, "vkCmdBeginRenderingKHR");
+            (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(vb.device, "vkCmdBeginRenderingKHR");
         vkCmdEndRenderingKHR =
-            (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(vb->device, "vkCmdEndRenderingKHR");
+            (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(vb.device, "vkCmdEndRenderingKHR");
         if (!vkCmdBeginRenderingKHR || !vkCmdEndRenderingKHR)
             throw std::runtime_error("Failed to load VK_KHR_dynamic_rendering functions!");
     }
 
     void VulkanBase::SetUpSwapchain()
     {
+        VulkanBaseResources& vb = s_Resources;
+
         /* SWAPCHAIN CREATION */
-        VkSwapchainKHR oldSwapchain = vb->swapchain.swapchain;
+        VkSwapchainKHR oldSwapchain = vb.swapchain.swapchain;
 
-        VulkanSwapchain::QuerySupport(vb->physicalDevice);
+        VulkanSwapchain::QuerySupport(vb.physicalDevice);
 
-        VkSurfaceCapabilitiesKHR caps = vb->swapchain.details.capabilities;
-        std::vector<VkSurfaceFormatKHR> formats = vb->swapchain.details.formats;
-        std::vector<VkPresentModeKHR> presentModes = vb->swapchain.details.presentModes;
+        VkSurfaceCapabilitiesKHR caps = vb.swapchain.details.capabilities;
+        std::vector<VkSurfaceFormatKHR> formats = vb.swapchain.details.formats;
+        std::vector<VkPresentModeKHR> presentModes = vb.swapchain.details.presentModes;
 
         VkSurfaceFormatKHR surfaceFormat = VulkanSwapchain::ChooseSurfaceFormat(formats);
-        vb->swapchain.format = surfaceFormat.format;
+        vb.swapchain.format = surfaceFormat.format;
 
         VkPresentModeKHR presentMode = VulkanSwapchain::ChoosePresentMode(presentModes);
-        vb->swapchain.extent = VulkanSwapchain::ChooseExtent(caps);
+        vb.swapchain.extent = VulkanSwapchain::ChooseExtent(caps);
 
         // check to make sure we dont exceed the max number of possible images
-        vb->swapchain.imageCount = caps.minImageCount;
-        if (caps.maxImageCount > 0 && vb->swapchain.imageCount > caps.maxImageCount)
-            vb->swapchain.imageCount = caps.maxImageCount;
+        vb.swapchain.imageCount = caps.minImageCount;
+        if (caps.maxImageCount > 0 && vb.swapchain.imageCount > caps.maxImageCount)
+            vb.swapchain.imageCount = caps.maxImageCount;
 
         // find the transformation of the surface
         VkSurfaceTransformFlagsKHR preTransform;
@@ -326,11 +333,11 @@ namespace Deako {
 
         VkSwapchainCreateInfoKHR swapchainInfo = {};
         swapchainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainInfo.surface = vb->surface;
-        swapchainInfo.minImageCount = vb->swapchain.imageCount;
-        swapchainInfo.imageFormat = vb->swapchain.format;
+        swapchainInfo.surface = vb.surface;
+        swapchainInfo.minImageCount = vb.swapchain.imageCount;
+        swapchainInfo.imageFormat = vb.swapchain.format;
         swapchainInfo.imageColorSpace = surfaceFormat.colorSpace;
-        swapchainInfo.imageExtent = vb->swapchain.extent;
+        swapchainInfo.imageExtent = vb.swapchain.extent;
         swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         swapchainInfo.preTransform = (VkSurfaceTransformFlagBitsKHR)preTransform;
         swapchainInfo.imageArrayLayers = 1;
@@ -346,8 +353,8 @@ namespace Deako {
         if (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
             swapchainInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-        DkU32 queueFamilyIndices[] = { vb->graphicsFamily.value(), vb->presentFamily.value() };
-        if (vb->graphicsFamily != vb->presentFamily)
+        DkU32 queueFamilyIndices[] = { vb.graphicsFamily.value(), vb.presentFamily.value() };
+        if (vb.graphicsFamily != vb.presentFamily)
         {
             swapchainInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             swapchainInfo.queueFamilyIndexCount = 2;
@@ -360,33 +367,33 @@ namespace Deako {
             swapchainInfo.pQueueFamilyIndices = nullptr;
         }
 
-        VkCR(vkCreateSwapchainKHR(vb->device, &swapchainInfo, nullptr, &vb->swapchain.swapchain));
+        VkCR(vkCreateSwapchainKHR(vb.device, &swapchainInfo, nullptr, &vb.swapchain.swapchain));
 
         // if an existing swap chain is re-created, destroy the old swap chain
         if (oldSwapchain != VK_NULL_HANDLE)
         {
-            for (auto imageView : vb->swapchain.views)
-                vkDestroyImageView(vb->device, imageView, nullptr);
-            vkDestroySwapchainKHR(vb->device, oldSwapchain, nullptr);
+            for (auto imageView : vb.swapchain.views)
+                vkDestroyImageView(vb.device, imageView, nullptr);
+            vkDestroySwapchainKHR(vb.device, oldSwapchain, nullptr);
 
-            VulkanImage::Destroy(vb->swapchain.colorTarget);
-            VulkanImage::Destroy(vb->swapchain.depthTarget);
+            VulkanImage::Destroy(vb.swapchain.colorTarget);
+            VulkanImage::Destroy(vb.swapchain.depthTarget);
         }
 
         /* SWAPCHAIN IMAGES */
-        vkGetSwapchainImagesKHR(vb->device, vb->swapchain.swapchain, &vb->swapchain.imageCount, nullptr);
-        vb->swapchain.images.resize(vb->swapchain.imageCount);
-        vkGetSwapchainImagesKHR(vb->device, vb->swapchain.swapchain, &vb->swapchain.imageCount, vb->swapchain.images.data());
+        vkGetSwapchainImagesKHR(vb.device, vb.swapchain.swapchain, &vb.swapchain.imageCount, nullptr);
+        vb.swapchain.images.resize(vb.swapchain.imageCount);
+        vkGetSwapchainImagesKHR(vb.device, vb.swapchain.swapchain, &vb.swapchain.imageCount, vb.swapchain.images.data());
 
         /* SWAPCHAIN IMAGE VIEWS */
-        vb->swapchain.views.resize(vb->swapchain.imageCount);
-        for (size_t i = 0; i < vb->swapchain.imageCount; i++)
+        vb.swapchain.views.resize(vb.swapchain.imageCount);
+        for (size_t i = 0; i < vb.swapchain.imageCount; i++)
         {
             VkImageViewCreateInfo imageViewInfo = {};
             imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            imageViewInfo.image = vb->swapchain.images[i];
-            imageViewInfo.format = vb->swapchain.format;
+            imageViewInfo.image = vb.swapchain.images[i];
+            imageViewInfo.format = vb.swapchain.format;
             imageViewInfo.subresourceRange.baseMipLevel = 0;
             imageViewInfo.subresourceRange.levelCount = 1;
             imageViewInfo.subresourceRange.baseArrayLayer = 0;
@@ -397,39 +404,43 @@ namespace Deako {
             imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
             imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
 
-            VkCR(vkCreateImageView(vb->device, &imageViewInfo, nullptr, &vb->swapchain.views[i]));
+            VkCR(vkCreateImageView(vb.device, &imageViewInfo, nullptr, &vb.swapchain.views[i]));
         }
 
         /* DRAW TARGETS */ // resolve to the sc image view
-        VkExtent3D targetExtent = { vb->swapchain.extent.width, vb->swapchain.extent.height, 1 };
-        VkSampleCountFlagBits targetSamples = vb->settings.sampleCount;
+        VkExtent3D targetExtent = { vb.swapchain.extent.width, vb.swapchain.extent.height, 1 };
+        VkSampleCountFlagBits targetSamples = vb.settings.sampleCount;
 
         VkFormat colorFormat = VK_FORMAT_B8G8R8A8_SRGB;
         VkImageUsageFlags colorUsages = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        vb->swapchain.colorTarget =
+        vb.swapchain.colorTarget =
             VulkanImage::Create(targetExtent, colorFormat, targetSamples, colorUsages, 1, VK_IMAGE_TYPE_2D);
 
         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
         VkImageUsageFlags depthUsages = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        vb->swapchain.depthTarget =
+        vb.swapchain.depthTarget =
             VulkanImage::Create(targetExtent, depthFormat, targetSamples, depthUsages, 1, VK_IMAGE_TYPE_2D);
     }
 
     void VulkanBase::SetUpPipelineCache()
     {
-        if (vb->pipelineCache) vkDestroyPipelineCache(vb->device, vb->pipelineCache, nullptr);
+        VulkanBaseResources& vb = s_Resources;
+
+        if (vb.pipelineCache) vkDestroyPipelineCache(vb.device, vb.pipelineCache, nullptr);
 
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
         pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-        VkCR(vkCreatePipelineCache(vb->device, &pipelineCacheCreateInfo, nullptr, &vb->pipelineCache));
+        VkCR(vkCreatePipelineCache(vb.device, &pipelineCacheCreateInfo, nullptr, &vb.pipelineCache));
     }
 
     void VulkanBase::SetUpCommands()
     {
+        VulkanBaseResources& vb = s_Resources;
+
         /* RENDERING COMMANDS */
         VkCommandPoolCreateInfo commandPoolInfo = {};
         commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolInfo.queueFamilyIndex = vb->graphicsFamily.value();
+        commandPoolInfo.queueFamilyIndex = vb.graphicsFamily.value();
         commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         VkCommandBufferAllocateInfo commandBufferInfo{};
@@ -437,40 +448,43 @@ namespace Deako {
         commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferInfo.commandBufferCount = 1;
 
-        vb->frames.resize(vb->settings.frameOverlap);
+        vb.frames.resize(vb.settings.frameOverlap);
 
-        for (int i = 0; i < vb->settings.frameOverlap; i++)
+        for (int i = 0; i < vb.settings.frameOverlap; i++)
         {
-            VkCR(vkCreateCommandPool(vb->device, &commandPoolInfo, nullptr, &vb->frames[i].commandPool));
+            VkCR(vkCreateCommandPool(vb.device, &commandPoolInfo, nullptr, &vb.frames[i].commandPool));
 
-            commandBufferInfo.commandPool = vb->frames[i].commandPool;
+            commandBufferInfo.commandPool = vb.frames[i].commandPool;
             // default command buffer that we will use for rendering
-            VkCR(vkAllocateCommandBuffers(vb->device, &commandBufferInfo, &vb->frames[i].commandBuffer));
+            VkCR(vkAllocateCommandBuffers(vb.device, &commandBufferInfo, &vb.frames[i].commandBuffer));
         }
 
         /* SINGLE-USE COMMANDS */
-        VkCR(vkCreateCommandPool(vb->device, &commandPoolInfo, nullptr, &vb->singleUseCommandPool));
+        VkCR(vkCreateCommandPool(vb.device, &commandPoolInfo, nullptr, &vb.singleUseCommandPool));
 
         // Stats
-        if (vb->timestampQueryPool) vkDestroyQueryPool(vb->device, vb->timestampQueryPool, nullptr);
+        if (vb.timestampQueryPool) vkDestroyQueryPool(vb.device, vb.timestampQueryPool, nullptr);
         VulkanStats::SetupTimestampQuery();
     }
 
 
     void VulkanBase::SetUpSyncObjects()
     {
+        VulkanBaseResources& vb = s_Resources;
+
         VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT };
         VkSemaphoreCreateInfo semaphoreInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0 };
-        for (int i = 0; i < vb->settings.frameOverlap; i++)
+        for (int i = 0; i < vb.settings.frameOverlap; i++)
         {
-            VkCR(vkCreateFence(vb->device, &fenceInfo, nullptr, &vb->frames[i].waitFence));
-            VkCR(vkCreateSemaphore(vb->device, &semaphoreInfo, nullptr, &vb->frames[i].presentSemaphore));
-            VkCR(vkCreateSemaphore(vb->device, &semaphoreInfo, nullptr, &vb->frames[i].renderSemaphore));
+            VkCR(vkCreateFence(vb.device, &fenceInfo, nullptr, &vb.frames[i].waitFence));
+            VkCR(vkCreateSemaphore(vb.device, &semaphoreInfo, nullptr, &vb.frames[i].presentSemaphore));
+            VkCR(vkCreateSemaphore(vb.device, &semaphoreInfo, nullptr, &vb.frames[i].renderSemaphore));
         }
     }
 
     void VulkanBase::SetUpImGui()
     {
+        VulkanBaseResources& vb = s_Resources;
         DkContext& deako = Deako::GetContext();
 
         VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }, };
@@ -482,7 +496,7 @@ namespace Deako {
         poolInfo.poolSizeCount = (DkU32)std::size(poolSizes);
         poolInfo.pPoolSizes = poolSizes;
 
-        VkCR(vkCreateDescriptorPool(vb->device, &poolInfo, nullptr, &vb->imguiDescriptorPool));
+        VkCR(vkCreateDescriptorPool(vb.device, &poolInfo, nullptr, &vb.imguiDescriptorPool));
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -495,16 +509,16 @@ namespace Deako {
         ImGui_ImplGlfw_InitForVulkan(deako.window->glfwWindow, true);
 
         ImGui_ImplVulkan_InitInfo initInfo{};
-        initInfo.Instance = vb->instance;
-        initInfo.Device = vb->device;
-        initInfo.PhysicalDevice = vb->physicalDevice;
-        initInfo.DescriptorPool = vb->imguiDescriptorPool;
-        initInfo.PipelineCache = vb->pipelineCache;
-        initInfo.QueueFamily = vb->graphicsFamily.value();
-        initInfo.Queue = vb->graphicsQueue;
-        initInfo.ImageCount = vb->settings.frameOverlap;
+        initInfo.Instance = vb.instance;
+        initInfo.Device = vb.device;
+        initInfo.PhysicalDevice = vb.physicalDevice;
+        initInfo.DescriptorPool = vb.imguiDescriptorPool;
+        initInfo.PipelineCache = vb.pipelineCache;
+        initInfo.QueueFamily = vb.graphicsFamily.value();
+        initInfo.Queue = vb.graphicsQueue;
+        initInfo.ImageCount = vb.settings.frameOverlap;
         initInfo.MinImageCount = 2;
-        initInfo.MSAASamples = vb->settings.sampleCount;
+        initInfo.MSAASamples = vb.settings.sampleCount;
         initInfo.Allocator = VK_NULL_HANDLE;
 
         initInfo.UseDynamicRendering = true;
@@ -512,7 +526,7 @@ namespace Deako {
         initInfo.PipelineRenderingCreateInfo = {};
         initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vb->swapchain.colorTarget.format;
+        initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &vb.swapchain.colorTarget.format;
 
         ImGui_ImplVulkan_Init(&initInfo);
 
@@ -521,12 +535,13 @@ namespace Deako {
 
     void VulkanBase::Draw()
     {
-        FrameData& frame = vb->frames[vb->context.currentFrame];
+        VulkanBaseResources& vb = s_Resources;
+        FrameData& frame = vb.frames[vb.context.currentFrame];
 
-        VkCR(vkWaitForFences(vb->device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
+        VkCR(vkWaitForFences(vb.device, 1, &frame.waitFence, VK_TRUE, UINT64_MAX));
 
         DkU32 scImageIndex;
-        VkResult result = vkAcquireNextImageKHR(vb->device, vb->swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
+        VkResult result = vkAcquireNextImageKHR(vb.device, vb.swapchain.swapchain, UINT64_MAX, frame.presentSemaphore, VK_NULL_HANDLE, &scImageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -538,7 +553,7 @@ namespace Deako {
         }
 
         // manually reset fence after acquiring image (to avoid deadlock)
-        vkResetFences(vb->device, 1, &frame.waitFence);
+        vkResetFences(vb.device, 1, &frame.waitFence);
 
         VkCR(vkResetCommandBuffer(frame.commandBuffer, 0));
 
@@ -549,19 +564,20 @@ namespace Deako {
 
         VulkanStats::RecordStartTime(frame.commandBuffer);
 
-        VulkanImage::Transition(frame.commandBuffer, vb->swapchain.colorTarget.image, vb->swapchain.colorTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VulkanImage::Transition(frame.commandBuffer, vb.swapchain.colorTarget.image, vb.swapchain.colorTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         VulkanPicker::Draw(frame.commandBuffer, scImageIndex);
 
-        VulkanImage::Transition(frame.commandBuffer, vb->swapchain.depthTarget.image, vb->swapchain.depthTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        VulkanImage::Transition(frame.commandBuffer, vb.swapchain.depthTarget.image, vb.swapchain.depthTarget.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-        VulkanScene::Draw(frame.commandBuffer, scImageIndex);
+        VulkanScene& vulkanScene = GetActiveScene().GetVulkanScene();
+        vulkanScene.Draw(frame.commandBuffer, scImageIndex);
 
-        VulkanImage::Transition(frame.commandBuffer, vb->swapchain.images[scImageIndex], vb->swapchain.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VulkanImage::Transition(frame.commandBuffer, vb.swapchain.images[scImageIndex], vb.swapchain.format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         DrawGui(frame.commandBuffer, scImageIndex);
 
-        VulkanImage::Transition(frame.commandBuffer, vb->swapchain.images[scImageIndex], vb->swapchain.format, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VulkanImage::Transition(frame.commandBuffer, vb.swapchain.images[scImageIndex], vb.swapchain.format, 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         VulkanStats::RecordEndTime(frame.commandBuffer);
 
@@ -601,19 +617,19 @@ namespace Deako {
         submitInfo.commandBufferInfoCount = 1;
         submitInfo.pCommandBufferInfos = &commandInfo;
 
-        VkCR(vkQueueSubmit2KHR(vb->graphicsQueue, 1, &submitInfo, frame.waitFence));
+        VkCR(vkQueueSubmit2KHR(vb.graphicsQueue, 1, &submitInfo, frame.waitFence));
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = &frame.renderSemaphore;
-        VkSwapchainKHR swapChains[] = { vb->swapchain.swapchain };
+        VkSwapchainKHR swapChains[] = { vb.swapchain.swapchain };
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &scImageIndex;
         presentInfo.pResults = nullptr; // Optional
 
-        result = vkQueuePresentKHR(vb->presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(vb.presentQueue, &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
         {
@@ -624,20 +640,21 @@ namespace Deako {
             DK_CORE_ASSERT(result, "vkQueuePresentKHR failed!");
         }
 
-        vb->context.currentFrame = (vb->context.currentFrame + 1) % vb->settings.frameOverlap;
+        vb.context.currentFrame = (vb.context.currentFrame + 1) % vb.settings.frameOverlap;
     }
 
     void VulkanBase::DrawGui(VkCommandBuffer commandBuffer, DkU32 imageIndex)
     {
+        VulkanBaseResources& vb = s_Resources;
         DkContext& deako = Deako::GetContext();
 
         VkRenderingAttachmentInfo colorAttachment = {};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.pNext = nullptr;
-        colorAttachment.imageView = vb->swapchain.colorTarget.view;
+        colorAttachment.imageView = vb.swapchain.colorTarget.view;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
-        colorAttachment.resolveImageView = vb->swapchain.views[imageIndex];
+        colorAttachment.resolveImageView = vb.swapchain.views[imageIndex];
         colorAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -645,7 +662,7 @@ namespace Deako {
         VkRenderingInfo renderInfo = {};
         renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderInfo.pNext = nullptr;
-        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vb->swapchain.extent.width, vb->swapchain.extent.height };
+        renderInfo.renderArea = VkRect2D{ VkOffset2D { 0, 0 }, vb.swapchain.extent.width, vb.swapchain.extent.height };
         renderInfo.layerCount = 1;
         renderInfo.colorAttachmentCount = 1;
         renderInfo.pColorAttachments = &colorAttachment;
@@ -664,12 +681,14 @@ namespace Deako {
 
     void VulkanBase::RecreateSwapchain()
     {
+        VulkanBaseResources& vb = s_Resources;
+
         VulkanBase::Idle();
 
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        vkDestroyDescriptorPool(vb->device, vb->imguiDescriptorPool, nullptr);
+        vkDestroyDescriptorPool(vb.device, vb.imguiDescriptorPool, nullptr);
 
         SetUpSwapchain();
 

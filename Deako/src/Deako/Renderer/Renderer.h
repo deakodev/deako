@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Deako/Renderer/EditorCamera.h"
+#include "Deako/Renderer/Vulkan/VulkanBase.h"
+#include "Deako/Renderer/Vulkan/VulkanScene.h"
+#include "Deako/Renderer/Vulkan/VulkanPicker.h"
+#include "Deako/Renderer/Vulkan/VulkanStats.h"
 
 namespace Deako {
 

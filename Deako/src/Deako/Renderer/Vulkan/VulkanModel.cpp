@@ -2,15 +2,12 @@
 #include "dkpch.h"
 
 #include "VulkanBase.h"
-#include "VulkanScene.h"
 #include "VulkanResource.h"
 
 #include "Deako/Renderer/Renderer.h"
 
 namespace Deako {
 
-    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
-    static Ref<VulkanSceneResources> vs = VulkanScene::GetResources();
     static RendererStats& stats = Renderer::GetSceneStats();
 
     void Model::DrawNode(Node* node, VkCommandBuffer commandBuffer)
@@ -85,52 +82,56 @@ namespace Deako {
 
     void Model::SetVertices()
     {
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         // create host-visible staging buffers
         AllocatedBuffer vertexStaging =
             VulkanBuffer::Create(vertexData.buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VkCR(vkMapMemory(vb->device, vertexStaging.memory, 0, vertexStaging.memReqs.size, 0, &vertexStaging.mapped));
+        VkCR(vkMapMemory(vb.device, vertexStaging.memory, 0, vertexStaging.memReqs.size, 0, &vertexStaging.mapped));
         memcpy(vertexStaging.mapped, vertexData.buffer.data, vertexData.buffer.size);
-        vkUnmapMemory(vb->device, vertexStaging.memory);
+        vkUnmapMemory(vb.device, vertexStaging.memory);
 
         vertices =
             VulkanBuffer::Create(vertexData.buffer.size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
         VkBufferCopy copyRegion = {};
         copyRegion.size = vertexData.buffer.size;
         vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, vertices.buffer, 1, &copyRegion);
 
-        VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(vertexStaging);
     }
 
     void Model::SetIndices()
     {
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         if (indexData.buffer.size > 0)
         {
             // create host-visible staging buffers
             AllocatedBuffer indexStaging =
                 VulkanBuffer::Create(indexData.buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-            VkCR(vkMapMemory(vb->device, indexStaging.memory, 0, indexStaging.memReqs.size, 0, &indexStaging.mapped));
+            VkCR(vkMapMemory(vb.device, indexStaging.memory, 0, indexStaging.memReqs.size, 0, &indexStaging.mapped));
             memcpy(indexStaging.mapped, indexData.buffer.data, indexData.buffer.size);
-            vkUnmapMemory(vb->device, indexStaging.memory);
+            vkUnmapMemory(vb.device, indexStaging.memory);
 
             indices =
                 VulkanBuffer::Create(indexData.buffer.size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
             VkBufferCopy copyRegion = {};
             copyRegion.size = indexData.buffer.size;
             vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
 
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
             VulkanBuffer::Destroy(indexStaging);
         }
@@ -282,12 +283,14 @@ namespace Deako {
 
     Mesh::Mesh(DkMat4 matrix)
     {
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         this->uniformBlock.matrix = matrix;
 
         uniform.buffer = VulkanBuffer::Create(sizeof(uniformBlock),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-        VkCR(vkMapMemory(vb->device, uniform.buffer.memory, 0, sizeof(uniformBlock), 0, &uniform.mapped));
+        VkCR(vkMapMemory(vb.device, uniform.buffer.memory, 0, sizeof(uniformBlock), 0, &uniform.mapped));
         memcpy(uniform.mapped, &uniformBlock, sizeof(uniformBlock));
 
         uniform.descriptor = { uniform.buffer.buffer, 0, sizeof(uniformBlock) };

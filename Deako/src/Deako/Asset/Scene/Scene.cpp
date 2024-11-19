@@ -3,26 +3,26 @@
 
 #include "Deako/Asset/Pool/ProjectAssetPool.h"
 #include "Deako/Asset/Prefab/Prefab.h"
-#include "Deako/Renderer/Vulkan/VulkanScene.h"
 #include "Deako/Project/Serialize.h"
+#include "Deako/Renderer/Vulkan/VulkanScene.h"
 
 namespace Deako {
 
-    using EnttEntityMap = std::unordered_map<entt::entity, entt::entity>;
+    using EnttEnttMap = std::unordered_map<entt::entity, entt::entity>;
 
     template<typename... Component>
     static void CopyComponent(
         entt::registry& dstRegistry,
         entt::registry& srcRegistry,
-        const EnttEntityMap& enttEntityMap)
+        const EnttEnttMap& enttEnttMap)
     {
         ([&]()
             {
                 auto srcEnttEntities = srcRegistry.view<Component>();
                 for (auto srcEnttEntity : srcEnttEntities)
                 {
-                    auto dstEnttEntityIt = enttEntityMap.find(srcEnttEntity);
-                    if (dstEnttEntityIt == enttEntityMap.end())
+                    auto dstEnttEntityIt = enttEnttMap.find(srcEnttEntity);
+                    if (dstEnttEntityIt == enttEnttMap.end())
                         continue; // Skip if the dstEnttEntity wasn't found
 
                     entt::entity dstEnttEntity = dstEnttEntityIt->second;
@@ -37,47 +37,66 @@ namespace Deako {
         ComponentGroup<Component...>,
         entt::registry& dstRegistry,
         entt::registry& srcRegistry,
-        const EnttEntityMap& enttEntityMap)
+        const EnttEnttMap& enttEnttMap)
     {
-        CopyComponent<Component...>(dstRegistry, srcRegistry, enttEntityMap);
+        CopyComponent<Component...>(dstRegistry, srcRegistry, enttEnttMap);
+    }
+
+    void Scene::Build()
+    {
+        m_VulkanScene = CreateScope<VulkanScene>(this);
+        m_VulkanScene->Build();
+        m_IsValid = true;
+    }
+
+    void Scene::Rebuild()
+    {
+        DK_CORE_ASSERT(m_VulkanScene, "VulkanScene has not be created!");
+        m_VulkanScene->Rebuild();
+        m_IsValid = true;
+    }
+
+    void Scene::CleanUp()
+    {
+        m_VulkanScene->CleanUp();
+    }
+
+    void Scene::OnUpdate()
+    {
+        if (m_ActiveCamera)
+            m_ActiveCamera->OnUpdate();
+
+        if (!m_IsValid)
+        {
+            this->Rebuild();
+            return;
+        }
+
+        m_VulkanScene->OnUpdate();
     }
 
     Ref<Scene> Scene::Copy(Ref<Scene> srcScene)
     {
         Ref<Scene> dstScene = CreateRef<Scene>();
-        std::unordered_map<entt::entity, entt::entity> enttEntityMap;
+        std::unordered_map<entt::entity, entt::entity> enttEnttMap;
 
         // Create entities in dstScene and store mapping from src to dst entities
-        for (const auto& [handle, srcEnttEntity] : srcScene->entityMap)
+        for (const auto& [handle, srcEnttEntity] : srcScene->GetEnttEntityMap())
         {
-            const auto& name = srcScene->registry.get<TagComponent>(srcEnttEntity).tag;
+            const auto& name = srcScene->GetRegistry().get<TagComponent>(srcEnttEntity).tag;
             Entity dstEnttEntity = dstScene->CreateEntity(name, handle);
-            enttEntityMap[srcEnttEntity] = (entt::entity)dstEnttEntity; // Map src to dst entity
+            enttEnttMap[srcEnttEntity] = (entt::entity)dstEnttEntity; // Map src to dst entity
         }
 
         // Copy components (except TagComponent)
-        CopyComponent(AllComponents{}, dstScene->registry, srcScene->registry, enttEntityMap);
+        CopyComponent(AllComponents{}, dstScene->GetRegistry(), srcScene->GetRegistry(), enttEnttMap);
 
         return dstScene;
     }
 
-    void Scene::OnUpdate()
-    {
-        if (activeCamera)
-            activeCamera->OnUpdate();
-
-        if (!Deako::GetActiveScene().isValid)
-        {
-            VulkanScene::Rebuild(); return;
-        }
-
-        VulkanScene::OnUpdate();
-    }
-
     Entity Scene::CreateEntity(const std::string& name, EntityHandle handle)
     {
-        // After calling registry.create()
-        entt::entity enttEntity = registry.create();
+        entt::entity enttEntity = m_Registry.create();
         DkU32 colorOffset = 1;
         DkVec4 pickerColor = { U32ToVec3((DkU32)enttEntity + colorOffset), 1.0f };
         Entity entity = { handle, enttEntity, pickerColor, this };
@@ -86,21 +105,21 @@ namespace Deako {
         auto& tagComp = entity.AddComponent<TagComponent>();
         tagComp.tag = name.empty() ? "Entity" : name;
 
-        entities.push_back(entity);
-        entityMap[handle] = (entt::entity)entity;
-        pickerColorMap[pickerColor] = handle;
+        m_Entities.push_back(entity);
+        m_EnttEntityMap[handle] = (entt::entity)entity;
+        m_PickerColorMap[pickerColor] = handle;
 
         return entity;
     }
 
     void Scene::DestroyEntity(Entity entity)
     {
-        registry.destroy(entity);
+        m_Registry.destroy(entity);
     }
 
     Entity Scene::GetEntity(EntityHandle handle)
     {
-        for (auto& entity : entities)
+        for (auto& entity : m_Entities)
         {
             if (entity.GetHandle() == handle)
                 return entity;
@@ -111,8 +130,8 @@ namespace Deako {
 
     EntityHandle Scene::GetEntityHandle(const DkVec4& pickerColor)
     {
-        if (pickerColorMap.find(pickerColor) != pickerColorMap.end())
-            return pickerColorMap.at(pickerColor);
+        if (m_PickerColorMap.find(pickerColor) != m_PickerColorMap.end())
+            return m_PickerColorMap.at(pickerColor);
 
         return 0;
     }
@@ -126,12 +145,12 @@ namespace Deako {
     //     for (auto enttEntity : enttEntities)
     //     {
     //         // find the EntityHandle associated with this enttEntity
-    //         auto it = std::find_if(entityMap.begin(), entityMap.end(), [enttEntity](const auto& pair)
+    //         auto it = std::find_if(m_EnttEntityMap.begin(), m_EnttEntityMap.end(), [enttEntity](const auto& pair)
     //             {
     //                 return pair.second == enttEntity;
     //             });
 
-    //         if (it != entityMap.end())
+    //         if (it != m_EnttEntityMap.end())
     //             entities.emplace_back(it->first, enttEntity, this);
     //     }
 
@@ -144,9 +163,8 @@ namespace Deako {
     void Scene::LinkAssets()
     {
         ProjectAssetPool& projectAssetPool = Deako::GetProjectAssetPool();
-        Scene& activeScene = Deako::GetActiveScene();
 
-        for (auto& entity : activeScene.entities)
+        for (auto& entity : m_Entities)
         {
             auto& prefabComp = entity.GetComponent<PrefabComponent>();
             Ref<Prefab> prefabAsset = projectAssetPool.GetAsset<Prefab>(prefabComp.handle);
@@ -214,7 +232,7 @@ namespace Deako {
     template<>
     void Scene::OnComponentAdded<CameraComponent>(const Entity& entity, CameraComponent& component)
     {
-        component.camera = activeCamera;
+        component.camera = m_ActiveCamera;
     }
 
 

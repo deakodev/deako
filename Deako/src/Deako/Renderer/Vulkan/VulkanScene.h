@@ -3,7 +3,6 @@
 #include "Deako/Asset/AssetManager.h"
 #include "Deako/Asset/Pool/ProjectAssetPool.h"
 #include "Deako/Asset/Scene/Scene.h"
-#include "Deako/Asset/Scene/Entity.h"
 #include "Deako/Renderer/EditorCamera.h"
 
 #include "VulkanResource.h"
@@ -20,15 +19,12 @@ namespace Deako {
         UniformBuffer                              dynamic;
         UniformBuffer                              shared;
         UniformBuffer                              light;
-        UniformBuffer                              picker;
     };
 
     struct VulkanSceneResources
     {
         std::vector<UniformSet>                    uniforms;
-
         size_t                                     dynamicUniformAlignment{ 0 };
-        size_t                                     pickerUniformAlignment{ 0 };
 
         struct
         {   // per-object uniform data
@@ -36,33 +32,28 @@ namespace Deako {
         } uniformDynamicData;
 
         struct
-        {   // per-object uniform data
-            DkVec4* colorID{ nullptr };
-        } uniformPickerData;
-
-        struct
         {   // per-scene uniform data
-            DkMat4                              projection{ 1.0f };
-            DkMat4                              view{ 1.0f };
-            DkVec3                              camPos{ 0.0f };
+            DkMat4                                 projection{ 1.0f };
+            DkMat4                                 view{ 1.0f };
+            DkVec3                                 camPos{ 0.0f };
         } uniformSharedData;
 
         struct
         {   // light params
-            DkVec3                              color = DkVec3(1.0f);
-            DkVec3                              rotation = DkVec3(1.309f, -0.698f, 0.0f);
+            DkVec3                                 color = DkVec3(1.0f);
+            DkVec3                                 rotation = DkVec3(1.309f, -0.698f, 0.0f);
             Ref<Texture2D>                         lutBrdf;
         } lightSource;
 
         struct
         {   // light uniform data
-            DkVec4                              lightDir;
-            DkF32                                   exposure = 4.5f;
-            DkF32                                   gamma = 2.2f;
-            DkF32                                   prefilteredCubeMipLevels;
-            DkF32                                   scaleIBLAmbient = 1.0f;
-            DkF32                                   debugViewInputs = 0;
-            DkF32                                   debugViewEquation = 0;
+            DkVec4                                 lightDir;
+            DkF32                                  exposure = 4.5f;
+            DkF32                                  gamma = 2.2f;
+            DkF32                                  prefilteredCubeMipLevels;
+            DkF32                                  scaleIBLAmbient = 1.0f;
+            DkF32                                  debugViewInputs = 0;
+            DkF32                                  debugViewEquation = 0;
         } uniformLightData;
 
         VulkanDescriptor::AllocatorGrowable        staticDescriptorAllocator; // vs per-frame
@@ -74,13 +65,11 @@ namespace Deako {
             VkDescriptorSetLayout                  node;
             VkDescriptorSetLayout                  materialBuffer;
             VkDescriptorSetLayout                  skybox;
-            VkDescriptorSetLayout                  picker;
         } descriptorLayouts;
 
+        VkPipeline                                 boundPipeline;
         VkPipelineLayout                           scenePipelineLayout;
-        VkPipelineLayout                           pickerPipelineLayout;
         VkPipelineLayout                           skyboxPipelineLayout;
-
 
         struct
         {
@@ -92,7 +81,6 @@ namespace Deako {
             VkPipeline                             unlitDoubleSided;
             VkPipeline                             unlitAlphaBlending;
             VkPipeline                             outline;
-            VkPipeline                             picker;
         } pipelines;
 
         struct
@@ -109,47 +97,37 @@ namespace Deako {
             VkDescriptorBufferInfo                 descriptor;
             VkDescriptorSet                        descriptorSet;
         } materialBuffer;
-
-        struct
-        {
-            AllocatedImage                         colorTarget;
-            AllocatedImage                         depthTarget;
-            AllocatedBuffer                        stagingBuffer;
-            VkDescriptorSet                        descriptorSet;
-        } picker;
-
-        struct
-        {
-            bool                                       displayBackground{ true };
-            bool                                       animationPaused{ false };
-        } settings;
-
-        struct
-        {
-            VkPipeline                                 boundPipeline;
-        } context;
     };
+
+    Scene& GetActiveScene();
 
     class VulkanScene
     {
     public:
-        static void Build();
-        static void Rebuild();
-        static void CleanUp();
+        VulkanScene(Scene* scene);
 
-        static void OnUpdate();
-        static void Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex);
+        void Build();
+        void Rebuild();
+        void CleanUp();
 
-        static Ref<VulkanSceneResources> GetResources() { return vs; }
+        void OnUpdate();
+        void Draw(VkCommandBuffer commandBuffer, DkU32 imageIndex);
 
-    private:
-        static void SetUpAssets();
-        static void SetUpUniforms();
-        static void SetUpDescriptors();
-        static void SetUpPipelines();
+        VulkanSceneResources& GetResources() { return m_Resources; }
+        static VulkanSceneResources& GetActiveSceneResources() { return GetActiveScene().GetVulkanScene().GetResources(); }
 
     private:
-        static Ref<VulkanSceneResources> vs;
+        void SetUpAssets();
+        void SetUpUniforms();
+        void SetUpDescriptors();
+        void SetUpPipelines();
+
+    private:
+        VulkanSceneResources m_Resources;
+
+        bool m_DisplayBackground{ true };
+
+        Scene* m_ParentScene; // non-owning pointer to parent scene
     };
 
 }

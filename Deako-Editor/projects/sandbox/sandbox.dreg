@@ -1,6 +1,9 @@
 AssetRegistry:
-  - AssetHandle: 1472441976225249573
-    AssetPath: prefabs/TerrainGrid.gltf
+  - AssetHandle: 1364095540859975581
+    AssetPath: scenes/sandbox.dscene
+    AssetType: Scene
+  - AssetHandle: 51418710489529541
+    AssetPath: prefabs/DamagedHelmet.gltf
     AssetType: Prefab
   - AssetHandle: 57892318812072087
     AssetPath: prefabs/Cube.gltf
@@ -8,21 +11,18 @@ AssetRegistry:
   - AssetHandle: 2334446085925837575
     AssetPath: prefabs/Teapot.gltf
     AssetType: Prefab
-  - AssetHandle: 1364095540859975581
-    AssetPath: scenes/sandbox.dscene
-    AssetType: Scene
-  - AssetHandle: 6885474818565613459
-    AssetPath: environments/satara_night_cube.ktx
-    AssetType: TextureCubeMap
-  - AssetHandle: 7052072051722835223
-    AssetPath: environments/papermill.ktx
-    AssetType: TextureCubeMap
+  - AssetHandle: 1472441976225249573
+    AssetPath: prefabs/TerrainGrid.gltf
+    AssetType: Prefab
   - AssetHandle: 9803649518941654224
     AssetPath: prefabs/orientationTest.gltf
     AssetType: Prefab
+  - AssetHandle: 7052072051722835223
+    AssetPath: environments/papermill.ktx
+    AssetType: TextureCubeMap
+  - AssetHandle: 6885474818565613459
+    AssetPath: environments/satara_night_cube.ktx
+    AssetType: TextureCubeMap
   - AssetHandle: 5532312814824508002
     AssetPath: prefabs/BlueCube.gltf
-    AssetType: Prefab
-  - AssetHandle: 51418710489529541
-    AssetPath: prefabs/DamagedHelmet.gltf
     AssetType: Prefab

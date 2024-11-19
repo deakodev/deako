@@ -12,7 +12,7 @@ namespace Deako {
 
         ImGui::Begin("Scene");
 
-        for (auto& entity : activeScene.entities)
+        for (auto& entity : activeScene.GetEntities())
         {
             EntityHandle entityHandle = entity.GetHandle();
             DrawEntityNode(entityHandle, deako.activeHandle == entityHandle);
@@ -28,8 +28,9 @@ namespace Deako {
         {
             if (ImGui::MenuItem("Create Empty Entity"))
             {
-                // activeScene.CreateEntity("Empty Entity");
-                activeScene.isValid = false;
+                Scene& activeScene = Deako::GetActiveScene();
+                activeScene.CreateEntity("Empty Entity");
+                activeScene.Invalidate();
             }
 
             ImGui::EndPopup();

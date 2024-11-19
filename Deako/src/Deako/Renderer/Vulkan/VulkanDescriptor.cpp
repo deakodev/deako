@@ -5,8 +5,6 @@
 
 namespace Deako {
 
-    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
-
     namespace VulkanDescriptor {
 
         void LayoutBuilder::AddBinding(DkU32 bindingIndex, VkDescriptorType type, VkShaderStageFlags flags)
@@ -23,6 +21,8 @@ namespace Deako {
 
         VkDescriptorSetLayout LayoutBuilder::Build(void* pNext, VkDescriptorSetLayoutCreateFlags flags)
         {
+            VulkanBaseResources& vb = VulkanBase::GetResources();
+
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
 
             layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -31,7 +31,7 @@ namespace Deako {
             layoutInfo.pNext = pNext;
 
             VkDescriptorSetLayout descriptorSetLayout;
-            VkCR(vkCreateDescriptorSetLayout(vb->device, &layoutInfo, nullptr, &descriptorSetLayout));
+            VkCR(vkCreateDescriptorSetLayout(vb.device, &layoutInfo, nullptr, &descriptorSetLayout));
 
             return descriptorSetLayout;
         }
@@ -67,7 +67,8 @@ namespace Deako {
 
         void Writer::UpdateSets()
         {
-            vkUpdateDescriptorSets(vb->device, (DkU32)writes.size(), writes.data(), 0, nullptr);
+            VulkanBaseResources& vb = VulkanBase::GetResources();
+            vkUpdateDescriptorSets(vb.device, (DkU32)writes.size(), writes.data(), 0, nullptr);
         }
 
         AllocatorGrowable::AllocatorGrowable(DkU32 maxSets, std::span<PoolSizeRatio> poolRatios)
@@ -84,6 +85,8 @@ namespace Deako {
 
         VkDescriptorSet AllocatorGrowable::Allocate(VkDescriptorSetLayout descriptorLayout, void* pNext)
         {
+            VulkanBaseResources& vb = VulkanBase::GetResources();
+
             VkDescriptorSet descriptorSet{};
 
             VkDescriptorPool poolToUse = GetPool(); //get or create pool to allocate from
@@ -96,7 +99,7 @@ namespace Deako {
             allocInfo.pSetLayouts = &descriptorLayout;
             allocInfo.pNext = pNext;
 
-            VkResult result = vkAllocateDescriptorSets(vb->device, &allocInfo, &descriptorSet);
+            VkResult result = vkAllocateDescriptorSets(vb.device, &allocInfo, &descriptorSet);
 
             if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
             {   // allocation failed. Try again
@@ -106,7 +109,7 @@ namespace Deako {
                 poolToUse = GetPool();
                 allocInfo.descriptorPool = poolToUse;
 
-                VkCR(vkAllocateDescriptorSets(vb->device, &allocInfo, &descriptorSet));
+                VkCR(vkAllocateDescriptorSets(vb.device, &allocInfo, &descriptorSet));
             }
 
             m_ReadyPools.emplace_back(poolToUse);
@@ -116,6 +119,8 @@ namespace Deako {
 
         VkDescriptorPool AllocatorGrowable::CreatePool(DkU32 maxSets, std::span<PoolSizeRatio> poolRatios)
         {
+            VulkanBaseResources& vb = VulkanBase::GetResources();
+
             VkDescriptorPool descriptorPool{};
 
             std::vector<VkDescriptorPoolSize> poolSizes;
@@ -135,7 +140,7 @@ namespace Deako {
             poolInfo.poolSizeCount = (DkU32)poolSizes.size();
             poolInfo.pPoolSizes = poolSizes.data();
 
-            vkCreateDescriptorPool(vb->device, &poolInfo, nullptr, &descriptorPool);
+            vkCreateDescriptorPool(vb.device, &poolInfo, nullptr, &descriptorPool);
 
             return descriptorPool;
         }
@@ -163,10 +168,12 @@ namespace Deako {
 
         void AllocatorGrowable::DestroyPools()
         {
+            VulkanBaseResources& vb = VulkanBase::GetResources();
+
             for (auto pool : m_ReadyPools)
-                vkDestroyDescriptorPool(vb->device, pool, nullptr);
+                vkDestroyDescriptorPool(vb.device, pool, nullptr);
             for (auto pool : m_FullPools)
-                vkDestroyDescriptorPool(vb->device, pool, nullptr);
+                vkDestroyDescriptorPool(vb.device, pool, nullptr);
 
             m_ReadyPools.clear();
             m_FullPools.clear();

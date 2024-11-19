@@ -9,9 +9,6 @@
 
 namespace Deako {
 
-    static Ref<VulkanBaseResources> vb = VulkanBase::GetResources();
-    static Ref<VulkanSceneResources> vs = VulkanScene::GetResources();
-
     Texture::Texture(TextureDetails details)
         : details(details)
     {
@@ -26,13 +23,17 @@ namespace Deako {
 
     void Texture::Destroy()
     {
-        if (sampler) vkDestroySampler(vb->device, sampler, nullptr);
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
+        if (sampler) vkDestroySampler(vb.device, sampler, nullptr);
         VulkanImage::Destroy(image);
     }
 
     Texture2D::Texture2D(const TextureDetails& details, Buffer& buffer)
         : Texture(details)
     {
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         if (buffer.size == 0)
             DK_CORE_ERROR("Texture buffer empty. Unable to create Texture2D!");
 
@@ -41,9 +42,9 @@ namespace Deako {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         // copy texture data into staging buffer
-        VkCR(vkMapMemory(vb->device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
+        VkCR(vkMapMemory(vb.device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
         memcpy(staging.mapped, buffer.data, buffer.size);
-        vkUnmapMemory(vb->device, staging.memory);
+        vkUnmapMemory(vb.device, staging.memory);
 
         // create optimal tiled target image
         image =
@@ -67,7 +68,7 @@ namespace Deako {
             copyRegions.push_back(copyRegion);
         }
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
         VulkanImage::Transition(commandBuffer, image.image, details.format, details.mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -77,12 +78,12 @@ namespace Deako {
 
         VulkanImage::Transition(commandBuffer, image.image, details.format, details.mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, details.layout);
 
-        VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(staging);
 
         VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(vb->physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(vb.physicalDevice, &deviceProperties);
 
         // create the sampler
         VkSamplerCreateInfo samplerInfo = {};
@@ -100,7 +101,7 @@ namespace Deako {
         samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VkCR(vkCreateSampler(vb->device, &samplerInfo, nullptr, &sampler));
+        VkCR(vkCreateSampler(vb.device, &samplerInfo, nullptr, &sampler));
 
         UpdateDescriptor();
     }
@@ -108,6 +109,8 @@ namespace Deako {
     // loads image for texture. Supports jpg, png, embedded and external files as well as external KTX2 files with basis universal texture compression
     void Texture2D::GenerateFromGLTF(tinygltf::Image& gltfimage, Buffer& textureData, TextureSampler textureSampler)
     {
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         image.format = VK_FORMAT_R8G8B8A8_UNORM;
 
         if (gltfimage.uri.substr(gltfimage.uri.find_last_of(".") + 1) == "ktx2")
@@ -123,15 +126,15 @@ namespace Deako {
             // select target format based on device features (use uncompressed if none supported)
             auto targetFormat = basist::transcoder_texture_format::cTFRGBA32;
 
-            auto FormatSupported = [](VkFormat format)
+            auto FormatSupported = [&vb](VkFormat format)
                 {
                     VkFormatProperties formatProperties;
-                    vkGetPhysicalDeviceFormatProperties(vb->physicalDevice, format, &formatProperties);
+                    vkGetPhysicalDeviceFormatProperties(vb.physicalDevice, format, &formatProperties);
                     return ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT) && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT));
                 };
 
             VkPhysicalDeviceFeatures deviceFeatures;
-            vkGetPhysicalDeviceFeatures(vb->physicalDevice, &deviceFeatures);
+            vkGetPhysicalDeviceFeatures(vb.physicalDevice, &deviceFeatures);
 
             if (deviceFeatures.textureCompressionBC)
             {   // BC7 is the preferred block compression if available
@@ -198,7 +201,7 @@ namespace Deako {
             AllocatedBuffer staging =
                 VulkanBuffer::Create(totalBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-            VkCR(vkMapMemory(vb->device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
+            VkCR(vkMapMemory(vb.device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
 
             unsigned char* buffer = new unsigned char[totalBufferSize];
             unsigned char* bufferPtr = &buffer[0];
@@ -225,7 +228,7 @@ namespace Deako {
             image =
                 VulkanImage::Create(image.extent, image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, mipLevels);
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
             VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -253,7 +256,7 @@ namespace Deako {
 
             VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
             VulkanBuffer::Destroy(staging);
 
@@ -293,7 +296,7 @@ namespace Deako {
             mipLevels = static_cast<DkU32>(floor(log2(std::max(width, height))) + 1.0);
 
             VkFormatProperties formatProperties;
-            vkGetPhysicalDeviceFormatProperties(vb->physicalDevice, image.format, &formatProperties);
+            vkGetPhysicalDeviceFormatProperties(vb.physicalDevice, image.format, &formatProperties);
             DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT, "VK_FORMAT_FEATURE_BLIT_SRC_BIT is required!");
             DK_CORE_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT, "VK_FORMAT_FEATURE_BLIT_DST_BIT is required!");
 
@@ -301,9 +304,9 @@ namespace Deako {
             AllocatedBuffer staging =
                 VulkanBuffer::Create(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-            VkCR(vkMapMemory(vb->device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
+            VkCR(vkMapMemory(vb.device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
             memcpy(staging.mapped, buffer, bufferSize);
-            vkUnmapMemory(vb->device, staging.memory);
+            vkUnmapMemory(vb.device, staging.memory);
 
             if (deleteBuffer) delete[] buffer;
 
@@ -311,7 +314,7 @@ namespace Deako {
             image =
                 VulkanImage::Create(image.extent, image.format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, mipLevels);
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
             VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -326,12 +329,12 @@ namespace Deako {
 
             VulkanImage::Transition(commandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
             VulkanBuffer::Destroy(staging);
 
             // generate the mip chain (glTF uses jpg and png, so we need to create this manually)
-            VkCommandBuffer blitCommandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer blitCommandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
             for (DkU32 i = 1; i < mipLevels; i++)
             {
@@ -384,7 +387,7 @@ namespace Deako {
 
             VulkanImage::Transition(blitCommandBuffer, image.image, image.format, mipLevels, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, blitCommandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, blitCommandBuffer);
         }
 
         details.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -404,7 +407,7 @@ namespace Deako {
         samplerInfo.maxLod = (DkF32)mipLevels;
         samplerInfo.maxAnisotropy = 8.0f;
         samplerInfo.anisotropyEnable = VK_TRUE;
-        VkCR(vkCreateSampler(vb->device, &samplerInfo, nullptr, &sampler));
+        VkCR(vkCreateSampler(vb.device, &samplerInfo, nullptr, &sampler));
 
         UpdateDescriptor();
     }
@@ -412,6 +415,8 @@ namespace Deako {
     TextureCubeMap::TextureCubeMap(const TextureDetails& details, Buffer& buffer)
         : Texture(details)
     {
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         if (!buffer)
             DK_CORE_ERROR("Texture buffer empty. Unable to create TextureCubeMap!");
 
@@ -420,9 +425,9 @@ namespace Deako {
             VulkanBuffer::Create(buffer.size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         // copy texture data into staging buffer
-        VkCR(vkMapMemory(vb->device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
+        VkCR(vkMapMemory(vb.device, staging.memory, 0, staging.memReqs.size, 0, &staging.mapped));
         memcpy(staging.mapped, buffer.data, buffer.size);
-        vkUnmapMemory(vb->device, staging.memory);
+        vkUnmapMemory(vb.device, staging.memory);
 
         // create optimal tiled target image
         VkImageCreateInfo imageInfo = {};
@@ -438,17 +443,17 @@ namespace Deako {
         imageInfo.extent = { details.width, details.height, 1 };
         imageInfo.usage = details.usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-        VkCR(vkCreateImage(vb->device, &imageInfo, nullptr, &image.image));
+        VkCR(vkCreateImage(vb.device, &imageInfo, nullptr, &image.image));
 
         VkMemoryRequirements memReqs;
-        vkGetImageMemoryRequirements(vb->device, image.image, &memReqs);
+        vkGetImageMemoryRequirements(vb.device, image.image, &memReqs);
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memReqs.size;
         allocInfo.memoryTypeIndex = VulkanDevice::GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        VkCR(vkAllocateMemory(vb->device, &allocInfo, nullptr, &image.memory));
-        VkCR(vkBindImageMemory(vb->device, image.image, image.memory, 0));
+        VkCR(vkAllocateMemory(vb.device, &allocInfo, nullptr, &image.memory));
+        VkCR(vkBindImageMemory(vb.device, image.image, image.memory, 0));
 
         // setup buffer copy regions for each mip level
         std::vector<VkBufferImageCopy> copyRegions;
@@ -472,7 +477,7 @@ namespace Deako {
             }
         }
 
-        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+        VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -508,7 +513,7 @@ namespace Deako {
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
         }
 
-        VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+        VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
 
         VulkanBuffer::Destroy(staging);
 
@@ -522,10 +527,10 @@ namespace Deako {
         imageViewInfo.subresourceRange.layerCount = 6;
         imageViewInfo.subresourceRange.levelCount = details.mipLevels;
         imageViewInfo.image = image.image;
-        VkCR(vkCreateImageView(vb->device, &imageViewInfo, nullptr, &image.view));
+        VkCR(vkCreateImageView(vb.device, &imageViewInfo, nullptr, &image.view));
 
         VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(vb->physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(vb.physicalDevice, &deviceProperties);
 
         // create the sampler
         VkSamplerCreateInfo samplerInfo = {};
@@ -543,14 +548,17 @@ namespace Deako {
         samplerInfo.maxAnisotropy = deviceProperties.limits.maxSamplerAnisotropy;
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VkCR(vkCreateSampler(vb->device, &samplerInfo, nullptr, &sampler));
+        VkCR(vkCreateSampler(vb.device, &samplerInfo, nullptr, &sampler));
 
         UpdateDescriptor();
     }
 
-
     void TextureCubeMap::GenerateCubeMap()
     {
+        Scene& activeScene = Deako::GetActiveScene();
+        VulkanSceneResources& vs = activeScene.GetVulkanScene().GetResources();
+        VulkanBaseResources& vb = VulkanBase::GetResources();
+
         VkFormat format;
         DkU32 dim;
 
@@ -578,18 +586,18 @@ namespace Deako {
             imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
             imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            VkCR(vkCreateImage(vb->device, &imageInfo, nullptr, &image.image));
+            VkCR(vkCreateImage(vb.device, &imageInfo, nullptr, &image.image));
 
             VkMemoryRequirements memReqs;
-            vkGetImageMemoryRequirements(vb->device, image.image, &memReqs);
+            vkGetImageMemoryRequirements(vb.device, image.image, &memReqs);
 
             VkMemoryAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
             allocInfo.allocationSize = memReqs.size;
             allocInfo.memoryTypeIndex = VulkanDevice::GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            VkCR(vkAllocateMemory(vb->device, &allocInfo, nullptr, &image.memory));
-            VkCR(vkBindImageMemory(vb->device, image.image, image.memory, 0));
+            VkCR(vkAllocateMemory(vb.device, &allocInfo, nullptr, &image.memory));
+            VkCR(vkBindImageMemory(vb.device, image.image, image.memory, 0));
 
             // image-view
             VkImageViewCreateInfo imageViewInfo = {};
@@ -601,7 +609,7 @@ namespace Deako {
             imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             imageViewInfo.subresourceRange.levelCount = numMips;
             imageViewInfo.subresourceRange.layerCount = 6;
-            VkCR(vkCreateImageView(vb->device, &imageViewInfo, nullptr, &image.view));
+            VkCR(vkCreateImageView(vb.device, &imageViewInfo, nullptr, &image.view));
             // sampler
             VkSamplerCreateInfo samplerInfo{};
             samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -615,7 +623,7 @@ namespace Deako {
             samplerInfo.maxLod = static_cast<DkF32>(numMips);
             samplerInfo.maxAnisotropy = 1.0f;
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VkCR(vkCreateSampler(vb->device, &samplerInfo, nullptr, &sampler));
+            VkCR(vkCreateSampler(vb.device, &samplerInfo, nullptr, &sampler));
         }
 
         // color attachment
@@ -663,7 +671,7 @@ namespace Deako {
         renderPassInfo.pDependencies = dependencies.data();
 
         VkRenderPass renderPass;
-        VkCR(vkCreateRenderPass(vb->device, &renderPassInfo, nullptr, &renderPass));
+        VkCR(vkCreateRenderPass(vb.device, &renderPassInfo, nullptr, &renderPass));
 
         struct Offscreen
         {
@@ -684,13 +692,13 @@ namespace Deako {
             framebufferInfo.width = dim;
             framebufferInfo.height = dim;
             framebufferInfo.layers = 1;
-            VkCR(vkCreateFramebuffer(vb->device, &framebufferInfo, nullptr, &offscreen.framebuffer));
+            VkCR(vkCreateFramebuffer(vb.device, &framebufferInfo, nullptr, &offscreen.framebuffer));
 
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
             VulkanImage::Transition(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
         }
 
         // descriptors
@@ -700,7 +708,7 @@ namespace Deako {
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.pBindings = &setLayoutBinding;
         layoutInfo.bindingCount = 1;
-        VkCR(vkCreateDescriptorSetLayout(vb->device, &layoutInfo, nullptr, &descriptorSetLayout));
+        VkCR(vkCreateDescriptorSetLayout(vb.device, &layoutInfo, nullptr, &descriptorSetLayout));
 
         // descriptor Pool
         VkDescriptorPoolSize poolSize = { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 };
@@ -711,7 +719,7 @@ namespace Deako {
         descriptorPoolInfo.maxSets = 2;
 
         VkDescriptorPool descriptorPool;
-        VkCR(vkCreateDescriptorPool(vb->device, &descriptorPoolInfo, nullptr, &descriptorPool));
+        VkCR(vkCreateDescriptorPool(vb.device, &descriptorPoolInfo, nullptr, &descriptorPool));
 
         // descriptor sets
         VkDescriptorSet descriptorSet;
@@ -720,7 +728,7 @@ namespace Deako {
         descriptorSetAllocInfo.descriptorPool = descriptorPool;
         descriptorSetAllocInfo.pSetLayouts = &descriptorSetLayout;
         descriptorSetAllocInfo.descriptorSetCount = 1;
-        VkCR(vkAllocateDescriptorSets(vb->device, &descriptorSetAllocInfo, &descriptorSet));
+        VkCR(vkAllocateDescriptorSets(vb.device, &descriptorSetAllocInfo, &descriptorSet));
 
         VkWriteDescriptorSet writeDescriptorSet{};
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -728,8 +736,8 @@ namespace Deako {
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.dstSet = descriptorSet;
         writeDescriptorSet.dstBinding = 0;
-        writeDescriptorSet.pImageInfo = &vs->skybox.environmentCube->descriptor;
-        vkUpdateDescriptorSets(vb->device, 1, &writeDescriptorSet, 0, nullptr);
+        writeDescriptorSet.pImageInfo = &vs.skybox.environmentCube->descriptor;
+        vkUpdateDescriptorSets(vb.device, 1, &writeDescriptorSet, 0, nullptr);
 
         struct PushBlockIrradiance
         {
@@ -764,7 +772,7 @@ namespace Deako {
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
         pipelineLayoutInfo.pushConstantRangeCount = 1;
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-        VkCR(vkCreatePipelineLayout(vb->device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+        VkCR(vkCreatePipelineLayout(vb.device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
 
         // pipeline
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
@@ -858,10 +866,10 @@ namespace Deako {
         pipelineInfo.pNext = nullptr;
 
         VkPipeline pipeline;
-        VkCR(vkCreateGraphicsPipelines(vb->device, vb->pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
+        VkCR(vkCreateGraphicsPipelines(vb.device, vb.pipelineCache, 1, &pipelineInfo, nullptr, &pipeline));
 
         for (auto shaderStage : shaderStages)
-            vkDestroyShaderModule(vb->device, shaderStage.module, nullptr);
+            vkDestroyShaderModule(vb.device, shaderStage.module, nullptr);
 
         // render cubemap
         VkClearValue clearValues[1];
@@ -900,7 +908,7 @@ namespace Deako {
         subresourceRange.layerCount = 6;
 
         {   // change image layout for all cubemap faces to transfer destination
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -912,14 +920,14 @@ namespace Deako {
             imageMemoryBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
         }
 
         for (DkU32 m = 0; m < numMips; m++)
         {
             for (DkU32 f = 0; f < 6; f++)
             {
-                VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+                VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
 
                 viewport.width = static_cast<DkF32>(dim * std::pow(0.5f, m));
                 viewport.height = static_cast<DkF32>(dim * std::pow(0.5f, m));
@@ -946,7 +954,7 @@ namespace Deako {
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
 
-                vs->skybox.model->Draw(commandBuffer);
+                vs.skybox.model->Draw(commandBuffer);
 
                 vkCmdEndRenderPass(commandBuffer);
 
@@ -979,12 +987,12 @@ namespace Deako {
 
                 VulkanImage::Transition(commandBuffer, offscreen.image.image, format, 1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-                VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+                VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
             }
         }
 
         {
-            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb->singleUseCommandPool);
+            VkCommandBuffer commandBuffer = VulkanCommand::BeginSingleTimeCommands(vb.singleUseCommandPool);
             VkImageMemoryBarrier imageMemoryBarrier{};
             imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
             imageMemoryBarrier.image = image.image;
@@ -994,16 +1002,16 @@ namespace Deako {
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
             imageMemoryBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            VulkanCommand::EndSingleTimeCommands(vb->singleUseCommandPool, commandBuffer);
+            VulkanCommand::EndSingleTimeCommands(vb.singleUseCommandPool, commandBuffer);
         }
 
-        vkDestroyRenderPass(vb->device, renderPass, nullptr);
-        vkDestroyFramebuffer(vb->device, offscreen.framebuffer, nullptr);
+        vkDestroyRenderPass(vb.device, renderPass, nullptr);
+        vkDestroyFramebuffer(vb.device, offscreen.framebuffer, nullptr);
         VulkanImage::Destroy(offscreen.image);
-        vkDestroyDescriptorPool(vb->device, descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(vb->device, descriptorSetLayout, nullptr);
-        vkDestroyPipeline(vb->device, pipeline, nullptr);
-        vkDestroyPipelineLayout(vb->device, pipelineLayout, nullptr);
+        vkDestroyDescriptorPool(vb.device, descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(vb.device, descriptorSetLayout, nullptr);
+        vkDestroyPipeline(vb.device, pipeline, nullptr);
+        vkDestroyPipelineLayout(vb.device, pipelineLayout, nullptr);
 
         details.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -1011,7 +1019,7 @@ namespace Deako {
 
         if (target == PREFILTERED)
         {
-            vs->uniformLightData.prefilteredCubeMipLevels = static_cast<DkF32>(numMips);
+            vs.uniformLightData.prefilteredCubeMipLevels = static_cast<DkF32>(numMips);
         }
     }
 
@@ -1062,6 +1070,5 @@ namespace Deako {
         default: DK_CORE_WARN("Unknown wrap mode: {0} and/or {1}", wrapS, wrapT); break;
         }
     }
-
 
 }
