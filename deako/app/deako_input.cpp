@@ -11,7 +11,6 @@ namespace Deako {
 		: m_Context(context), m_Window(window)
 	{
 		DK_CORE_ASSERT(context, "Input required a Context!");
-		DK_CORE_ASSERT(!context->Input, "Context already has a Input!");
 		DK_CORE_ASSERT(window, "Input requires a Window!");
 	}
 

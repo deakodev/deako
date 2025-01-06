@@ -5,6 +5,8 @@
 #include "app/deako_core.h"
 #include "app/deako_debug.h"
 
+#include <renderer/Renderer.h>
+
 namespace Deako {
 
 	struct ContextConfig
@@ -16,9 +18,8 @@ namespace Deako {
 
 	struct Context
 	{
-		Scope<Window> Window;
 		Scope<Application> Application;
-		Scope<Input> Input;
+		Scope<Renderer> Renderer;
 
 		bool Initialized = false;
 	};

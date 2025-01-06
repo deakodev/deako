@@ -55,7 +55,7 @@ namespace Deako {
 	class Application
 	{
 	public:
-		Application(Context* context, Window* window, const char* name);
+		Application(Context* context, const char* name, const glm::vec2& windowSize);
 
 		void Run();
 		void PollEvents();
@@ -73,16 +73,19 @@ namespace Deako {
 		bool OnMinimized(WindowMinimizedEvent& e);
 		bool OnRestored(WindowRestoredEvent& e);
 
-	private:
-		Context* m_Context; // parent, not owned
-		Window* m_Window; // not owned
-		const char* m_Name;
-
-		bool m_Running;
-		bool m_Active;
+		Window* GetWindow() { return m_Window.get(); }
 
 	protected:
 		LayerStack m_LayerStack;
+
+	private:
+		Context* m_Context; // parent, not owned
+		Scope<Window> m_Window;
+		Scope<Input> m_Input;
+
+		const char* m_Name;
+		bool m_Running;
+		bool m_Active;
 	};
 
 }

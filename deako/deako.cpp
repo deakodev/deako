@@ -12,9 +12,8 @@ namespace Deako {
 
 		DK_CORE_ASSERT(!deako.Initialized, "Deako Context already initialized!");
 
-		deako.Window = CreateScope<Window>(Gdeako);
-		deako.Application = CreateScope<Application>(Gdeako, deako.Window.get(), config.AppName);
-		deako.Input = CreateScope<Input>(Gdeako, deako.Window.get());
+		deako.Application = CreateScope<Application>(Gdeako, config.AppName, config.WindowSize);
+		deako.Renderer = CreateScope<Renderer>(Gdeako, deako.Application->GetWindow());
 
 		deako.Initialized = true;
 

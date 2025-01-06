@@ -72,14 +72,16 @@ namespace Deako {
 		}
 	}
 
-	Application::Application(Context* context, Window* window, const char* name)
-		: m_Context(context), m_Window(window), m_Name(name), m_Running(true), m_Active(true)
+	Application::Application(Context* context, const char* name, const glm::vec2& windowSize)
+		: m_Context(context), m_Name(name), m_Running(true), m_Active(true)
 	{
 		DK_CORE_ASSERT(context, "Application requires a Context!");
 		DK_CORE_ASSERT(!context->Application, "Context already has a Application!");
-		DK_CORE_ASSERT(window, "Application requires a Window!");
 
-		window->SetHandleEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
+		m_Window = CreateScope<Window>(context, windowSize);
+		m_Window->SetHandleEventCallback(DK_BIND_EVENT_FN(Application::OnEvent));
+
+		m_Input = CreateScope<Input>(context, m_Window.get());
 
 		DK_CORE_INFO("Created `{}`!", name);
 	}

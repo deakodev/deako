@@ -18,7 +18,7 @@ namespace Editor {
 
 	void SceneLayer::OnUpdate()
 	{
-		DK_TRACE("scene layer updated");
+		//DK_TRACE("scene layer updated");
 	}
 
 	void SceneLayer::OnEvent(Deako::Event& event)

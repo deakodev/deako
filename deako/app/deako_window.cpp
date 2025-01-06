@@ -14,7 +14,6 @@ namespace Deako {
 		: m_Context(context), m_Size(size)
 	{
 		DK_ASSERT(context, "Window requires a Context!");
-		DK_ASSERT(!context->Window, "Window already created for Context!");
 
 		int success = glfwInit();
 		DK_ASSERT(success, "GLFW was not initialized!");

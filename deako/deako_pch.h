@@ -22,3 +22,6 @@
 #include "deako.h"
 #include "app/deako_debug.h"
 
+#include "core/Inheritor.h"
+#include "core/Object.h"
+

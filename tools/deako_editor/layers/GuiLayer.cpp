@@ -18,7 +18,7 @@ namespace Editor {
 
 	void GuiLayer::OnUpdate()
 	{
-		DK_TRACE("gui layer updated");
+		//DK_TRACE("gui layer updated");
 	}
 
 	void GuiLayer::OnEvent(Deako::Event& event)
