@@ -12,7 +12,7 @@ namespace Deako {
 		{
 			case GraphicsApi::Vulkan:
 			{
-				Ref<VulkanResources> resources = VulkanResources::Create();
+				Ref<VulkanResources> resources = VulkanResources::Create(m_Window);
 				m_GraphicsResources = std::dynamic_pointer_cast<GraphicsResources>(resources);
 				break;
 			}

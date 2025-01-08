@@ -32,3 +32,10 @@ project "deako"
        "glfw",
        "vulkan-1",
    }
+
+   filter "system:windows"
+      systemversion "latest"
+      defines
+      {
+         "GLFW_INCLUDE_VULKAN",
+      }

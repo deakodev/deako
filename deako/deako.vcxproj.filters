@@ -1,117 +1,117 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="app">
+      <UniqueIdentifier>{665E880B-D267-887C-5BE3-9E7CC7EB937C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="core">
+      <UniqueIdentifier>{4E40957C-3A77-960D-E363-7C10CF79120F}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="renderer">
+      <UniqueIdentifier>{9C6AA017-8837-FB22-B150-E9CA9D7C30B1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="renderer\vulkan">
+      <UniqueIdentifier>{BC0497BB-2890-0480-31A1-87749DAB6080}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="deako_pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="deako.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_app.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_debug.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_event.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_input.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_core.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanInstance.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanDebugMessenger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\Renderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanResources.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="core\Object.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\GraphicsResources.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="deako_pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="deako_config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="deako.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="app\deako_app.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_debug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_event.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_input.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_window.h">
-      <Filter>Header Files</Filter>
+      <Filter>app</Filter>
     </ClInclude>
     <ClInclude Include="app\deako_core.h">
-      <Filter>Header Files</Filter>
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanInstance.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="app\deako_debug.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="app\deako_event.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="app\deako_input.h">
+      <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\Renderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanResources.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Object.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="app\deako_window.h">
+      <Filter>app</Filter>
     </ClInclude>
     <ClInclude Include="core\Inheritor.h">
-      <Filter>Header Files</Filter>
+      <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="core\Object.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="deako.h" />
+    <ClInclude Include="deako_config.h" />
+    <ClInclude Include="deako_pch.h" />
     <ClInclude Include="renderer\GraphicsResources.h">
-      <Filter>Header Files</Filter>
+      <Filter>renderer</Filter>
     </ClInclude>
+    <ClInclude Include="renderer\Renderer.h">
+      <Filter>renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanInstance.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanResources.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanSurface.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanDevice.h" />
+    <ClInclude Include="renderer\vulkan\VulkanQueue.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="app\deako_app.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="app\deako_core.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="app\deako_debug.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="app\deako_event.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="app\deako_input.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="app\deako_window.cpp">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="core\Object.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="deako.cpp" />
+    <ClCompile Include="deako_pch.cpp" />
+    <ClCompile Include="renderer\GraphicsResources.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\Renderer.cpp">
+      <Filter>renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanDebugMessenger.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanInstance.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanResources.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanSurface.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanDevice.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanQueue.cpp" />
   </ItemGroup>
 </Project>

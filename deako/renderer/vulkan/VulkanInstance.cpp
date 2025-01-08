@@ -3,6 +3,7 @@
 
 #include "VulkanPhysicalDevice.h"
 #include "VulkanDebugMessenger.h"
+#include "VulkanSurface.h"
 
 #include <GLFW/glfw3.h>
 
@@ -59,6 +60,7 @@ namespace Deako {
 		// Physical devices
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+		DK_CORE_ASSERT(deviceCount, "No devices are supported on this platform!");
 
 		std::vector<VkPhysicalDevice> devices{ deviceCount };
 		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
@@ -79,6 +81,35 @@ namespace Deako {
 		}
 
 		DK_CORE_INFO("VulkanInstance destroyed!");
+	}
+
+	Ref<VulkanPhysicalDevice> VulkanInstance::SelectPhysicalDevice(Ref<VulkanSurface> surface)
+	{
+		DK_CORE_ASSERT(!m_PhysicalDevices.empty(), "No physical devices found!");
+
+		Ref<VulkanPhysicalDevice> suitableDevice = nullptr;
+		for (auto& device : m_PhysicalDevices)
+		{
+			auto [graphicsFamily, presentFamily] = device->GetQueueFamilies(surface);
+
+			if (graphicsFamily >= 0 && presentFamily >= 0)
+			{
+				if (device->IsDiscrete())
+				{
+					DK_CORE_INFO("Selected physical device: {}", device->GetName());
+					return device;
+				}
+				else
+				{
+					suitableDevice = device;
+				}
+			}
+		}
+
+		DK_CORE_ASSERT(suitableDevice, "No suitable physical device found!");
+		DK_CORE_INFO("Selected physical device: {}", suitableDevice->GetName());
+
+		return suitableDevice;
 	}
 
 	void VulkanInstance::GetExtensions(VulkanInstanceExtensions* extensions)

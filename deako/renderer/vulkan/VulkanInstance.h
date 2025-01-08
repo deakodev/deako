@@ -6,6 +6,7 @@ namespace Deako {
 
 	// forward declare
 	class VulkanPhysicalDevice;
+	class VulkanSurface;
 
 	using VulkanInstanceExtensions = std::vector<const char*>;
 
@@ -16,10 +17,11 @@ namespace Deako {
 		VulkanInstance();
 		~VulkanInstance();
 
+		Ref<VulkanPhysicalDevice> SelectPhysicalDevice(Ref<VulkanSurface> surface);
 		void GetExtensions(VulkanInstanceExtensions* extensions);
 
 		operator VkInstance() const { return m_Instance; }
-		VkInstance Vk() const { return this->m_Instance; }
+		VkInstance Vk() const { return m_Instance; }
 
 		void Hello() { return DK_CORE_INFO("Hello There!"); }
 

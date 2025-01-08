@@ -76,7 +76,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DEBUG;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\vendor\spdlog\include;..\vendor\glm;..\vendor\glfw\include;..\vendor\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
@@ -101,7 +101,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;RELEASE;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\vendor\spdlog\include;..\vendor\glm;..\vendor\glfw\include;..\vendor\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Full</Optimization>
@@ -131,7 +131,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DIST;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>.;..\vendor\spdlog\include;..\vendor\glm;..\vendor\glfw\include;..\vendor\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <Optimization>Full</Optimization>
@@ -158,6 +158,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="app\deako_app.h" />
+    <ClInclude Include="app\deako_core.h" />
     <ClInclude Include="app\deako_debug.h" />
     <ClInclude Include="app\deako_event.h" />
     <ClInclude Include="app\deako_input.h" />
@@ -166,33 +167,38 @@
     <ClInclude Include="core\Object.h" />
     <ClInclude Include="deako.h" />
     <ClInclude Include="deako_config.h" />
-    <ClInclude Include="app\deako_core.h" />
     <ClInclude Include="deako_pch.h" />
     <ClInclude Include="renderer\GraphicsResources.h" />
     <ClInclude Include="renderer\Renderer.h" />
-    <ClInclude Include="renderer\vulkan\VulkanResources.h" />
     <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h" />
-    <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h" />
+    <ClInclude Include="renderer\vulkan\VulkanDevice.h" />
     <ClInclude Include="renderer\vulkan\VulkanInstance.h" />
+    <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h" />
+    <ClInclude Include="renderer\vulkan\VulkanQueue.h" />
+    <ClInclude Include="renderer\vulkan\VulkanResources.h" />
+    <ClInclude Include="renderer\vulkan\VulkanSurface.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app\deako_app.cpp" />
+    <ClCompile Include="app\deako_core.cpp" />
     <ClCompile Include="app\deako_debug.cpp" />
     <ClCompile Include="app\deako_event.cpp" />
     <ClCompile Include="app\deako_input.cpp" />
     <ClCompile Include="app\deako_window.cpp" />
     <ClCompile Include="core\Object.cpp" />
     <ClCompile Include="deako.cpp" />
-    <ClCompile Include="app\deako_core.cpp" />
     <ClCompile Include="deako_pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="renderer\GraphicsResources.cpp" />
     <ClCompile Include="renderer\Renderer.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanResources.cpp" />
     <ClCompile Include="renderer\vulkan\VulkanDebugMessenger.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanDevice.cpp" />
     <ClCompile Include="renderer\vulkan\VulkanInstance.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanQueue.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanResources.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanSurface.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\vendor\glfw\glfw.vcxproj">

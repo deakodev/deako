@@ -28,7 +28,7 @@ namespace Deako {
 		if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)   typeString += "VALIDATION";
 		if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)  typeString += "PERFORMANCE";
 
-		std::string message = severityString + " [[" + typeString + "]]:\n " + pCallbackData->pMessage;
+		std::string message = "[[VULKAN " + typeString + " " + severityString + "]]:\n " + pCallbackData->pMessage + "\n";
 
 		switch (messageSeverity)
 		{
