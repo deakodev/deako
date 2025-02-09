@@ -9,7 +9,25 @@ int main(int argc, char** argv)
 {
 	Deako::DebugProvider::Init();
 
-	Deako::ContextConfig config{};
+	std::string zach = "zach";
+
+	Deako::Arena arena{ 1024 * 1024 * 1024 };
+
+	DK_INFO("Arena space: {}", arena.RemainingSpace());
+
+	Deako::ArenaBlock* block = arena.AddBlock(1024);
+
+	DK_INFO("Arena space: {}", arena.RemainingSpace());
+	DK_INFO("Block space: {}", block->RemainingSpace());
+
+	block->Push(zach);
+
+	DK_INFO("Block space: {}", block->RemainingSpace());
+
+
+
+
+	/*Deako::ContextConfig config{};
 	config.AppName = "deako_editor";
 	config.WorkingDir = "../deako_editor";
 	config.WindowSize = { 1600, 900 };
@@ -21,5 +39,5 @@ int main(int argc, char** argv)
 
 	deako.Application->Run();
 
-	Deako::DestroyContext();
+	Deako::DestroyContext();*/
 }

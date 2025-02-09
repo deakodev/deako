@@ -57,6 +57,11 @@ namespace Deako {
 
 		VK_CHECK(vkCreateInstance(&createInfo, nullptr, &m_Instance));
 
+		if (m_ValidationsEnabled)
+		{
+			m_DebugMessenger = VulkanDebugMessenger::Create(m_Instance);
+		}
+
 		// Physical devices
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
@@ -74,6 +79,11 @@ namespace Deako {
 	VulkanInstance::~VulkanInstance()
 	{
 		m_PhysicalDevices.clear();
+
+		if (m_DebugMessenger)
+		{
+			m_DebugMessenger.reset();
+		}
 
 		if (m_Instance)
 		{

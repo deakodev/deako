@@ -163,6 +163,7 @@
     <ClInclude Include="app\deako_event.h" />
     <ClInclude Include="app\deako_input.h" />
     <ClInclude Include="app\deako_window.h" />
+    <ClInclude Include="core\Arena.h" />
     <ClInclude Include="core\Inheritor.h" />
     <ClInclude Include="core\Object.h" />
     <ClInclude Include="deako.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="renderer\vulkan\VulkanQueue.h" />
     <ClInclude Include="renderer\vulkan\VulkanResources.h" />
     <ClInclude Include="renderer\vulkan\VulkanSurface.h" />
+    <ClInclude Include="renderer\vulkan\VulkanSwapchain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app\deako_app.cpp" />
@@ -185,6 +187,7 @@
     <ClCompile Include="app\deako_event.cpp" />
     <ClCompile Include="app\deako_input.cpp" />
     <ClCompile Include="app\deako_window.cpp" />
+    <ClCompile Include="core\Arena.cpp" />
     <ClCompile Include="core\Object.cpp" />
     <ClCompile Include="deako.cpp" />
     <ClCompile Include="deako_pch.cpp">
@@ -199,6 +202,7 @@
     <ClCompile Include="renderer\vulkan\VulkanQueue.cpp" />
     <ClCompile Include="renderer\vulkan\VulkanResources.cpp" />
     <ClCompile Include="renderer\vulkan\VulkanSurface.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanSwapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\vendor\glfw\glfw.vcxproj">

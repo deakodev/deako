@@ -52,10 +52,9 @@ namespace Deako {
 		return VK_FALSE;
 	}
 
-	VulkanDebugMessenger::VulkanDebugMessenger(Ref<VulkanInstance> instance)
+	VulkanDebugMessenger::VulkanDebugMessenger(VkInstance instance)
+		: m_Messenger(VK_NULL_HANDLE), m_Instance(instance)
 	{
-		m_Instance = instance;
-
 		VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
@@ -63,22 +62,22 @@ namespace Deako {
 		createInfo.pfnUserCallback = VulkanDebugCallback;
 
 		auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)
-			vkGetInstanceProcAddr(m_Instance->Vk(), "vkCreateDebugUtilsMessengerEXT");
+			vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
 
 		if (vkCreateDebugUtilsMessengerEXT)
 		{
-			VK_CHECK(vkCreateDebugUtilsMessengerEXT(m_Instance->Vk(), &createInfo, nullptr, &m_Messenger));
+			VK_CHECK(vkCreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_Messenger));
 		}
 	}
 
 	VulkanDebugMessenger::~VulkanDebugMessenger()
 	{
 		auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)
-			vkGetInstanceProcAddr(m_Instance->Vk(), "vkDestroyDebugUtilsMessengerEXT");
+			vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
 
 		if (vkDestroyDebugUtilsMessengerEXT)
 		{
-			vkDestroyDebugUtilsMessengerEXT(m_Instance->Vk(), m_Messenger, nullptr);
+			vkDestroyDebugUtilsMessengerEXT(m_Instance, m_Messenger, nullptr);
 		}
 
 		DK_CORE_INFO("VulkanDebugMessenger destroyed!");

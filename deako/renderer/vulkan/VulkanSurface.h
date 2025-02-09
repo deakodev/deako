@@ -9,10 +9,11 @@ namespace Deako
 	class VulkanInstance;
 	class VulkanWindow;
 
+	/// VulkanSurface encapsulates a Vulkan surface
 	class VulkanSurface : public Inheritor<Object, VulkanSurface>
 	{
 	public:
-		VulkanSurface(Ref<VulkanInstance> instance, Window* window);
+		VulkanSurface(Window* window, Ref<VulkanInstance> instance);
 		~VulkanSurface();
 
 		operator VkSurfaceKHR() const { return m_Surface; }
@@ -22,7 +23,6 @@ namespace Deako
 		VkSurfaceKHR m_Surface;
 
 		Ref<VulkanInstance> m_Instance;
-		Window* m_Window; // not owned
 	};
 
 	DK_TYPE_NAME(VulkanSurface);

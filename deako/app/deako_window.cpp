@@ -36,10 +36,10 @@ namespace Deako {
 		glfwTerminate();
 	}
 
-	glm::vec2 Window::GetScaledSize() const
+	std::pair<uint32_t, uint32_t> Window::GetScaledSize() const
 	{
-		float width = m_Size.x * m_DpiScale.x;
-		float height = m_Size.y * m_DpiScale.y;
+		uint32_t width = m_Size.x * m_DpiScale.x;
+		uint32_t height = m_Size.y * m_DpiScale.y;
 		return { width, height };
 	}
 

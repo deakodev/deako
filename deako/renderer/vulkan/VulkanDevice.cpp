@@ -110,4 +110,9 @@ namespace Deako
 		}
 	}
 
+	void VulkanDevice::WaitIdle() const
+	{
+		vkDeviceWaitIdle(m_Device);
+	}
+
 }

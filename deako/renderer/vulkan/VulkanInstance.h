@@ -5,6 +5,7 @@
 namespace Deako {
 
 	// forward declare
+	class VulkanDebugMessenger;
 	class VulkanPhysicalDevice;
 	class VulkanSurface;
 
@@ -23,11 +24,9 @@ namespace Deako {
 		operator VkInstance() const { return m_Instance; }
 		VkInstance Vk() const { return m_Instance; }
 
-		void Hello() { return DK_CORE_INFO("Hello There!"); }
-
 	private:
 		VkInstance m_Instance;
-
+		Ref<VulkanDebugMessenger> m_DebugMessenger;
 		std::vector<Ref<VulkanPhysicalDevice>> m_PhysicalDevices;
 
 		bool m_ValidationsEnabled = true;

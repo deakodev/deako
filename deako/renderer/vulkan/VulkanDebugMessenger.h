@@ -10,7 +10,7 @@ namespace Deako {
 	class VulkanDebugMessenger : public Inheritor<Object, VulkanDebugMessenger>
 	{
 	public:
-		VulkanDebugMessenger(Ref<VulkanInstance> instance);
+		VulkanDebugMessenger(VkInstance instance);
 		~VulkanDebugMessenger();
 
 		operator VkDebugUtilsMessengerEXT() const { return m_Messenger; }
@@ -18,7 +18,7 @@ namespace Deako {
 	private:
 		VkDebugUtilsMessengerEXT m_Messenger;
 
-		Ref<VulkanInstance> m_Instance;
+		VkInstance m_Instance;
 	};
 
 	DK_TYPE_NAME(VulkanDebugMessenger);

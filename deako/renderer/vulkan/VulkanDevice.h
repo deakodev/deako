@@ -17,6 +17,11 @@ namespace Deako
 		VulkanDevice(Ref<VulkanInstance> instance, Ref<VulkanPhysicalDevice> physicalDevice);
 		~VulkanDevice();
 
+		void WaitIdle() const;
+
+		operator VkDevice() const { return m_Device; }
+		VkDevice Vk() const { return m_Device; }
+
 	private:
 		VkDevice m_Device;
 

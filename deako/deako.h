@@ -5,6 +5,8 @@
 #include "app/deako_core.h"
 #include "app/deako_debug.h"
 
+#include "core/Arena.h"
+
 #include <renderer/Renderer.h>
 
 namespace Deako {

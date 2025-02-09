@@ -17,7 +17,7 @@ namespace Deako {
 		~Window();
 
 		GLFWwindow* GetGlfwWindow() const { return m_GlfwWindow; }
-		glm::vec2 GetScaledSize() const;
+		std::pair<uint32_t, uint32_t> GetScaledSize() const;
 
 		void SetSize(float width, float height) { m_Size = { width, height }; }
 		void SetDpiScale(float xScale, float yScale) { m_DpiScale = { xScale, yScale }; }

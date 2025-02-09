@@ -65,6 +65,8 @@
     </ClInclude>
     <ClInclude Include="renderer\vulkan\VulkanDevice.h" />
     <ClInclude Include="renderer\vulkan\VulkanQueue.h" />
+    <ClInclude Include="renderer\vulkan\VulkanSwapchain.h" />
+    <ClInclude Include="core\Arena.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app\deako_app.cpp">
@@ -113,5 +115,7 @@
     </ClCompile>
     <ClCompile Include="renderer\vulkan\VulkanDevice.cpp" />
     <ClCompile Include="renderer\vulkan\VulkanQueue.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanSwapchain.cpp" />
+    <ClCompile Include="core\Arena.cpp" />
   </ItemGroup>
 </Project>

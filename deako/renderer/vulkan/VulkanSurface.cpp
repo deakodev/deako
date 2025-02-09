@@ -8,12 +8,11 @@
 
 namespace Deako {
 
-	VulkanSurface::VulkanSurface(Ref<VulkanInstance> instance, Window* window)
+	VulkanSurface::VulkanSurface(Window* window, Ref<VulkanInstance> instance)
 	{
 		m_Instance = instance;
-		m_Window = window;
 
-		VK_CHECK(glfwCreateWindowSurface(m_Instance->Vk(), m_Window->GetGlfwWindow(), nullptr, &m_Surface));
+		VK_CHECK(glfwCreateWindowSurface(m_Instance->Vk(), window->GetGlfwWindow(), nullptr, &m_Surface));
 	}
 
 	VulkanSurface::~VulkanSurface()
