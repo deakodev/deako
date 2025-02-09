@@ -30,16 +30,16 @@ workspace "deako"
 
     IncludeDir = {}
     IncludeDir["deako"] = "%{wks.location}/deako"
-	IncludeDir["glm"] = "%{wks.location}/vendor/glm"
-	IncludeDir["glfw"] = "%{wks.location}/vendor/glfw/include"
-	IncludeDir["spdlog"] = "%{wks.location}/vendor/spdlog/include"
-    IncludeDir["vulkan"] = "%{wks.location}/vendor/vulkan/1.3.296.0/Include"
+	IncludeDir["glm"] = "%{wks.location}/vendors/glm"
+	IncludeDir["glfw"] = "%{wks.location}/vendors/glfw/include"
+	IncludeDir["spdlog"] = "%{wks.location}/vendors/spdlog/include"
+    IncludeDir["vulkan"] = "%{wks.location}/vendors/vulkan/1.3.296.0/Include"
 
     LibDir = {}
-    LibDir["vulkan"] = "%{wks.location}/vendor/vulkan/1.3.296.0/Lib"
+    LibDir["vulkan"] = "%{wks.location}/vendors/vulkan/1.3.296.0/Lib"
 
     group "vendors"
-	    include "vendor/glfw/premake5.lua"
+	    include "vendors/glfw/premake5.lua"
     group ""
 
     group "deako"

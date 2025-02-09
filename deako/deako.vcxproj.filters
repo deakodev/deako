@@ -33,6 +33,9 @@
     <ClInclude Include="app\deako_window.h">
       <Filter>app</Filter>
     </ClInclude>
+    <ClInclude Include="core\Arena.h">
+      <Filter>core</Filter>
+    </ClInclude>
     <ClInclude Include="core\Inheritor.h">
       <Filter>core</Filter>
     </ClInclude>
@@ -51,10 +54,16 @@
     <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h">
       <Filter>renderer\vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanDevice.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
     <ClInclude Include="renderer\vulkan\VulkanInstance.h">
       <Filter>renderer\vulkan</Filter>
     </ClInclude>
     <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer\vulkan\VulkanQueue.h">
       <Filter>renderer\vulkan</Filter>
     </ClInclude>
     <ClInclude Include="renderer\vulkan\VulkanResources.h">
@@ -63,10 +72,9 @@
     <ClInclude Include="renderer\vulkan\VulkanSurface.h">
       <Filter>renderer\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanDevice.h" />
-    <ClInclude Include="renderer\vulkan\VulkanQueue.h" />
-    <ClInclude Include="renderer\vulkan\VulkanSwapchain.h" />
-    <ClInclude Include="core\Arena.h" />
+    <ClInclude Include="renderer\vulkan\VulkanSwapchain.h">
+      <Filter>renderer\vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app\deako_app.cpp">
@@ -87,6 +95,9 @@
     <ClCompile Include="app\deako_window.cpp">
       <Filter>app</Filter>
     </ClCompile>
+    <ClCompile Include="core\Arena.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
     <ClCompile Include="core\Object.cpp">
       <Filter>core</Filter>
     </ClCompile>
@@ -101,10 +112,16 @@
     <ClCompile Include="renderer\vulkan\VulkanDebugMessenger.cpp">
       <Filter>renderer\vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanDevice.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
     <ClCompile Include="renderer\vulkan\VulkanInstance.cpp">
       <Filter>renderer\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\vulkan\VulkanQueue.cpp">
       <Filter>renderer\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="renderer\vulkan\VulkanResources.cpp">
@@ -113,9 +130,8 @@
     <ClCompile Include="renderer\vulkan\VulkanSurface.cpp">
       <Filter>renderer\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanDevice.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanQueue.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanSwapchain.cpp" />
-    <ClCompile Include="core\Arena.cpp" />
+    <ClCompile Include="renderer\vulkan\VulkanSwapchain.cpp">
+      <Filter>renderer\vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

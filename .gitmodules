@@ -1,6 +1,6 @@
 [submodule "vendor/glm"]
 	path = vendor/glm
 	url = https://github.com/deakodev/glm.git
-[submodule "vendor/glfw"]
-	path = vendor/glfw
+[submodule "vendors/glfw"]
+	path = vendors/glfw
 	url = https://github.com/deakodev/glfw.git
