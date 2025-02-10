@@ -1,24 +1,23 @@
 project "deako"
    kind "StaticLib"
-   language "C++"
-   cppdialect "C++20"
+   language "C"
+   cdialect "C99"
    staticruntime "On"
 
    targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
    objdir ("%{wks.location}/bin/int/" .. OutputDir .. "/%{prj.name}")
 
    pchheader "deako_pch.h"
-   pchsource "deako_pch.cpp"
+   pchsource "deako_pch.c"
 
-   files { "**.h", "**.cpp" }
+   files { "**.h", "**.c" }
 
    includedirs
    {
       "%{prj.location}", 
-     
-      "%{IncludeDir.spdlog}",
       "%{IncludeDir.glm}",
       "%{IncludeDir.glfw}", 
+      "%{IncludeDir.magic_memory}", 
       "%{IncludeDir.vulkan}", 
    }
 
@@ -30,6 +29,7 @@ project "deako"
    links
    {
        "glfw",
+       "magic_memory",
        "vulkan-1",
    }
 

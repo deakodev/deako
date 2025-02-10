@@ -1,4 +1,5 @@
 #pragma once
+#include <app/deako_core.h>
 
 namespace Deako {
 

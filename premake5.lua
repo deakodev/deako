@@ -6,7 +6,6 @@ workspace "deako"
 
     filter "system:windows"
         systemversion "latest"
-        buildoptions { "/EHsc", "/Zc:preprocessor", "/Zc:__cplusplus", "/utf-8" }
         defines { "DK_PLATFORM_WINDOWS" }
 
     filter "configurations:debug"
@@ -32,7 +31,7 @@ workspace "deako"
     IncludeDir["deako"] = "%{wks.location}/deako"
 	IncludeDir["glm"] = "%{wks.location}/vendors/glm"
 	IncludeDir["glfw"] = "%{wks.location}/vendors/glfw/include"
-	IncludeDir["spdlog"] = "%{wks.location}/vendors/spdlog/include"
+    IncludeDir["magic_memory"] = "%{wks.location}/vendors/magic_memory/magic_memory"
     IncludeDir["vulkan"] = "%{wks.location}/vendors/vulkan/1.3.296.0/Include"
 
     LibDir = {}
@@ -40,6 +39,7 @@ workspace "deako"
 
     group "vendors"
 	    include "vendors/glfw/premake5.lua"
+        include "vendors/magic_memory/magic_memory/premake5.lua"
     group ""
 
     group "deako"

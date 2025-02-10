@@ -5,8 +5,6 @@
 
 // use this config file for compile-time options
 
-namespace Deako {
-
 	//typedef int Deako_ApplicationFlags;    // -> enum Deako_ApplicationFlags_
 	//typedef int Deako_WindowFlags;         // -> enum Deako_WindowFlags_
 	//typedef int Deako_GraphicsFlags;       // -> enum Deako_GraphicsFlags_
@@ -39,6 +37,4 @@ namespace Deako {
 	//ContextConfig ConfigureContext();
 
 	//Scope<Application> CreateApplication(Context* context, Window* window, const char* name);
-
-}
 

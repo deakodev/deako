@@ -7,3 +7,6 @@
 [submodule "vendors/magic_memory"]
 	path = vendors/magic_memory
 	url = https://github.com/deakodev/magic_memory.git
+[submodule "vendors/cglm"]
+	path = vendors/cglm
+	url = https://github.com/deakodev/cglm.git

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 namespace Deako
 {
 	/// VulkanQueue encapsulates a VkQueue

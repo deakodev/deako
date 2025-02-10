@@ -7,6 +7,9 @@
     <Filter Include="core">
       <UniqueIdentifier>{4E40957C-3A77-960D-E363-7C10CF79120F}</UniqueIdentifier>
     </Filter>
+    <Filter Include="logger">
+      <UniqueIdentifier>{4507DF0B-31A9-09E2-1A64-1D3606A59032}</UniqueIdentifier>
+    </Filter>
     <Filter Include="renderer">
       <UniqueIdentifier>{9C6AA017-8837-FB22-B150-E9CA9D7C30B1}</UniqueIdentifier>
     </Filter>
@@ -45,6 +48,9 @@
     <ClInclude Include="deako.h" />
     <ClInclude Include="deako_config.h" />
     <ClInclude Include="deako_pch.h" />
+    <ClInclude Include="logger\log.h">
+      <Filter>logger</Filter>
+    </ClInclude>
     <ClInclude Include="renderer\GraphicsResources.h">
       <Filter>renderer</Filter>
     </ClInclude>
@@ -77,61 +83,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="app\deako_app.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_core.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_debug.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_event.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_input.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="app\deako_window.cpp">
-      <Filter>app</Filter>
-    </ClCompile>
-    <ClCompile Include="core\Arena.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
-    <ClCompile Include="core\Object.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
-    <ClCompile Include="deako.cpp" />
-    <ClCompile Include="deako_pch.cpp" />
-    <ClCompile Include="renderer\GraphicsResources.cpp">
-      <Filter>renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\Renderer.cpp">
-      <Filter>renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanDebugMessenger.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanDevice.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanInstance.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanQueue.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanResources.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanSurface.cpp">
-      <Filter>renderer\vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="renderer\vulkan\VulkanSwapchain.cpp">
-      <Filter>renderer\vulkan</Filter>
+    <ClCompile Include="deako.c" />
+    <ClCompile Include="deako_pch.c" />
+    <ClCompile Include="logger\log.c">
+      <Filter>logger</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

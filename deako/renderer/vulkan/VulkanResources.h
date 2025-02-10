@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/deako_window.h"
 #include "renderer/GraphicsResources.h"
 
 #include <vulkan/vulkan.h>

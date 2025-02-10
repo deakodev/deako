@@ -1,32 +1,28 @@
-#pragma once
+#ifndef DEAKO_HEADER
+#define DEAKO_HEADER
 
 #include "deako_config.h"
-#include "app/deako_app.h"
-#include "app/deako_core.h"
-#include "app/deako_debug.h"
+#include "logger/log.h"
 
-#include "core/Arena.h"
+#include <magic_memory.h>
 
-#include <renderer/Renderer.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-namespace Deako {
+typedef struct {
+	Magic_Arena arena;
+	bool initialized;
+} Deako;
 
-	struct ContextConfig
-	{
-		const char* AppName;
-		const char* WorkingDir;
-		glm::vec2 WindowSize;
-	};
+typedef struct
+{
+	const char* app_name;
+	const char* working_dir;
+	//glm::vec2 window_size;
+} Deako_Config;
 
-	struct Context
-	{
-		Scope<Application> Application;
-		Scope<Renderer> Renderer;
+extern Deako* deako_init(Deako_Config* config);
+extern void deako_shutdown(void);
 
-		bool Initialized = false;
-	};
 
-	Context& CreateContext(ContextConfig& config);
-	void DestroyContext();
-
-}
+#endif // DEAKO_HEADER

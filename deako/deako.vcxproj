@@ -77,14 +77,12 @@
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DEBUG;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;..\vendors\spdlog\include;..\vendors\glm;..\vendors\glfw\include;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\vendors\glm;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
@@ -102,7 +100,7 @@
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;RELEASE;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;..\vendors\spdlog\include;..\vendors\glm;..\vendors\glfw\include;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\vendors\glm;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -111,8 +109,6 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
@@ -132,7 +128,7 @@
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DIST;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;..\vendors\spdlog\include;..\vendors\glm;..\vendors\glfw\include;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\vendors\glm;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -141,8 +137,6 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/EHsc /Zc:preprocessor /Zc:__cplusplus /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
@@ -169,6 +163,7 @@
     <ClInclude Include="deako.h" />
     <ClInclude Include="deako_config.h" />
     <ClInclude Include="deako_pch.h" />
+    <ClInclude Include="logger\log.h" />
     <ClInclude Include="renderer\GraphicsResources.h" />
     <ClInclude Include="renderer\Renderer.h" />
     <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h" />
@@ -181,32 +176,18 @@
     <ClInclude Include="renderer\vulkan\VulkanSwapchain.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="app\deako_app.cpp" />
-    <ClCompile Include="app\deako_core.cpp" />
-    <ClCompile Include="app\deako_debug.cpp" />
-    <ClCompile Include="app\deako_event.cpp" />
-    <ClCompile Include="app\deako_input.cpp" />
-    <ClCompile Include="app\deako_window.cpp" />
-    <ClCompile Include="core\Arena.cpp" />
-    <ClCompile Include="core\Object.cpp" />
-    <ClCompile Include="deako.cpp" />
-    <ClCompile Include="deako_pch.cpp">
+    <ClCompile Include="deako.c" />
+    <ClCompile Include="deako_pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="renderer\GraphicsResources.cpp" />
-    <ClCompile Include="renderer\Renderer.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanDebugMessenger.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanDevice.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanInstance.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanPhysicalDevice.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanQueue.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanResources.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanSurface.cpp" />
-    <ClCompile Include="renderer\vulkan\VulkanSwapchain.cpp" />
+    <ClCompile Include="logger\log.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\vendors\glfw\glfw.vcxproj">
       <Project>{9563977C-819A-980D-2A87-7E10169D140F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\vendors\magic_memory\magic_memory\magic_memory.vcxproj">
+      <Project>{DE74A213-CAD7-31B8-735D-6A6E5F9FFD3A}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,22 +1,21 @@
 project "deako_editor"
    kind "ConsoleApp"
-   language "C++"
-   cppdialect "C++20"
+   language "C"
+   cdialect "C99"
    staticruntime "On"
 
    targetdir ("%{wks.location}/bin/" .. OutputDir .. "/%{prj.name}")
    objdir ("%{wks.location}/bin/int/" .. OutputDir .. "/%{prj.name}")
 
-   files { "src/**.h", "src/**.cpp" }
+   files { "**.h", "**.c" }
 
    includedirs
    {
       "src",
-
 	  "%{IncludeDir.deako}",
-      "%{IncludeDir.spdlog}",
       "%{IncludeDir.glm}",
       "%{IncludeDir.glfw}", 
+      "%{IncludeDir.magic_memory}",
       "%{IncludeDir.vulkan}", 
    }
 

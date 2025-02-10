@@ -1,5 +1,7 @@
 #pragma once
 
+#include "app/deako_window.h"
+
 #include <vulkan/vulkan.h>
 
 namespace Deako
