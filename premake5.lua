@@ -29,7 +29,8 @@ workspace "deako"
 
     IncludeDir = {}
     IncludeDir["deako"] = "%{wks.location}/deako"
-	IncludeDir["glm"] = "%{wks.location}/vendors/glm"
+	IncludeDir["cglm"] = "%{wks.location}/vendors/cglm/include"
+    IncludeDir["log"] = "%{wks.location}/vendors/log"
 	IncludeDir["glfw"] = "%{wks.location}/vendors/glfw/include"
     IncludeDir["magic_memory"] = "%{wks.location}/vendors/magic_memory/magic_memory"
     IncludeDir["vulkan"] = "%{wks.location}/vendors/vulkan/1.3.296.0/Include"
@@ -38,12 +39,17 @@ workspace "deako"
     LibDir["vulkan"] = "%{wks.location}/vendors/vulkan/1.3.296.0/Lib"
 
     group "vendors"
+        include "vendors/log/premake5.lua"
 	    include "vendors/glfw/premake5.lua"
         include "vendors/magic_memory/magic_memory/premake5.lua"
     group ""
 
     group "deako"
 	    include "deako/premake5.lua"
+    group ""
+
+    group "sandbox"
+	    include "sandbox/event_system/premake5.lua"
     group ""
 
     group "tools"

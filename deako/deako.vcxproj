@@ -77,7 +77,7 @@
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DEBUG;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;..\vendors\glm;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\vendors\cglm\include;..\vendors\log;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
@@ -100,7 +100,7 @@
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;RELEASE;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;..\vendors\glm;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\vendors\cglm\include;..\vendors\log;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -128,7 +128,7 @@
       <PrecompiledHeaderFile>deako_pch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DIST;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.;..\vendors\glm;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\vendors\cglm\include;..\vendors\log;..\vendors\glfw\include;..\vendors\magic_memory\magic_memory;..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -152,37 +152,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="app\deako_app.h" />
-    <ClInclude Include="app\deako_core.h" />
-    <ClInclude Include="app\deako_debug.h" />
-    <ClInclude Include="app\deako_event.h" />
-    <ClInclude Include="app\deako_input.h" />
-    <ClInclude Include="app\deako_window.h" />
-    <ClInclude Include="core\Arena.h" />
-    <ClInclude Include="core\Inheritor.h" />
-    <ClInclude Include="core\Object.h" />
+    <ClInclude Include="app\deako_entry.h" />
     <ClInclude Include="deako.h" />
-    <ClInclude Include="deako_config.h" />
+    <ClInclude Include="deako_internal.h" />
     <ClInclude Include="deako_pch.h" />
-    <ClInclude Include="logger\log.h" />
-    <ClInclude Include="renderer\GraphicsResources.h" />
-    <ClInclude Include="renderer\Renderer.h" />
-    <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h" />
-    <ClInclude Include="renderer\vulkan\VulkanDevice.h" />
-    <ClInclude Include="renderer\vulkan\VulkanInstance.h" />
-    <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h" />
-    <ClInclude Include="renderer\vulkan\VulkanQueue.h" />
-    <ClInclude Include="renderer\vulkan\VulkanResources.h" />
-    <ClInclude Include="renderer\vulkan\VulkanSurface.h" />
-    <ClInclude Include="renderer\vulkan\VulkanSwapchain.h" />
+    <ClInclude Include="renderer\deako_renderer.h" />
+    <ClInclude Include="renderer\vulkan\deako_vulkan.c" />
+    <ClInclude Include="sokol.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="deako.c" />
+    <ClCompile Include="app\deako_app.c" />
+    <ClCompile Include="app\deako_window.c" />
+    <ClCompile Include="deako_internal.c" />
     <ClCompile Include="deako_pch.c">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="logger\log.c" />
+    <ClCompile Include="renderer\deako_renderer.c" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\vendors\log\log.vcxproj">
+      <Project>{078D880B-7396-887C-FC11-9F7C681A947C}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\vendors\glfw\glfw.vcxproj">
       <Project>{9563977C-819A-980D-2A87-7E10169D140F}</Project>
     </ProjectReference>

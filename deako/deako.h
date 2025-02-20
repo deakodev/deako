@@ -1,28 +1,29 @@
-#ifndef DEAKO_HEADER
-#define DEAKO_HEADER
+#ifndef DEAKO_H
+#define DEAKO_H
 
-#include "deako_config.h"
-#include "logger/log.h"
+#include "app/deako_app.h"
 
-#include <magic_memory.h>
+#include <log.h>
+#define DK_APP_TRACE(...) log_log(LOG_TRACE, __FILE__, __LINE__, __VA_ARGS__)
+#define DK_APP_DEBUG(...) log_log(LOG_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
+#define DK_APP_INFO(...)  log_log(LOG_INFO,  __FILE__, __LINE__, __VA_ARGS__)
+#define DK_APP_WARN(...)  log_log(LOG_WARN,  __FILE__, __LINE__, __VA_ARGS__)
+#define DK_APP_ERROR(...) log_log(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__)
+#define DK_APP_FATAL(...) log_log(LOG_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
-#include <stdbool.h>
-#include <stdint.h>
-
-typedef struct {
-	Magic_Arena arena;
-	bool initialized;
-} Deako;
-
-typedef struct
-{
+typedef struct dk_config {
 	const char* app_name;
-	const char* working_dir;
-	//glm::vec2 window_size;
-} Deako_Config;
+	dk_layer_t* app_layers;
+	uint32_t app_layer_count;
+	int window_width;
+	int window_height;
+} dk_config_t;
 
-extern Deako* deako_init(Deako_Config* config);
-extern void deako_shutdown(void);
+/* user-defined */
+extern dk_config_t dk_configure(void);
 
+#ifdef DEAKO_IMPLEMENT_MAIN
+#include "app/deako_entry.h"
+#endif
 
-#endif // DEAKO_HEADER
+#endif // DEAKO_H

@@ -1,91 +1,47 @@
-#pragma once
+#ifndef DEAKO_APP_H
+#define DEAKO_APP_H
 
-#include "deako_event.h"
-#include "deako_window.h"
+#include "deako_internal.h"
 
-namespace Deako {
+#include <GLFW/glfw3.h>
 
-	class Layer
-	{
-	public:
-		Layer(const char* name = "Deako Layer");
-		virtual ~Layer() = default;
+#include <stdint.h>
 
-		virtual void OnAttach() {}
-		virtual void OnDetach() {}
-		virtual void OnUpdate() {}
-		virtual void OnImGuiRender() {}
-		virtual void OnEvent(Event& e) {}
+typedef struct dk_config dk_config_t;
 
-		const char* GetName() const { return m_DebugName; }
+typedef void (*dk_on_update_cb)();
 
-	protected:
-		const char* m_DebugName;
-	};
+typedef struct dk_window {
+    dk_module_t module;
+    dk_on_request_cb on_request;
+} dk_window_t;
 
-	class LayerStack
-	{
-	public:
-		LayerStack() = default;
-		~LayerStack();
+typedef struct dk_layer {
+    const char* name;
+    dk_on_update_cb on_update;
+    dk_on_request_cb on_request;
+} dk_layer_t;
 
-		void OnUpdate();
-		void OnEvent(Event& e);
+typedef struct dk_app {
+    dk_timer_t timer;
+    GLFWwindow* glfw_window;
+    dk_layer_t* layers;
+    dk_module_t* modules;
+    uint32_t layer_count;
+    uint32_t module_count;
+    uint32_t active_requests;
+    bool is_running;
+} dk_app_t;
 
-		void PushLayer(Layer* layer);
-		void PushOverlay(Layer* overlay);
-		void PopLayer(uint32_t count = 1);
-		void PopOverlay(uint32_t count = 1);
+extern int _dk_app_init(const dk_config_t* config);
+extern int _dk_app_run(void);
+extern int _dk_app_shutdown(void);
 
-		std::vector<Layer*>::iterator begin() { return m_Layers.begin(); }
-		std::vector<Layer*>::iterator end() { return m_Layers.end(); }
-		std::vector<Layer*>::reverse_iterator rbegin() { return m_Layers.rbegin(); }
-		std::vector<Layer*>::reverse_iterator rend() { return m_Layers.rend(); }
+extern int _dk_app_status_update(void);
+extern void _dk_app_layer_update(void);
+extern void _dk_app_time_update(uint64_t* time);
 
-		std::vector<Layer*>::const_iterator begin() const { return m_Layers.begin(); }
-		std::vector<Layer*>::const_iterator end()	const { return m_Layers.end(); }
-		std::vector<Layer*>::const_reverse_iterator rbegin() const { return m_Layers.rbegin(); }
-		std::vector<Layer*>::const_reverse_iterator rend() const { return m_Layers.rend(); }
+extern int _dk_app_window_init(dk_app_t* app, int width, int height, const char* name);
+extern void _dk_app_window_poll(void);
 
-	private:
-		std::vector<Layer*> m_Layers;
-		uint32_t m_LayerInsertIndex = 0;
-	};
-
-	class Application
-	{
-	public:
-		Application(Context* context, const char* name, const glm::vec2& windowSize);
-
-		void Run();
-		void PollEvents();
-		void Shutdown() { m_Running = false; }
-
-		template<typename T>
-		void CreateLayer(const char* name)
-		{
-			T* layer = new T(name);
-			m_LayerStack.PushLayer(layer);
-		}
-
-		void OnEvent(Event& e);
-		bool OnClose(WindowCloseEvent& e);
-		bool OnMinimized(WindowMinimizedEvent& e);
-		bool OnRestored(WindowRestoredEvent& e);
-
-		Window* GetWindow() { return m_Window.get(); }
-
-	protected:
-		LayerStack m_LayerStack;
-
-	private:
-		Context* m_Context; // parent, not owned
-		Scope<Window> m_Window;
-		Scope<Input> m_Input;
-
-		const char* m_Name;
-		bool m_Running;
-		bool m_Active;
-	};
-
-}
+#endif // DEAKO_APP_H

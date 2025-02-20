@@ -15,7 +15,8 @@ project "deako"
    includedirs
    {
       "%{prj.location}", 
-      "%{IncludeDir.glm}",
+      "%{IncludeDir.cglm}",
+      "%{IncludeDir.log}",
       "%{IncludeDir.glfw}", 
       "%{IncludeDir.magic_memory}", 
       "%{IncludeDir.vulkan}", 
@@ -28,6 +29,7 @@ project "deako"
 
    links
    {
+       "log",
        "glfw",
        "magic_memory",
        "vulkan-1",

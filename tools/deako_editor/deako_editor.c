@@ -1,11 +1,17 @@
-#include <deako.h>
+#define DEAKO_IMPLEMENT_MAIN
+#include "deako.h"
 
-int main(int argc, char** argv)
+#include "deako_editor.h"
+
+static dk_layer_t layers[] = {
+	{ "GUI", dk_editor_gui_on_update, dk_editor_gui_on_request },
+	{ "VIEWPORT", dk_editor_viewport_on_update, dk_editor_viewport_on_request }
+};
+
+dk_config_t dk_configure(void)
 {
-	Deako_Config config;
-	Deako* deako = deako_init(&config);
-
-	DK_LOG_DEBUG("Deako initialized? %s\n", deako->initialized ? "true" : "false");
-	DK_LOG_DEBUG("Deako arena write marker: %d\n", deako->arena.write_marker);
-	DK_LOG_DEBUG("Deako arena end marker: %d\n", deako->arena.end_marker);
-} // End of main
+	return (dk_config_t) {
+		.app_name = "Deako Editor", .app_layers = layers,
+			.app_layer_count = 2, .window_width = 1200, .window_height = 900
+	};
+}

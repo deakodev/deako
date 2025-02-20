@@ -77,9 +77,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DEBUG;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;..\..\deako;..\..\vendors\glm;..\..\vendors\glfw\include;..\..\vendors\magic_memory\magic_memory;..\..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\..\deako;..\..\vendors\cglm\include;..\..\vendors\log;..\..\vendors\glfw\include;..\..\vendors\magic_memory\magic_memory;..\..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
@@ -97,9 +97,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;RELEASE;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;..\..\deako;..\..\vendors\glm;..\..\vendors\glfw\include;..\..\vendors\magic_memory\magic_memory;..\..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\..\deako;..\..\vendors\cglm\include;..\..\vendors\log;..\..\vendors\glfw\include;..\..\vendors\magic_memory\magic_memory;..\..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -122,9 +122,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='dist|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>DK_PLATFORM_WINDOWS;DIST;GLFW_INCLUDE_VULKAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;..\..\deako;..\..\vendors\glm;..\..\vendors\glfw\include;..\..\vendors\magic_memory\magic_memory;..\..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..\..\deako;..\..\vendors\cglm\include;..\..\vendors\log;..\..\vendors\glfw\include;..\..\vendors\magic_memory\magic_memory;..\..\vendors\vulkan\1.3.296.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -145,11 +145,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="layers\GuiLayer.h" />
-    <ClInclude Include="layers\SceneLayer.h" />
+    <ClInclude Include="deako_editor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="deako_editor.c" />
+    <ClCompile Include="layers\deako_editor_gui.c" />
+    <ClCompile Include="layers\deako_editor_viewport.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\deako\deako.vcxproj">

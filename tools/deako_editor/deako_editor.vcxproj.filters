@@ -6,14 +6,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="layers\GuiLayer.h">
-      <Filter>layers</Filter>
-    </ClInclude>
-    <ClInclude Include="layers\SceneLayer.h">
-      <Filter>layers</Filter>
-    </ClInclude>
+    <ClInclude Include="deako_editor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="deako_editor.c" />
+    <ClCompile Include="layers\deako_editor_gui.c">
+      <Filter>layers</Filter>
+    </ClCompile>
+    <ClCompile Include="layers\deako_editor_viewport.c">
+      <Filter>layers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

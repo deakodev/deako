@@ -4,12 +4,6 @@
     <Filter Include="app">
       <UniqueIdentifier>{665E880B-D267-887C-5BE3-9E7CC7EB937C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="core">
-      <UniqueIdentifier>{4E40957C-3A77-960D-E363-7C10CF79120F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="logger">
-      <UniqueIdentifier>{4507DF0B-31A9-09E2-1A64-1D3606A59032}</UniqueIdentifier>
-    </Filter>
     <Filter Include="renderer">
       <UniqueIdentifier>{9C6AA017-8837-FB22-B150-E9CA9D7C30B1}</UniqueIdentifier>
     </Filter>
@@ -21,72 +15,27 @@
     <ClInclude Include="app\deako_app.h">
       <Filter>app</Filter>
     </ClInclude>
-    <ClInclude Include="app\deako_core.h">
+    <ClInclude Include="app\deako_entry.h">
       <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_debug.h">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_event.h">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_input.h">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="app\deako_window.h">
-      <Filter>app</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Arena.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Inheritor.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="core\Object.h">
-      <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="deako.h" />
-    <ClInclude Include="deako_config.h" />
+    <ClInclude Include="deako_internal.h" />
     <ClInclude Include="deako_pch.h" />
-    <ClInclude Include="logger\log.h">
-      <Filter>logger</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\GraphicsResources.h">
-      <Filter>renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\Renderer.h">
-      <Filter>renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanDebugMessenger.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanDevice.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanInstance.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanPhysicalDevice.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanQueue.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanResources.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanSurface.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="renderer\vulkan\VulkanSwapchain.h">
-      <Filter>renderer\vulkan</Filter>
-    </ClInclude>
+    <ClInclude Include="sokol.h" />
+    <ClInclude Include="renderer\deako_renderer.h" />
+    <ClInclude Include="renderer\vulkan\deako_vulkan.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="deako.c" />
+    <ClCompile Include="app\deako_app.c">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="deako_internal.c" />
     <ClCompile Include="deako_pch.c" />
-    <ClCompile Include="logger\log.c">
-      <Filter>logger</Filter>
+    <ClCompile Include="app\deako_window.c">
+      <Filter>app</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer\deako_renderer.c">
+      <Filter>renderer</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
